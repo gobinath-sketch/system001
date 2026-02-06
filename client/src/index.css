@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@theme {
+  /* Primary Blue - Main buttons, headers, active states */
+  --color-primary-blue: #003D7A;
+  --color-primary-blue-light: #0052A3;
+  --color-primary-blue-dark: #002952;
+
+  /* Accent Gold - Highlights, KPIs, active menu items */
+  --color-accent-yellow: #D4AF37;
+  --color-accent-yellow-light: #E0C158;
+  --color-accent-yellow-dark: #B8941F;
+
+  /* Backgrounds */
+  --color-bg-page: #F3F4F6;
+  --color-bg-card: #FFFFFF;
+
+  /* Text Colors */
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+
+  /* Alerts (only use for status indicators) */
+  --color-alert-success: #10B981;
+  --color-alert-danger: #EF4444;
+  --color-alert-warning: #F59E0B;
+
+  /* Legacy support - map old brand colors to new system */
+  --color-brand-blue: #003D7A;
+  --color-brand-gold: #D4AF37;
+  --color-brand-light: #F3F4F6;
+
+  --font-family-sans: 'Inter', system-ui, sans-serif;
+}
+
+:root {
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  /* Increased from 12px */
+}
+
+body {
+  background-color: var(--color-bg-page);
+  color: var(--color-text-primary);
+  margin: 0;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Lean Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  /* slate-300 */
+  border-radius: 10px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+  /* slate-400 */
+}
+
+/* Firefox support */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Custom Scrollbar for Notification Dropdown */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #94a3b8, #64748b);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #64748b, #475569);
+}
+
+/* Smooth Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes zoom-in {
+  from {
+    transform: scale(0.95);
+  }
+
+  to {
+    transform: scale(1);
+  }
+}
+
+.animate-in {
+  animation: fade-in 0.3s ease-out, zoom-in 0.3s ease-out;
+}

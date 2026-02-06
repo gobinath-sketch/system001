@@ -1,0 +1,401 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { Plus, Eye, Search, Filter, X, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import GPReportSection from '../components/reports/GPReportSection';
+import CreateOpportunityModal from '../components/opportunity/CreateOpportunityModal';
+import AlertModal from '../components/ui/AlertModal';
+
+const OpportunityPage = () => {
+    const navigate = useNavigate();
+    const { user } = useAuth();
+    const { addToast } = useToast();
+
+    // Data States
+    const [opportunities, setOpportunities] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    // UI States
+    const [showForm, setShowForm] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterCreator, setFilterCreator] = useState('');
+    const [filterType, setFilterType] = useState('');
+    const [filterMonth, setFilterMonth] = useState('');
+    const [filterYear, setFilterYear] = useState('');
+
+    // Status Modal State
+    const [statusModal, setStatusModal] = useState({ isOpen: false, oppId: null, newStatus: '' });
+
+    useEffect(() => {
+        fetchOpportunities();
+    }, []);
+
+    const fetchOpportunities = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/opportunities', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setOpportunities(res.data);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching opportunities:', err);
+            setLoading(false);
+        }
+    };
+
+
+
+    // Role Helper
+    const isDeliveryRole = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
+    const isSalesRole = ['Sales Executive', 'Sales Manager', 'Super Admin'].includes(user?.role);
+
+    // Delivery Status Change Handler
+    const handleStatusChange = async (oppId, newStatus) => {
+        try {
+            const token = localStorage.getItem('token');
+            await axios.put(`http://localhost:5000/api/opportunities/${oppId}/status`,
+                { status: newStatus },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+            addToast('Status updated successfully', 'success');
+            fetchOpportunities();
+        } catch (error) {
+            console.error('Status update failed', error);
+            // Display specific validation message from backend (e.g. missing docs)
+            const msg = error.response?.data?.message || 'Failed to update status';
+            addToast(msg, 'error');
+        }
+    };
+
+    // Filter Logic
+    const filteredOpportunities = opportunities.filter(opp => {
+        const matchesSearch = isDeliveryRole
+            ? opp.opportunityNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+            : (opp.opportunityNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                opp.clientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                opp.client?.companyName?.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesCreator = filterCreator ? opp.createdBy?.name === filterCreator : true;
+        const matchesType = filterType ? opp.type === filterType : true;
+
+        // Filter by Training Month and Year
+        const matchesMonth = filterMonth
+            ? opp.commonDetails?.monthOfTraining === filterMonth
+            : true;
+        const matchesYear = filterYear
+            ? opp.commonDetails?.year?.toString() === filterYear
+            : true;
+
+        return matchesSearch && matchesCreator && matchesType && matchesMonth && matchesYear;
+    });
+
+    // Get unique creators for filter (Sales Manager only)
+    const uniqueCreators = [...new Set(opportunities.map(o => o.createdBy?.name).filter(Boolean))];
+
+    return (
+        <div className="p-5 relative">
+            <div className="flex justify-between items-center mb-8">
+                <div className="flex items-center space-x-4">
+                    <button
+                        onClick={() => {
+                            if (user?.role === 'Sales Executive') navigate('/dashboard/executive');
+                            else if (user?.role === 'Sales Manager') navigate('/dashboard/manager');
+                            else if (['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role)) navigate('/dashboard/delivery');
+                            else if (user?.role === 'Director') navigate('/dashboard/businesshead');
+                            else navigate('/'); // Default fallack
+                        }}
+                        className="text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                        <ArrowLeft size={24} />
+                    </button>
+                    <h1 className="text-3xl font-bold text-primary-blue">Opportunity Management</h1>
+                </div>
+                {!isDeliveryRole && (
+                    <button
+                        onClick={() => setShowForm(true)}
+                        className="bg-primary-blue text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-opacity-90 shadow-md"
+                    >
+                        <Plus size={18} />
+                        <span className="font-bold">Create Opportunity</span>
+                    </button>
+                )}
+            </div>
+
+            {/* GP Report Section - Only for Super Admin */}
+            {user?.role === 'Super Admin' && (
+                <GPReportSection />
+            )}
+
+            <CreateOpportunityModal
+                isOpen={showForm}
+                onClose={() => setShowForm(false)}
+                onSuccess={fetchOpportunities}
+            />
+
+            {/* Opportunity List Container */}
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+                {/* Table Header with Search & Count */}
+                <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                    {/* Left: Count */}
+                    <h2 className="text-lg font-semibold text-gray-900">
+                        All Opportunities ({filteredOpportunities.length})
+                    </h2>
+
+                    {/* Right: Search & Filters */}
+                    <div className="flex flex-1 items-center justify-end gap-4 w-full md:w-auto">
+                        <div className="relative max-w-md w-64">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                            <input
+                                type="text"
+                                placeholder={isDeliveryRole ? "Search by Opp ID..." : "Search by Opp ID or Client..."}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <div className="relative">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                <select
+                                    value={filterType}
+                                    onChange={(e) => setFilterType(e.target.value)}
+                                    className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50"
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="Training">Training</option>
+                                    <option value="Vouchers">Vouchers</option>
+                                    <option value="Lab Support">Lab Support</option>
+                                    <option value="Resource Support">Resource Support</option>
+                                    <option value="Content Development">Content Development</option>
+                                    <option value="Product Support">Product Support</option>
+                                </select>
+                            </div>
+                            <div className="relative">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                <select
+                                    value={filterMonth}
+                                    onChange={(e) => setFilterMonth(e.target.value)}
+                                    className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50"
+                                >
+                                    <option value="">All Months</option>
+                                    {['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="relative">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                <select
+                                    value={filterYear}
+                                    onChange={(e) => setFilterYear(e.target.value)}
+                                    className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50"
+                                >
+                                    <option value="">All Years</option>
+                                    {[2024, 2025, 2026, 2027].map(y => (
+                                        <option key={y} value={y}>{y}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            {(user?.role === 'Sales Manager' || isDeliveryRole) && (
+                                <div className="relative">
+                                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                    <select
+                                        value={filterCreator}
+                                        onChange={(e) => setFilterCreator(e.target.value)}
+                                        className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50"
+                                    >
+                                        <option value="">All Creators</option>
+                                        {uniqueCreators.map((creator, idx) => (
+                                            <option key={idx} value={creator}>{creator}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
+                <div className="overflow-auto h-[calc(100vh-240px)]">
+                    <table className="min-w-full text-left text-sm relative">
+                        <thead className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th className="px-6 py-2 font-semibold text-gray-900">Opp ID</th>
+                                <th className="px-6 py-2 font-semibold text-gray-900">Client</th>
+                                {isDeliveryRole ? (
+                                    <th className="px-6 py-2 font-semibold text-gray-900">Created By</th>
+                                ) : (
+                                    <>
+                                        <th className="px-6 py-2 font-semibold text-gray-900">Contact Person</th>
+                                        {user?.role === 'Sales Manager' && (
+                                            <th className="px-6 py-2 font-semibold text-gray-900">Created By</th>
+                                        )}
+                                    </>
+                                )}
+                                <th className="px-6 py-2 font-semibold text-gray-900">Type</th>
+                                <th className="px-6 py-2 font-semibold text-gray-900">Progress</th>
+                                <th className="px-6 py-2 font-semibold text-gray-900">Approval Status</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredOpportunities.length > 0 ? (
+                                filteredOpportunities.map((opp) => {
+                                    // Find full contact details from client data
+                                    // Fallback to primary contact if specific selection is not found/available
+                                    let contactDetails = opp.client?.contactPersons?.find(cp => cp.name === opp.selectedContactPerson);
+
+                                    // If no specific contact found, try to find the primary one
+                                    if (!contactDetails && opp.client?.contactPersons?.length > 0) {
+                                        contactDetails = opp.client.contactPersons.find(cp => cp.isPrimary) || opp.client.contactPersons[0];
+                                    }
+
+                                    // Determine Approval Status Badge
+                                    let statusBadge = null;
+                                    const appStatus = opp.approvalStatus;
+
+                                    if (!appStatus || appStatus === 'Draft' || appStatus === 'No Approval Required' || appStatus === 'Not Required') {
+                                        statusBadge = (
+                                            <span
+                                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 cursor-help"
+                                                title="No approval required. Within approved limits."
+                                            >
+                                                Pre-Approved
+                                            </span>
+                                        );
+                                    } else if (appStatus === 'Approved') {
+                                        statusBadge = (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                                Approved
+                                            </span>
+                                        );
+                                    } else if (appStatus === 'Rejected') {
+                                        statusBadge = (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                                                Rejected
+                                            </span>
+                                        );
+                                    } else if (['Pending Manager', 'Pending Director', 'Pending'].includes(appStatus) || appStatus?.toLowerCase().includes('pending')) {
+                                        statusBadge = (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                                Pending
+                                            </span>
+                                        );
+                                    } else {
+                                        // Fallback for unknown status
+                                        statusBadge = (
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                                                {appStatus}
+                                            </span>
+                                        );
+                                    }
+
+                                    return (
+                                        <tr key={opp._id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => navigate(`/opportunities/${opp._id}`)}>
+                                            <td className="px-6 py-2 font-bold text-gray-900">
+                                                {opp.opportunityNumber}
+                                            </td>
+                                            <td className="px-6 py-2">
+                                                <div className="font-medium text-gray-900">{opp.client?.companyName || opp.clientName || 'N/A'}</div>
+                                                <div className="text-xs text-gray-500">{opp.client?.sector}</div>
+                                            </td>
+
+                                            {isDeliveryRole ? (
+                                                <td className="px-6 py-2">
+                                                    <div className="font-medium text-gray-900">{opp.createdBy?.name || 'N/A'}</div>
+                                                </td>
+                                            ) : (
+                                                <>
+                                                    <td className="px-6 py-2">
+                                                        {contactDetails ? (
+                                                            <div className="flex flex-col">
+                                                                <div className="font-medium text-gray-900">{contactDetails.name}</div>
+                                                                <div className="text-xs text-gray-500">{contactDetails.designation}</div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-gray-500 italic">{opp.selectedContactPerson || 'N/A'}</div>
+                                                        )}
+                                                    </td>
+                                                    {user?.role === 'Sales Manager' && (
+                                                        <td className="px-6 py-2">
+                                                            <div className="font-medium text-gray-900">{opp.createdBy?.name || 'N/A'}</div>
+                                                        </td>
+                                                    )}
+                                                </>
+                                            )}
+                                            <td className="px-6 py-2 text-gray-700">{opp.type}</td>
+
+                                            {/* Progress Column */}
+                                            <td className="px-6 py-2">
+                                                <div className="flex flex-col space-y-2 max-w-[140px]">
+                                                    <div className="flex items-center space-x-2">
+                                                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                                            <div
+                                                                className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-green-500"
+                                                                style={{ width: `${opp.progressPercentage || 0}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs font-semibold text-gray-600">{opp.progressPercentage || 0}%</span>
+                                                    </div>
+
+                                                    {/* Manual Status Override */}
+                                                    <div onClick={(e) => e.stopPropagation()}>
+                                                        <select
+                                                            className="text-xs border border-gray-200 rounded p-1 bg-gray-50 hover:bg-white focus:ring-1 focus:ring-brand-blue"
+                                                            value={opp.commonDetails?.status || 'Active'}
+                                                            onChange={(e) => {
+                                                                setStatusModal({
+                                                                    isOpen: true,
+                                                                    oppId: opp._id,
+                                                                    newStatus: e.target.value
+                                                                });
+                                                            }}
+                                                            disabled={!isSalesRole && !isDeliveryRole}
+                                                        >
+                                                            <option value="Active">Active</option>
+                                                            <option value="Cancelled">Cancelled</option>
+                                                            <option value="Discontinued">Discontinued</option>
+                                                            <option value="Completed">Completed</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            </td>
+
+                                            {/* Status Column (Approval Status) */}
+                                            <td className="px-6 py-2">
+                                                {statusBadge}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
+                                        No opportunities found matching your search.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {/* Status Confirmation Modal */}
+            <AlertModal
+                isOpen={statusModal.isOpen}
+                onClose={() => setStatusModal({ ...statusModal, isOpen: false })}
+                title="Confirm Status Change"
+                message={`Are you sure you want to change the status to "${statusModal.newStatus}"?`}
+                confirmText="Yes, Change Status"
+                cancelText="No, Keep It"
+                type="warning"
+                onConfirm={() => {
+                    handleStatusChange(statusModal.oppId, statusModal.newStatus);
+                    setStatusModal({ ...statusModal, isOpen: false });
+                }}
+            />
+        </div>
+    );
+};
+
+export default OpportunityPage;
