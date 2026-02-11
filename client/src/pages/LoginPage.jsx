@@ -38,8 +38,8 @@ const LoginPage = () => {
                         -webkit-text-fill-color: #1f2937 !important; /* text-gray-800 */
                         transition: background-color 5000s ease-in-out 0s;
                         box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.5) !important;
-                        border: 1px solid rgba(229, 231, 235, 1) !important; /* border-gray-200 */
-                        background-clip: content-box !important;
+                        -webkit-box-shadow: inset 0 0 0 1000px rgba(255, 255, 255, 0.5) !important;
+                        border-radius: 9999px !important;
                     }
                     /* Hide default password reveal button in Edge/IE */
                     input::-ms-reveal,
