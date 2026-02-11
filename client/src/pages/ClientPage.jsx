@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X, Handshake } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { validateMobile, validateEmail } from '../utils/validation';
@@ -626,7 +626,6 @@ const ClientPage = () => {
                     </button>
                     <div>
                         <div className="flex items-center gap-3">
-                            <Handshake size={32} className="text-primary-blue" />
                             <h1 className="text-3xl font-bold text-primary-blue">Clients</h1>
                         </div>
                     </div>
