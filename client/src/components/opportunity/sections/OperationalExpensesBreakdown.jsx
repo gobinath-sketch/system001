@@ -278,15 +278,7 @@ const OperationalExpensesBreakdown = ({
                     />
                 )}
 
-                {/* Read Only View - Compact single line */}
-                {!canEdit && (
-                    <div className="flex justify-between items-center text-[11px] text-gray-600">
-                        <span className="text-gray-500">Adhoc</span>
-                        <span className="font-medium text-gray-800">
-                            {CURRENCY_SYMBOL} {((activeData.expenses?.[key] || 0) / CONVERSION_RATE).toLocaleString()}
-                        </span>
-                    </div>
-                )}
+
 
                 {/* Document Upload / View */}
                 {(canEdit || opportunity.expenseDocuments?.[key]?.length > 0) && (
