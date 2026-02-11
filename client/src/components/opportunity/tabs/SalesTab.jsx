@@ -253,8 +253,9 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                                     type="number"
                                     value={formData.participants || ''}
                                     onChange={(e) => handleChange('root', 'participants', parseInt(e.target.value) || 0)}
+                                    onWheel={(e) => e.target.blur()}
                                     disabled={!isEditing}
-                                    className={inputClass}
+                                    className={`${inputClass} no-arrows`}
                                     placeholder="0"
                                 />
                             </div>

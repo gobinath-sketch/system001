@@ -142,3 +142,14 @@ code {
     transform: translateX(150%) skewX(-15deg);
   }
 }
+
+/* Hide Number Input Arrows */
+.no-arrows::-webkit-outer-spin-button,
+.no-arrows::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.no-arrows {
+  -moz-appearance: textfield;
+}

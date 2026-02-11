@@ -276,8 +276,14 @@ const SalesExecutiveDashboard = ({ user }) => {
                             </div>
                         </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-center">
+                    <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
+                            <p className="text-lg font-bold text-gray-800">
+                                {allOpps.length}
+                            </p>
+                            <p className="text-[10px] text-gray-400">Total</p>
+                        </div>
+                        <div className="border-l border-gray-100">
                             <p className="text-lg font-bold text-blue-600">
                                 {allOpps.filter(opp => opp.poDocument).length}
                             </p>

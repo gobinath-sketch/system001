@@ -259,9 +259,10 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                                     <input
                                         type="number"
                                         name="poValue"
-                                        value={formData.poValue}
+                                        value={formData.poValue === 0 ? '' : formData.poValue}
                                         onChange={handleChange}
-                                        className={inputClass}
+                                        onWheel={(e) => e.target.blur()}
+                                        className={`${inputClass} no-arrows`}
                                         placeholder="Enter Amount"
                                     />
                                 ) : (

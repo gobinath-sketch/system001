@@ -592,7 +592,7 @@ const SMEManagement = () => {
                                     </div>
                                     <input name="technology" value={formData.technology} onChange={handleInputChange} placeholder="Technology *" className="border p-2 rounded" required />
                                     <div className="relative">
-                                        <input name="yearsExperience" value={formData.yearsExperience} onChange={handleInputChange} onWheel={(e) => e.target.blur()} placeholder="Years Experience *" type="number" className="border p-2 rounded w-full" required />
+                                        <input name="yearsExperience" value={formData.yearsExperience} onChange={handleInputChange} onWheel={(e) => e.target.blur()} placeholder="Years Experience *" type="number" className="border p-2 rounded w-full no-arrows" required />
                                     </div>
                                     <input name="location" value={formData.location} onChange={handleInputChange} placeholder="Location *" className="border p-2 rounded" required />
                                     {formData.smeType === 'Freelancer' && (

@@ -8,7 +8,7 @@ import SearchableSelect from '../ui/SearchableSelect';
 
 const TECHNOLOGIES = ['IBM', 'Red hat', 'Microsoft', 'Blockchain', 'Tableau', 'Mulesoft', 'AI alliance', 'Trending technologies'];
 
-const CreateOpportunityModal = ({ isOpen, onClose, onSuccess }) => {
+const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientId }) => {
     const { addToast } = useToast();
 
     // Data States
@@ -59,8 +59,11 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess }) => {
     useEffect(() => {
         if (isOpen) {
             fetchClients();
+            if (preselectedClientId) {
+                setFormData(prev => ({ ...prev, clientId: preselectedClientId }));
+            }
         }
-    }, [isOpen]);
+    }, [isOpen, preselectedClientId]);
 
     const fetchClients = async () => {
         try {
@@ -297,7 +300,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Number of Participants *</label>
-                                        <input type="number" name="batchSize" value={formData.batchSize} onChange={handleChange} className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="Enter number of participants" required min="1" />
+                                        <input type="number" name="batchSize" value={formData.batchSize} onChange={handleChange} onWheel={(e) => e.target.blur()} className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue no-arrows" placeholder="Enter number of participants" required min="1" />
                                     </div>
                                     {(formData.modeOfTraining === 'Classroom' || formData.modeOfTraining === 'Hybrid') && (
                                         <div className="md:col-span-2">

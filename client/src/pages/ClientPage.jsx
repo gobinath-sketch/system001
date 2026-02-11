@@ -387,12 +387,16 @@ const ClientPage = () => {
                                             <input
                                                 value={contact.contactNumber}
                                                 onChange={(e) => handleContactChange(index, 'contactNumber', e.target.value)}
-                                                className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                                                className={`w-full bg-white border p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue ${contact.contactNumber && contact.contactNumber.length !== 10 ? 'border-red-300 focus:ring-red-200' : 'border-gray-200'
+                                                    }`}
                                                 placeholder="10-digit Mobile Number"
                                                 pattern="^[0-9]{10}$"
                                                 title="Enter a valid phone number (Exactly 10 digits)"
                                                 required
                                             />
+                                            {contact.contactNumber && contact.contactNumber.length !== 10 && (
+                                                <p className="text-xs text-red-500 mt-1">Must be exactly 10 digits ({contact.contactNumber.length}/10)</p>
+                                            )}
                                         </div>
                                         <div>
                                             <label className="block text-xs text-gray-600 mb-1">Email <span className="text-red-500">*</span></label>
@@ -735,6 +739,7 @@ const ClientPage = () => {
                                         {user?.role === 'Sales Manager' && (
                                             <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>
                                         )}
+                                        <th className="px-6 py-3 font-semibold text-gray-900">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -772,6 +777,18 @@ const ClientPage = () => {
                                                             {client.createdBy?.name || 'N/A'}
                                                         </td>
                                                     )}
+                                                    <td className="px-6 py-4">
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                navigate('/opportunities', { state: { createOpportunity: true, clientId: client._id } });
+                                                            }}
+                                                            className="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-colors"
+                                                            title="Create Opportunity"
+                                                        >
+                                                            <Plus size={20} />
+                                                        </button>
+                                                    </td>
                                                 </tr>
                                             );
                                         })

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Eye, Search, Filter, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -10,6 +10,7 @@ import AlertModal from '../components/ui/AlertModal';
 
 const OpportunityPage = () => {
     const navigate = useNavigate();
+    const location = useLocation(); // Add useLocation
     const { user } = useAuth();
     const { addToast } = useToast();
 
@@ -19,6 +20,24 @@ const OpportunityPage = () => {
 
     // UI States
     const [showForm, setShowForm] = useState(false);
+    const [preselectedClientId, setPreselectedClientId] = useState(null); // New State
+
+    // ... (rest of state)
+
+    // Handle Navigation State
+    useEffect(() => {
+        if (location.state?.createOpportunity) {
+            setShowForm(true);
+            if (location.state.clientId) {
+                setPreselectedClientId(location.state.clientId);
+            }
+            // Optional: Clear state to prevent reopening on refresh, but requires navigation replace
+            window.history.replaceState({}, document.title)
+        }
+    }, [location]);
+
+    // ... (rest of component)
+
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCreator, setFilterCreator] = useState('');
     const [filterType, setFilterType] = useState('');
@@ -130,8 +149,12 @@ const OpportunityPage = () => {
 
             <CreateOpportunityModal
                 isOpen={showForm}
-                onClose={() => setShowForm(false)}
+                onClose={() => {
+                    setShowForm(false);
+                    setPreselectedClientId(null); // Reset on close
+                }}
                 onSuccess={fetchOpportunities}
+                preselectedClientId={preselectedClientId}
             />
 
             {/* Opportunity List Container */}
