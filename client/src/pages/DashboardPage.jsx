@@ -65,8 +65,22 @@ const DashboardPage = ({ mockRole }) => {
         fetchData();
     }, [mockRole]);
 
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     const StatCard = ({ title, value, icon: Icon, color, subtext }) => (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-4">
+        <div style={glassCardStyle} className="p-6 flex items-center space-x-4">
             <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
                 <Icon size={24} className={color.replace('bg-', 'text-')} />
             </div>

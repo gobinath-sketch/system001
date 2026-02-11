@@ -221,6 +221,20 @@ const SalesManagerDashboard = () => {
         }
     };
 
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     if (loading) return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
 
     return (
@@ -238,7 +252,7 @@ const SalesManagerDashboard = () => {
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Combined Client & Team Members Card */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                <div style={glassCardStyle} className="p-6">
                     <div className="flex items-center space-x-3 mb-4">
                         <div className="p-2 rounded-full bg-blue-100">
                             <Grid size={20} className="text-blue-600" />
@@ -258,7 +272,7 @@ const SalesManagerDashboard = () => {
                 </div>
 
                 {/* Opportunities Card */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                <div style={glassCardStyle} className="p-6">
                     <div className="flex items-center space-x-3 mb-2">
                         <div className="p-2 rounded-full bg-purple-100">
                             <Briefcase size={20} className="text-purple-600" />
@@ -278,7 +292,7 @@ const SalesManagerDashboard = () => {
                 </div>
 
                 {/* Document Status Card */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+                <div style={glassCardStyle} className="p-6">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center space-x-3">
                             <div className="p-2 rounded-full bg-indigo-100">
@@ -309,7 +323,7 @@ const SalesManagerDashboard = () => {
             {/* --- Row 2: Analytics & Targets (3 Columns) --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* 1. Revenue by Type */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Revenue by Opportunity Type</h3>
                         <div className="flex items-center gap-2">
@@ -369,7 +383,7 @@ const SalesManagerDashboard = () => {
                 </div>
 
                 {/* 2. Top 5 Clients */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Top 5 Clients by Revenue</h3>
                         <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">
@@ -396,7 +410,7 @@ const SalesManagerDashboard = () => {
                 </div>
 
                 {/* 3. Set Team Targets */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Set Team Targets</h3>
                         <select
@@ -474,7 +488,7 @@ const SalesManagerDashboard = () => {
             {/* --- Row 3: Trends (2 Columns) --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 1. Team Opportunity Trends */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Team Opportunity Trends</h3>
                         <div className="flex items-center gap-2">
@@ -507,7 +521,7 @@ const SalesManagerDashboard = () => {
                 </div>
 
                 {/* 2. Team Revenue Trends */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Team Revenue Trends</h3>
                         <div className="flex items-center gap-2">

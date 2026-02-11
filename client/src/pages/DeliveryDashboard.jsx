@@ -54,6 +54,20 @@ const DeliveryDashboard = () => {
         }
     };
 
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     if (loading) return (
         <div className="flex justify-center items-center min-h-screen bg-bg-page">
             <div className="text-primary-blue font-semibold">Loading Analytics...</div>
@@ -80,7 +94,7 @@ const DeliveryDashboard = () => {
             {/* KPI Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                 {kpiCards.map((card, idx) => (
-                    <div key={idx} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                    <div key={idx} style={glassCardStyle} className="rounded-xl p-4 hover:shadow-[0_8px_32px_0_rgba(255,255,255,0.3)] transition-all">
                         <div className="flex justify-between items-start mb-2">
                             <div className={`p-2 rounded-lg ${card.bg}`}>
                                 <card.icon size={20} className={card.color} />
@@ -97,7 +111,7 @@ const DeliveryDashboard = () => {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-96">
 
                 {/* Sales Executive Wise Count */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                <div style={glassCardStyle} className="p-6 rounded-xl flex flex-col">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">Opportunities by Sales Executive</h3>
                     <div className="flex-1 w-full min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
@@ -116,7 +130,7 @@ const DeliveryDashboard = () => {
                 </div>
 
                 {/* Top 5 Vendors */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                <div style={glassCardStyle} className="p-6 rounded-xl flex flex-col">
                     <h3 className="text-lg font-bold text-gray-800 mb-4">Top 5 Vendors (by Spend)</h3>
                     <div className="flex-1 w-full min-h-0">
                         <ResponsiveContainer width="100%" height="100%">
@@ -136,7 +150,7 @@ const DeliveryDashboard = () => {
             </div>
 
             {/* Charts Row 2: Monthly GP% Trend */}
-            <div className="h-80 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+            <div style={glassCardStyle} className="h-80 p-6 rounded-xl">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Average GP % (Monthly)</h3>
                 <div className="w-full h-full pb-6">
                     <ResponsiveContainer width="100%" height="100%">

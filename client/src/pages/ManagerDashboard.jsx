@@ -55,10 +55,25 @@ const ManagerDashboard = ({ user: userProp }) => {
         }
     };
 
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     const StatCard = ({ title, value, icon: Icon, bgColor, iconColor, subtext, onClick }) => (
         <div
             onClick={onClick}
-            className={`bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-4 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            style={glassCardStyle}
+            className={`p-6 flex items-center space-x-4 ${onClick ? 'cursor-pointer hover:shadow-[0_8px_32px_0_rgba(255,255,255,0.3)] transition-all' : ''}`}
         >
             <div className={`p-3 rounded-full ${bgColor} flex items-center justify-center`}>
                 {Icon && <Icon size={24} className={iconColor} />}
@@ -96,7 +111,7 @@ const ManagerDashboard = ({ user: userProp }) => {
                 />
 
                 {/* Split Opportunity Card */}
-                <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center">
+                <div style={glassCardStyle} className="p-6 flex flex-col justify-center">
                     <div className="flex items-center space-x-3 mb-2">
                         <div className="p-2 rounded-full bg-purple-100">
                             <Briefcase size={20} className="text-purple-600" />
@@ -128,7 +143,7 @@ const ManagerDashboard = ({ user: userProp }) => {
             </div>
 
             {/* 2. Team Performance Section */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+            <div style={glassCardStyle} className="p-6">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-lg font-bold text-gray-800">Team Performance</h3>
                     <div className="flex gap-3">

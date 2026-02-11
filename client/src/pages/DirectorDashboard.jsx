@@ -36,8 +36,22 @@ const DirectorDashboard = () => {
             : `$${val.toLocaleString('en-US', { maximumFractionDigits: 0 })}`;
     };
 
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     const MetricCard = ({ title, value, icon: Icon, trend, trendValue, color }) => (
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+        <div style={glassCardStyle} className="p-6 hover:shadow-[0_8px_32px_0_rgba(255,255,255,0.3)] transition-all">
             <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
                     <Icon size={24} className={color.replace('bg-', 'text-')} />
@@ -94,17 +108,17 @@ const DirectorDashboard = () => {
 
             {/* Quick Stats */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div style={glassCardStyle} className="p-6">
                     <div className="text-sm text-gray-500 mb-1">Total Revenue (MTD)</div>
                     <div className="text-2xl font-bold text-gray-900">{format(convert(450000))}</div>
                     <div className="text-xs text-green-600 mt-1">+18% from last month</div>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div style={glassCardStyle} className="p-6">
                     <div className="text-sm text-gray-500 mb-1">Total Expenses (MTD)</div>
                     <div className="text-2xl font-bold text-gray-900">{format(convert(280000))}</div>
                     <div className="text-xs text-red-600 mt-1">+8% from last month</div>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm border">
+                <div style={glassCardStyle} className="p-6">
                     <div className="text-sm text-gray-500 mb-1">Profit Margin</div>
                     <div className="text-2xl font-bold text-green-600">37.8%</div>
                     <div className="text-xs text-gray-500 mt-1">Healthy margin</div>
