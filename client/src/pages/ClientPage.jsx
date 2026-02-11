@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X, Handshake } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { validateMobile, validateEmail } from '../utils/validation';
@@ -99,12 +99,20 @@ const ClientPage = () => {
     };
 
     const handleContactChange = (index, field, value) => {
+        if (field === 'contactNumber') {
+            if (!/^\d*$/.test(value)) return;
+            if (value.length > 10) return;
+        }
         const newContacts = [...formData.contactPersons];
         newContacts[index][field] = value;
         setFormData({ ...formData, contactPersons: newContacts });
     };
 
     const handleReportingManagerChange = (index, field, value) => {
+        if (field === 'contactNumber') {
+            if (!/^\d*$/.test(value)) return;
+            if (value.length > 10) return;
+        }
         const newContacts = [...formData.contactPersons];
         newContacts[index].reportingManager[field] = value;
         setFormData({ ...formData, contactPersons: newContacts });
@@ -380,9 +388,9 @@ const ClientPage = () => {
                                                 value={contact.contactNumber}
                                                 onChange={(e) => handleContactChange(index, 'contactNumber', e.target.value)}
                                                 className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue"
-                                                placeholder="+91"
-                                                pattern="^(\+91[\s]?)?[0-9]{1,4}[\s]?[0-9]{1,4}[\s]?[0-9]{1,4}$"
-                                                title="Enter a valid phone number (10 digits, optional +91 prefix, max 3 spaces allowed)"
+                                                placeholder="10-digit Mobile Number"
+                                                pattern="^[0-9]{10}$"
+                                                title="Enter a valid phone number (Exactly 10 digits)"
                                                 required
                                             />
                                         </div>
@@ -417,8 +425,9 @@ const ClientPage = () => {
                                                     value={contact.reportingManager.contactNumber}
                                                     onChange={(e) => handleReportingManagerChange(index, 'contactNumber', e.target.value)}
                                                     className="w-full border p-2 rounded text-sm bg-white"
-                                                    pattern="^(\+91[\s]?)?[0-9]{1,4}[\s]?[0-9]{1,4}[\s]?[0-9]{1,4}$"
-                                                    title="Enter a valid phone number (10 digits, optional +91 prefix, max 3 spaces allowed)"
+                                                    pattern="^[0-9]{10}$"
+                                                    title="Enter a valid phone number (Exactly 10 digits)"
+                                                    placeholder="10-digit Mobile Number"
                                                 />
                                             </div>
                                             <div>
@@ -616,7 +625,10 @@ const ClientPage = () => {
                         <ArrowLeft size={20} />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold text-primary-blue">Clients</h1>
+                        <div className="flex items-center gap-3">
+                            <Handshake size={32} className="text-primary-blue" />
+                            <h1 className="text-3xl font-bold text-primary-blue">Clients</h1>
+                        </div>
                     </div>
                 </div>
                 {viewMode === 'list' && user?.role !== 'Director' && (

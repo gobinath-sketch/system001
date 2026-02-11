@@ -361,23 +361,23 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                         <div className="flex-1">
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
                             <div className="flex items-center gap-2 mt-2">
-                                {vendorData.perDiem.document ? (
-                                    <a href={`http://localhost:5000/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
+                                {vendorData.other.document ? (
+                                    <a href={`http://localhost:5000/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
                                 ) : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                 {canEdit && (
                                     <div className="inline-block">
                                         <input
                                             type="file"
-                                            id="upload-perDiem"
+                                            id="upload-other"
                                             className="hidden"
-                                            onChange={(e) => handleFileUpload(e, 'perDiem', 'document')}
+                                            onChange={(e) => handleFileUpload(e, 'other', 'document')}
                                             disabled={uploading}
                                         />
                                         <UploadButton
-                                            onClick={() => document.getElementById('upload-perDiem').click()}
+                                            onClick={() => document.getElementById('upload-other').click()}
                                             disabled={uploading}
                                         >
-                                            {vendorData.perDiem.document ? 'Replace' : 'Upload'}
+                                            {vendorData.other.document ? 'Replace' : 'Upload'}
                                         </UploadButton>
                                     </div>
                                 )}

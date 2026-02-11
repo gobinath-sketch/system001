@@ -393,6 +393,7 @@ const Input = ({ label, value, onChange }) => {
                     type="number"
                     value={value || ''}
                     onChange={e => onChange(e.target.value)}
+                    onWheel={(e) => e.target.blur()}
                     className={`w-full text-right ${!isNonCurrencyField ? 'pl-6' : 'pl-2'} pr-2 py-1.5 bg-white border-2 border-blue-300 rounded text-sm font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                     placeholder="0"
                 />

@@ -1,9 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const UploadButton = ({ onClick, disabled, className, type = "button", children }) => {
+const UploadButton = ({ onClick, disabled, className, type = "button", children, variant = "primary" }) => {
   return (
-    <StyledWrapper className={className}>
+    <StyledWrapper className={className} variant={variant}>
       <button
         className="button"
         onClick={onClick}
@@ -28,24 +28,24 @@ const StyledWrapper = styled.div`
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    background: linear-gradient(45deg, #ffc75d, #ffc708);
-    box-shadow: 0 0 6px #ffb20840;
-    border: 1.5px solid #ffe825;
+    background: ${props => props.variant === 'primary' ? 'linear-gradient(45deg, #0056b3, #003D7A)' : 'linear-gradient(45deg, #ffc75d, #ffc708)'};
+    box-shadow: ${props => props.variant === 'primary' ? '0 0 6px rgba(0, 61, 122, 0.3)' : '0 0 6px #ffb20840'};
+    border: 1.5px solid ${props => props.variant === 'primary' ? '#003D7A' : '#ffe825'};
     border-radius: 100px;
     transition: background-color 0.3s ease, box-shadow 0.3s ease,
       text-shadow 0.3s ease;
     padding: 3px 8px;
-    color: #09090b;
+    color: ${props => props.variant === 'primary' ? '#ffffff' : '#09090b'};
     font-weight: bold;
     font-size: 10px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    text-shadow: ${props => props.variant === 'primary' ? 'none' : '1px 1px 2px rgba(0, 0, 0, 0.2)'};
   }
 
   .button:hover {
-    background-color: #ffc75d !important;
-    box-shadow: 0 0 10px #ffb20861 !important;
-    text-shadow: 0 0 2px #ffe825;
-    border-color: #ffe825 !important;
+    background: ${props => props.variant === 'primary' ? 'linear-gradient(45deg, #004494, #002a5e)' : '#ffc75d'} !important;
+    box-shadow: ${props => props.variant === 'primary' ? '0 0 10px rgba(0, 61, 122, 0.5)' : '0 0 10px #ffb20861'} !important;
+    text-shadow: ${props => props.variant === 'primary' ? 'none' : '0 0 2px #ffe825'};
+    border-color: ${props => props.variant === 'primary' ? '#002a5e' : '#ffe825'} !important;
   }
 
   .button:disabled {
@@ -54,11 +54,17 @@ const StyledWrapper = styled.div`
     background: #ccc;
     box-shadow: none;
     border-color: #999;
+    color: #666;
   }
 
   .icon {
     margin-right: 4px;
     filter: drop-shadow(1px 1px 2px rgba(0, 0, 0, 0.2));
-  }`;
+  }
+  
+  .icon path.color000000 {
+     fill: ${props => props.variant === 'primary' ? '#ffffff' : '#000000'};
+  }
+`;
 
 export default UploadButton;

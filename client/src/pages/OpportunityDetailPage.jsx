@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
-import { ArrowLeft, Edit, Save, X, FileText, Activity, Building2, Tag, Calendar, User, GraduationCap } from 'lucide-react';
+import { ArrowLeft, Edit, Save, X, FileText, Activity, Building2, Tag, Calendar, User, GraduationCap, Handshake } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 
@@ -307,7 +307,7 @@ const OpportunityDetailPage = () => {
                         {/* Block 3: Client */}
                         <div className="flex items-center gap-3 min-w-max">
                             <div className="p-2 bg-[#003D7A]/10 rounded-lg text-[#003D7A]">
-                                <User size={20} />
+                                <Handshake size={20} />
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Client</p>

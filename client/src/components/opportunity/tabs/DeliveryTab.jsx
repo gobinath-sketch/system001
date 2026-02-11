@@ -298,7 +298,7 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                                 <option value="">-- Select SME --</option>
                                 {filteredSMEs.map(s => (
                                     <option key={s._id} value={s._id}>
-                                        {s.name} - {s.companyName || 'N/A'}
+                                        {s.smeType === 'Company' ? `${s.name} – ${s.companyName}` : `${s.name} – Freelancer`}
                                     </option>
                                 ))}
                             </select>

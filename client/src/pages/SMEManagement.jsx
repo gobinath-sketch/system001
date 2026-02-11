@@ -5,7 +5,7 @@ import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, FileText, Building, Arro
 import UploadButton from '../components/ui/UploadButton';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
-import { validateMobile, validateEmail } from '../utils/validation';
+import { validateMobile, validateEmail, validatePAN, validateGST, validateBankAccount, validateIFSC } from '../utils/validation';
 
 const SMEManagement = () => {
     const navigate = useNavigate();
@@ -58,6 +58,7 @@ const SMEManagement = () => {
     };
 
     const [formData, setFormData] = useState(initialFormState);
+    const [errors, setErrors] = useState({});
 
     const [files, setFiles] = useState({
         sowDocument: null,
@@ -97,6 +98,15 @@ const SMEManagement = () => {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
+
+        // Strict validation for contact numbers
+        if (name === 'contactNumber' || name === 'companyContactNumber') {
+            // Allow only numbers
+            if (!/^\d*$/.test(value)) return;
+            // Limit to 10 digits (ignore 11th)
+            if (value.length > 10) return;
+        }
+
         if (name.includes('.')) {
             const [parent, child] = name.split('.');
             setFormData({
@@ -106,8 +116,37 @@ const SMEManagement = () => {
                     [child]: value
                 }
             });
+
+            // Validation for nested fields
+            let error = '';
+            if (name === 'bankDetails.accountNumber') {
+                const { valid, message } = validateBankAccount(value);
+                if (!valid && value) error = message;
+            } else if (name === 'bankDetails.ifscCode') {
+                const { valid, message } = validateIFSC(value);
+                if (!valid && value) error = message;
+            }
+            setErrors(prev => ({ ...prev, [name]: error }));
+
         } else {
             setFormData({ ...formData, [name]: value });
+
+            // Validation for top-level fields
+            let error = '';
+            if (name === 'contactNumber' || name === 'companyContactNumber') {
+                const { valid, message } = validateMobile(value);
+                if (!valid && value.length > 0) error = message;
+            } else if (name === 'email') {
+                const { valid, message } = validateEmail(value);
+                if (!valid && value) error = message;
+            } else if (name === 'gstNo') {
+                const { valid, message } = validateGST(value);
+                if (!valid && value) error = message;
+            } else if (name === 'panNo') {
+                const { valid, message } = validatePAN(value);
+                if (!valid && value) error = message;
+            }
+            setErrors(prev => ({ ...prev, [name]: error }));
         }
     };
 
@@ -132,9 +171,10 @@ const SMEManagement = () => {
             yearsExperience: sme.yearsExperience,
             address: sme.address || '',
             bankDetails: sme.bankDetails || initialFormState.bankDetails,
-            gstNo: sme.gstNo || '',
-            panNo: sme.panNo || ''
+            gstNo: (sme.gstNo && sme.gstNo !== 'Pending') ? sme.gstNo : '',
+            panNo: (sme.panNo && sme.panNo !== 'Pending') ? sme.panNo : ''
         });
+        setErrors({}); // Clear errors on edit
         setEditMode(true);
         setShowForm(true);
     };
@@ -192,6 +232,40 @@ const SMEManagement = () => {
             const emailValidation = validateEmail(formData.email);
             if (!emailValidation.valid) {
                 addToast(emailValidation.message, 'error');
+                return;
+            }
+        }
+
+        // Bank Validation
+        if (formData.bankDetails.accountNumber) {
+            const bankValidation = validateBankAccount(formData.bankDetails.accountNumber);
+            if (!bankValidation.valid) {
+                addToast(bankValidation.message, 'error');
+                return;
+            }
+        }
+
+        if (formData.bankDetails.ifscCode) {
+            const ifscValidation = validateIFSC(formData.bankDetails.ifscCode);
+            if (!ifscValidation.valid) {
+                addToast(ifscValidation.message, 'error');
+                return;
+            }
+        }
+
+        // Tax Validation
+        if (formData.panNo) {
+            const panValidation = validatePAN(formData.panNo);
+            if (!panValidation.valid) {
+                addToast(panValidation.message, 'error');
+                return;
+            }
+        }
+
+        if (formData.gstNo) {
+            const gstValidation = validateGST(formData.gstNo);
+            if (!gstValidation.valid) {
+                addToast(gstValidation.message, 'error');
                 return;
             }
         }
@@ -492,7 +566,10 @@ const SMEManagement = () => {
                                     <h3 className="font-semibold text-blue-900 mb-4">Company Details</h3>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <input name="companyName" value={formData.companyName} onChange={handleInputChange} placeholder="Company Name *" className="border p-2 rounded" required />
-                                        <input name="companyContactNumber" value={formData.companyContactNumber} onChange={handleInputChange} placeholder="Company Contact Number *" className="border p-2 rounded" required />
+                                        <div className="relative">
+                                            <input name="companyContactNumber" value={formData.companyContactNumber} onChange={handleInputChange} placeholder="Company Contact Number *" className={`border p-2 rounded w-full ${errors.companyContactNumber ? 'border-red-500' : ''}`} required />
+                                            {errors.companyContactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.companyContactNumber}</div>}
+                                        </div>
                                         <input name="companyContactPerson" value={formData.companyContactPerson} onChange={handleInputChange} placeholder="Contact Person Name *" className="border p-2 rounded" required />
                                         <input name="companyLocation" value={formData.companyLocation} onChange={handleInputChange} placeholder="Company Location *" className="border p-2 rounded" required />
                                         <textarea name="companyAddress" value={formData.companyAddress} onChange={handleInputChange} placeholder="Company Address *" className="border p-2 rounded md:col-span-2" rows="2" required />
@@ -505,10 +582,18 @@ const SMEManagement = () => {
                                 <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">A. Basic Details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <input name="name" value={formData.name} onChange={handleInputChange} placeholder="SME Name *" className="border p-2 rounded" required />
-                                    <input name="email" value={formData.email} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "Email *" : "Email"} type="email" className="border p-2 rounded" />
-                                    <input name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "SME Contact Number *" : "SME Contact Number"} className="border p-2 rounded" />
+                                    <div className="relative">
+                                        <input name="email" value={formData.email} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "Email *" : "Email"} type="email" className={`border p-2 rounded w-full ${errors.email ? 'border-red-500' : ''}`} />
+                                        {errors.email && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.email}</div>}
+                                    </div>
+                                    <div className="relative">
+                                        <input name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "SME Contact Number *" : "SME Contact Number"} className={`border p-2 rounded w-full ${errors.contactNumber ? 'border-red-500' : ''}`} />
+                                        {errors.contactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.contactNumber}</div>}
+                                    </div>
                                     <input name="technology" value={formData.technology} onChange={handleInputChange} placeholder="Technology *" className="border p-2 rounded" required />
-                                    <input name="yearsExperience" value={formData.yearsExperience} onChange={handleInputChange} placeholder="Years Experience *" type="number" className="border p-2 rounded" required />
+                                    <div className="relative">
+                                        <input name="yearsExperience" value={formData.yearsExperience} onChange={handleInputChange} onWheel={(e) => e.target.blur()} placeholder="Years Experience *" type="number" className="border p-2 rounded w-full" required />
+                                    </div>
                                     <input name="location" value={formData.location} onChange={handleInputChange} placeholder="Location *" className="border p-2 rounded" required />
                                     {formData.smeType === 'Freelancer' && (
                                         <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Address *" className="border p-2 rounded md:col-span-3" rows="2" required />
@@ -522,9 +607,15 @@ const SMEManagement = () => {
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <input name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleInputChange} placeholder="Bank Name *" className="border p-2 rounded" required />
                                     <input name="bankDetails.branchName" value={formData.bankDetails.branchName} onChange={handleInputChange} placeholder="Branch Name *" className="border p-2 rounded" required />
-                                    <input name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleInputChange} placeholder="Account Number *" className="border p-2 rounded" required />
+                                    <div className="relative">
+                                        <input name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleInputChange} placeholder="Account Number *" className={`border p-2 rounded w-full ${errors['bankDetails.accountNumber'] ? 'border-red-500' : ''}`} required />
+                                        {errors['bankDetails.accountNumber'] && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors['bankDetails.accountNumber']}</div>}
+                                    </div>
                                     <input name="bankDetails.accountHolderName" value={formData.bankDetails.accountHolderName} onChange={handleInputChange} placeholder="Account Holder Name *" className="border p-2 rounded" required />
-                                    <input name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleInputChange} placeholder="IFSC Code *" className="border p-2 rounded" required />
+                                    <div className="relative">
+                                        <input name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleInputChange} placeholder="IFSC Code *" className={`border p-2 rounded w-full ${errors['bankDetails.ifscCode'] ? 'border-red-500' : ''}`} required />
+                                        {errors['bankDetails.ifscCode'] && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors['bankDetails.ifscCode']}</div>}
+                                    </div>
                                 </div>
                             </div>
 
@@ -533,34 +624,40 @@ const SMEManagement = () => {
                                 <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">C. Tax Details</h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div>
-                                        <input name="gstNo" value={formData.gstNo} onChange={handleInputChange} placeholder="GST Number *" className="border p-2 rounded w-full mb-2" required />
-                                        <label className="block text-xs text-gray-500 mb-1">GST Document *</label>
-                                        <div className="flex flex-col gap-2">
-                                            <input type="file" id="upload-gst" name="gstDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
-                                            <div className="flex items-center gap-2">
-                                                <UploadButton onClick={() => document.getElementById('upload-gst').click()} type="button">
-                                                    {files.gstDocument ? 'Selected' : (editMode && selectedSme?.gstDocument ? 'Replace' : 'Upload')}
-                                                </UploadButton>
-                                                {files.gstDocument && <span className="text-xs text-green-600 truncate max-w-[100px]">{files.gstDocument.name}</span>}
-                                                {editMode && selectedSme?.gstDocument && !files.gstDocument && (
-                                                    <a href={`http://localhost:5000/${selectedSme.gstDocument}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-blue hover:underline">View</a>
-                                                )}
+                                        <div className="relative">
+                                            <input name="gstNo" value={formData.gstNo} onChange={handleInputChange} placeholder="GST Number *" className={`border p-2 rounded w-full mb-2 ${errors.gstNo ? 'border-red-500' : ''}`} required />
+                                            {errors.gstNo && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.gstNo}</div>}
+                                            <label className="block text-xs text-gray-500 mb-1">GST Document *</label>
+                                            <div className="flex flex-col gap-2">
+                                                <input type="file" id="upload-gst" name="gstDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
+                                                <div className="flex items-center gap-2">
+                                                    <UploadButton onClick={() => document.getElementById('upload-gst').click()} type="button">
+                                                        {files.gstDocument ? 'Selected' : (editMode && selectedSme?.gstDocument ? 'Replace' : 'Upload')}
+                                                    </UploadButton>
+                                                    {files.gstDocument && <span className="text-xs text-green-600 truncate max-w-[100px]">{files.gstDocument.name}</span>}
+                                                    {editMode && selectedSme?.gstDocument && !files.gstDocument && (
+                                                        <a href={`http://localhost:5000/${selectedSme.gstDocument}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-blue hover:underline">View</a>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                     <div>
-                                        <input name="panNo" value={formData.panNo} onChange={handleInputChange} placeholder="PAN Number *" className="border p-2 rounded w-full mb-2" required />
-                                        <label className="block text-xs text-gray-500 mb-1">PAN Card *</label>
-                                        <div className="flex flex-col gap-2">
-                                            <input type="file" id="upload-pan" name="panDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
-                                            <div className="flex items-center gap-2">
-                                                <UploadButton onClick={() => document.getElementById('upload-pan').click()} type="button">
-                                                    {files.panDocument ? 'Selected' : (editMode && selectedSme?.panDocument ? 'Replace' : 'Upload')}
-                                                </UploadButton>
-                                                {files.panDocument && <span className="text-xs text-green-600 truncate max-w-[100px]">{files.panDocument.name}</span>}
-                                                {editMode && selectedSme?.panDocument && !files.panDocument && (
-                                                    <a href={`http://localhost:5000/${selectedSme.panDocument}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-blue hover:underline">View</a>
-                                                )}
+                                        <div className="relative">
+                                            <input name="panNo" value={formData.panNo} onChange={handleInputChange} placeholder="PAN Number *" className={`border p-2 rounded w-full mb-2 ${errors.panNo ? 'border-red-500' : ''}`} required />
+                                            {errors.panNo && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.panNo}</div>}
+                                            <label className="block text-xs text-gray-500 mb-1">PAN Card *</label>
+                                            <div className="flex flex-col gap-2">
+                                                <input type="file" id="upload-pan" name="panDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
+                                                <div className="flex items-center gap-2">
+                                                    <UploadButton onClick={() => document.getElementById('upload-pan').click()} type="button">
+                                                        {files.panDocument ? 'Selected' : (editMode && selectedSme?.panDocument ? 'Replace' : 'Upload')}
+                                                    </UploadButton>
+                                                    {files.panDocument && <span className="text-xs text-green-600 truncate max-w-[100px]">{files.panDocument.name}</span>}
+                                                    {editMode && selectedSme?.panDocument && !files.panDocument && (
+                                                        <a href={`http://localhost:5000/${selectedSme.panDocument}`} target="_blank" rel="noopener noreferrer" className="text-xs text-brand-blue hover:underline">View</a>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -643,9 +740,9 @@ const SMEManagement = () => {
                             </button>
                         </div>
                     </form>
-                </div>
+                </div >
             )}
-        </div>
+        </div >
     );
 };
 
