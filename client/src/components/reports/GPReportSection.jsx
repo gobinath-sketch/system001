@@ -139,7 +139,7 @@ const GPReportSection = () => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
             currency: currency,
-            maximumFractionDigits: currency === 'USD' ? 2 : 0
+            maximumFractionDigits: currency === 'USD' ? 0 : 0
         }).format(displayValue);
     };
 

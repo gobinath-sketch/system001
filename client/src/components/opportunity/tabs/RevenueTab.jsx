@@ -197,8 +197,8 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
         const displayValue = currency === 'USD' ? value / USD_TO_INR : value;
         const symbol = currency === 'USD' ? '$' : '₹';
         return `${symbol} ${displayValue.toLocaleString(undefined, {
-            minimumFractionDigits: currency === 'USD' ? 2 : 0,
-            maximumFractionDigits: currency === 'USD' ? 2 : 0
+            minimumFractionDigits: currency === 'USD' ? 0 : 0,
+            maximumFractionDigits: currency === 'USD' ? 0 : 0
         })}`;
     };
 

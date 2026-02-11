@@ -510,7 +510,7 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Assigned SME</label>
                                 <div className="p-2 bg-gray-50 rounded border border-gray-200 text-sm font-medium text-gray-800">
-                                    {typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME.name : 'SME Assigned'}
+                                    {typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME.name : 'Not Assigned'}
                                 </div>
                             </div>
 
