@@ -88,13 +88,7 @@ const FinancialSummary = ({ opportunity, poValue }) => {
                         </tr>
                     </tbody>
                 </table>
-                <div className="mt-2 text-xs text-gray-500 italic">
-                    * GK Revenue (Profit) = PO Amount - Overall Expenses
-                    <br />
-                    * PO to Proposal Variance = PO Amount - Proposal Value
-                    <br />
-                    * GP % = GK Revenue / PO Amount
-                </div>
+
             </div>
         </React.Fragment>
     );

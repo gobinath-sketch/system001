@@ -311,11 +311,7 @@ const FinanceTab = ({ opportunity, editMode, canEditField, handleUpdate, user })
                                 </tr>
                             </tbody>
                         </table>
-                        <div className="mt-2 text-xs text-gray-500 italic">
-                            * GK Revenue (Profit) = PO Amount - Total Expenses
-                            <br />
-                            * Markup % = GK Revenue / Total Expenses
-                        </div>
+
                     </div>
                 </Card>
 
