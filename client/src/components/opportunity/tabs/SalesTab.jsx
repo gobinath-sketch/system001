@@ -273,13 +273,13 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                             )}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
-                                <textarea
+                                <input
+                                    type="text"
                                     value={formData.requirementSummary || ''}
                                     onChange={(e) => handleChange('root', 'requirementSummary', e.target.value)}
                                     disabled={!isEditing}
                                     className={inputClass}
                                     placeholder="Enter requirement summary"
-                                    rows="3"
                                 />
                             </div>
                         </>

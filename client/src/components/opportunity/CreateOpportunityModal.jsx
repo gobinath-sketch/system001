@@ -422,12 +422,12 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess }) => {
                                     <label className="block text-sm font-medium text-gray-700 mb-1">
                                         Requirement Summary *
                                     </label>
-                                    <textarea
+                                    <input
+                                        type="text"
                                         name="requirementSummary"
                                         value={formData.requirementSummary}
                                         onChange={handleChange}
                                         className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
-                                        rows="3"
                                         placeholder="Brief summary of the client's requirements"
                                         required
                                     />
