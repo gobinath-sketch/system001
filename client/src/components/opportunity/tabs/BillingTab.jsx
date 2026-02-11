@@ -631,7 +631,7 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                                 <div className="grid grid-cols-1 gap-4">
                                     {/* Profit (%) */}
                                     <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">Profit (%)</label>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Sales Profit (%)</label>
                                         <div className="flex space-x-2">
                                             <select
                                                 value={formData.expenses?.targetGpPercent ?? 30}
