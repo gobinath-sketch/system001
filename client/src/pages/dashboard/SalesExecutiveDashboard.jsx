@@ -95,11 +95,26 @@ const SalesExecutiveDashboard = ({ user }) => {
         }
     };
 
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     // Updated StatCard - Compact
     const StatCard = ({ title, value, icon: Icon, bgColor, iconColor, subtext, onClick }) => (
         <div
             onClick={onClick}
-            className={`bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex items-center space-x-3 ${onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
+            style={glassCardStyle}
+            className={`p-4 flex items-center space-x-3 ${onClick ? 'cursor-pointer hover:shadow-[0_8px_32px_0_rgba(255,255,255,0.3)] transition-all' : ''}`}
         >
             <div className={`p-2 rounded-full ${bgColor} flex items-center justify-center`}>
                 {Icon && <Icon size={20} className={iconColor} />}
@@ -149,7 +164,7 @@ const SalesExecutiveDashboard = ({ user }) => {
         }
 
         return (
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-between h-full">
+            <div style={glassCardStyle} className="p-4 flex flex-col justify-between h-full">
                 <div className="flex justify-between items-start mb-1">
                     <div className="flex items-center space-x-2">
                         <div className={`p-1.5 rounded-full ${isAchieved ? 'bg-green-100' : 'bg-red-100'}`}>
@@ -199,7 +214,7 @@ const SalesExecutiveDashboard = ({ user }) => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                 {/* Client Health Segmentation */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center">
+                <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center space-x-2 mb-3">
                         <div className="p-1.5 rounded-full bg-blue-100">
                             <Users size={16} className="text-blue-600" />
@@ -223,7 +238,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                 </div>
 
                 {/* Total Opportunities */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center">
+                <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center space-x-2 mb-3">
                         <div className="p-1.5 rounded-full bg-purple-100">
                             <Briefcase size={16} className="text-purple-600" />
@@ -243,7 +258,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                 </div>
 
                 {/* Document Status Summary Card */}
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col justify-center">
+                <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
                             <div className="p-1.5 rounded-full bg-indigo-100">
@@ -291,7 +306,7 @@ const SalesExecutiveDashboard = ({ user }) => {
             <div className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {/* Left: Total Opportunities by Type (Count) */}
-                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[280px]">
+                    <div style={glassCardStyle} className="p-4 flex flex-col h-[280px]">
                         <h3 className="text-sm font-bold text-gray-800 mb-3">Total Opportunities by Type</h3>
                         <div className="flex-1 w-full min-h-0">
                             <ResponsiveContainer width="100%" height="100%">
@@ -307,7 +322,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
 
                     {/* Right: Top 5 Clients by Revenue (using PO Amount) */}
-                    <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[280px]">
+                    <div style={glassCardStyle} className="p-4 flex flex-col h-[280px]">
                         <h3 className="text-sm font-bold text-gray-800 mb-3">Top 5 Clients by Revenue</h3>
                         <div className="flex-1 overflow-auto">
                             {(() => {

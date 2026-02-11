@@ -20,6 +20,20 @@ const CustomTooltip = ({ active, payload, formatMoney }) => {
 };
 
 const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXCHANGE_RATE }) => {
+    // Glass Style for Cards
+    const glassCardStyle = {
+        background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        borderRadius: '12px',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
+        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37), inset 0 0 30px rgba(255, 255, 255, 0.3), inset 0 0 10px rgba(255, 255, 255, 0.5)',
+        borderTop: '1px solid rgba(255, 255, 255, 0.8)',
+        borderLeft: '1px solid rgba(255, 255, 255, 0.8)',
+        overflow: 'hidden',
+        position: 'relative'
+    };
+
     const [selectedYear, setSelectedYear] = useState(2026); // Default to current year
     const [filter, setFilter] = useState('Yearly');
     const [filteredData, setFilteredData] = useState({
@@ -182,7 +196,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* 1. Revenue Summary Box */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[350px]">
+            <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-gray-800">Revenue Summary</h3>
                     <div className="flex gap-2">
@@ -300,7 +314,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             </div>
 
             {/* 2. Revenue by Technology (LIST FORMAT) */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[350px]">
+            <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <h3 className="text-sm font-bold text-gray-800 mb-3">Revenue by Technology</h3>
                 <div className="flex-1 overflow-auto flex flex-col justify-between">
                     <div className="flex-1 flex flex-col justify-between">
@@ -322,7 +336,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             </div>
 
             {/* 3. Revenue by Opportunity Type (PIE CHART) */}
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100 flex flex-col h-[350px]">
+            <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <h3 className="text-sm font-bold text-gray-800 mb-2">Revenue by Opportunity Type</h3>
                 <div className="flex-1 min-h-0">
                     {filteredData.typeData.length > 0 ? (
