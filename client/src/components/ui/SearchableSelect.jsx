@@ -35,9 +35,10 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
         setIsOpen(false);
     };
 
-    const filteredOptions = options.filter(option =>
-        (option || '').toLowerCase().includes((value || '').toLowerCase())
-    );
+    const filteredOptions = options.filter(option => {
+        const label = typeof option === 'string' ? option : option.label;
+        return (label || '').toLowerCase().includes((value || '').toLowerCase());
+    });
 
     return (
         <div className="relative w-full" ref={wrapperRef}>
@@ -69,15 +70,29 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
 
             {isOpen && !disabled && filteredOptions.length > 0 && (
                 <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    {filteredOptions.map((option, index) => (
-                        <div
-                            key={index}
-                            className="px-4 py-2 cursor-pointer hover:bg-blue-50 text-sm text-gray-700 hover:text-primary-blue transition-colors"
-                            onClick={() => handleOptionClick(option)}
-                        >
-                            {option}
-                        </div>
-                    ))}
+                    {filteredOptions.map((option, index) => {
+                        const isString = typeof option === 'string';
+                        const label = isString ? option : option.label;
+                        const optionValue = isString ? option : option.value;
+                        const icon = !isString ? option.icon : null;
+
+                        return (
+                            <div
+                                key={index}
+                                className="px-4 py-2 cursor-pointer hover:bg-blue-50 text-sm text-gray-700 hover:text-primary-blue transition-colors flex items-center"
+                                onClick={() => handleOptionClick(optionValue)}
+                            >
+                                {icon && (
+                                    <img
+                                        src={icon}
+                                        alt=""
+                                        className="w-5 h-5 object-contain mr-3"
+                                    />
+                                )}
+                                <span>{label}</span>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
         </div>

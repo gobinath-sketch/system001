@@ -6,8 +6,7 @@ import { useToast } from '../../../context/ToastContext';
 
 import SearchableSelect from '../../ui/SearchableSelect';
 import DeliveryDocuments from '../sections/DeliveryDocuments';
-
-const TECHNOLOGIES = ['IBM', 'Red hat', 'Microsoft', 'Blockchain', 'Tableau', 'Mulesoft', 'AI alliance', 'Trending technologies'];
+import { TECHNOLOGIES, getTechnologyOptions } from '../../../utils/TechnologyConstants';
 
 const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, user }, ref) => {
     const { addToast } = useToast();
@@ -216,7 +215,7 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                                 <SearchableSelect
                                     value={formData.typeSpecificDetails?.technology || ''}
                                     onChange={(e) => handleChange('typeSpecificDetails', 'technology', e.target.value)}
-                                    options={TECHNOLOGIES}
+                                    options={getTechnologyOptions()}
                                     placeholder="Select or type technology"
                                     disabled={!isEditing}
                                     className={selectClass}
@@ -294,7 +293,7 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                                 <SearchableSelect
                                     value={formData.typeSpecificDetails?.technology || ''}
                                     onChange={(e) => handleChange('typeSpecificDetails', 'technology', e.target.value)}
-                                    options={TECHNOLOGIES}
+                                    options={getTechnologyOptions()}
                                     placeholder="Select or type technology"
                                     disabled={!isEditing}
                                     className={selectClass}
@@ -344,7 +343,7 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                                 <SearchableSelect
                                     value={formData.typeSpecificDetails?.technology || ''}
                                     onChange={(e) => handleChange('typeSpecificDetails', 'technology', e.target.value)}
-                                    options={TECHNOLOGIES}
+                                    options={getTechnologyOptions()}
                                     placeholder="Select or type technology"
                                     disabled={!isEditing}
                                     className={selectClass}

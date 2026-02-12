@@ -19,14 +19,7 @@ const CustomTooltip = ({ active, payload, formatMoney }) => {
     return null;
 };
 
-import ibmLogo from '../../assets/logos/ibm.svg';
-import redhatLogo from '../../assets/logos/redhat.svg';
-import microsoftLogo from '../../assets/logos/microsoft.svg';
-import blockchainLogo from '../../assets/logos/blockchain.svg';
-import tableauLogo from '../../assets/logos/tableau.svg';
-import mulesoftLogo from '../../assets/logos/mulesoft.svg';
-import aiAllianceLogo from '../../assets/logos/ai_alliance.svg';
-import trendingLogo from '../../assets/logos/trending.svg';
+import { TECHNOLOGIES, LOGO_MAP } from '../../utils/TechnologyConstants';
 
 const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXCHANGE_RATE }) => {
     // Glass Style for Cards
@@ -54,21 +47,6 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
     // Color Palette
     const COLORS = ['#003D7A', '#10b981', '#D4AF37', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
-
-    // Technology list from dropdown
-    const TECHNOLOGIES = ['IBM', 'Red hat', 'Microsoft', 'Blockchain', 'Tableau', 'Mulesoft', 'AI alliance', 'Trending technologies'];
-
-    // Logo Mappings
-    const LOGO_MAP = {
-        'IBM': ibmLogo,
-        'Red hat': redhatLogo,
-        'Microsoft': microsoftLogo,
-        'Blockchain': blockchainLogo,
-        'Tableau': tableauLogo,
-        'Mulesoft': mulesoftLogo,
-        'AI alliance': aiAllianceLogo,
-        'Trending technologies': trendingLogo
-    };
 
     // Get available years from opportunities
     const availableYears = [...new Set(allOpps.map(opp =>

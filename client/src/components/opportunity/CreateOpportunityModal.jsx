@@ -5,8 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import AddClientModal from '../clients/AddClientModal';
 
 import SearchableSelect from '../ui/SearchableSelect';
-
-const TECHNOLOGIES = ['IBM', 'Red hat', 'Microsoft', 'Blockchain', 'Tableau', 'Mulesoft', 'AI alliance', 'Trending technologies'];
+import { TECHNOLOGIES, getTechnologyOptions } from '../../utils/TechnologyConstants';
 
 const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientId }) => {
     const { addToast } = useToast();
@@ -280,7 +279,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                             name="technology"
                                             value={formData.technology}
                                             onChange={handleChange}
-                                            options={TECHNOLOGIES}
+                                            options={getTechnologyOptions()}
                                             placeholder="Select or type technology"
                                             className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
                                             required
@@ -320,7 +319,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                             name="technology"
                                             value={formData.technology}
                                             onChange={handleChange}
-                                            options={TECHNOLOGIES}
+                                            options={getTechnologyOptions()}
                                             placeholder="Select or type technology"
                                             className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
                                             required
@@ -350,7 +349,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                             name="technology"
                                             value={formData.technology}
                                             onChange={handleChange}
-                                            options={TECHNOLOGIES}
+                                            options={getTechnologyOptions()}
                                             placeholder="Select or type technology"
                                             className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
                                             required
