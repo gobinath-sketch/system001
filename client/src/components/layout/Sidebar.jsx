@@ -155,20 +155,49 @@ const Sidebar = () => {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`
-                  flex items-center space-x-3 px-4 py-3 mb-2 rounded-lg
-                  transition-all duration-200 group whitespace-nowrap
-                  ${active
-                                        ? 'bg-white/20 text-white shadow-md'
-                                        : 'text-white hover:bg-white/10 hover:text-white'
-                                    }
-                `}
+                                className="relative block mb-3 group"
+                                style={{ textDecoration: 'none' }}
                             >
-                                <Icon size={20} className={active ? 'text-accent-yellow' : ''} />
-                                {!isCollapsed && (
-                                    <span className="flex-1 font-medium">{item.label}</span>
-                                )}
-                                {!isCollapsed && active && <ChevronRight size={16} className="text-accent-yellow" />}
+                                {/* Shadow Layer */}
+                                <span
+                                    className="absolute inset-0 bg-black/25 rounded-lg transition-transform duration-300 ease-out group-hover:translate-y-1 group-active:translate-y-0.5"
+                                    style={{ transform: 'translateY(2px)' }}
+                                />
+
+                                {/* Edge Layer */}
+                                <span
+                                    className="absolute inset-0 rounded-lg"
+                                    style={{
+                                        background: active
+                                            ? 'linear-gradient(to left, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 1) 8%, rgba(255, 255, 255, 1) 92%, rgba(255, 255, 255, 0.9) 100%)'
+                                            : 'linear-gradient(to left, hsl(217, 33%, 16%) 0%, hsl(217, 33%, 32%) 8%, hsl(217, 33%, 32%) 92%, hsl(217, 33%, 16%) 100%)'
+                                    }}
+                                />
+
+                                {/* Front Layer */}
+                                <div
+                                    className={`
+                                        relative flex items-center space-x-3 px-4 py-3 rounded-lg
+                                        transition-transform duration-300 ease-out
+                                        group-hover:-translate-y-1.5 group-active:-translate-y-0.5
+                                        whitespace-nowrap overflow-hidden
+                                        ${active
+                                            ? 'bg-white text-primary-blue-dark shadow-2xl'
+                                            : 'bg-primary-blue-dark/80 text-white'
+                                        }
+                                    `}
+                                    style={{ transform: 'translateY(-4px)' }}
+                                >
+                                    {/* Simple shine effect for active state */}
+                                    {active && (
+                                        <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
+                                    )}
+                                    <Icon size={20} className={active ? 'text-primary-blue-dark relative z-10' : 'text-white'} />
+                                    {!isCollapsed && (
+                                        <span className={`flex-1 font-medium select-none ${active ? 'relative z-10' : ''}`}>{item.label}</span>
+                                    )}
+                                    {!isCollapsed && active && <ChevronRight size={16} className="text-primary-blue-dark relative z-10" />}
+                                </div>
                             </Link>
                         );
                     })}
