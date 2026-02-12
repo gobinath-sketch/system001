@@ -1,5 +1,19 @@
 import React from 'react';
-import { X, FileText, Building, User, MapPin, Phone, Mail, Award, CreditCard } from 'lucide-react';
+import { X, FileText, Building, User, MapPin, Phone, Mail, Award, CreditCard, Briefcase, Home } from 'lucide-react';
+import ProfileIcon from '../common/ProfileIcon';
+
+const LabelValue = ({ label, value, icon: Icon }) => (
+    <div className="flex items-start gap-3">
+        <div className="flex items-center gap-2 text-gray-500 text-xs uppercase font-bold w-40 shrink-0">
+            {Icon && <Icon size={14} className="text-gray-400" />}
+            <span>{label}</span>
+        </div>
+        <span className="text-gray-400 shrink-0">-</span>
+        <span className="text-gray-900 font-medium text-sm flex-1 break-words">
+            {value || '-'}
+        </span>
+    </div>
+);
 
 const ViewSMEModal = ({ isOpen, onClose, sme }) => {
     if (!isOpen || !sme) return null;
@@ -33,18 +47,6 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
         );
     };
 
-    const LabelValue = ({ label, value, icon: Icon }) => (
-        <div className="flex items-start mb-3">
-            <span className="text-gray-500 text-xs uppercase font-bold w-32 shrink-0 flex items-center gap-2 pt-0.5">
-                {Icon && <Icon size={14} className="text-gray-400" />} {label}
-            </span>
-            <span className="text-gray-900 font-medium text-sm flex-1 break-words">
-                <span className="text-gray-400 mr-2">-</span>
-                {value || '-'}
-            </span>
-        </div>
-    );
-
     return (
         <div className="fixed inset-0 bg-gray-500/20 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-100 animate-in fade-in zoom-in duration-200">
@@ -52,7 +54,7 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
                 <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center z-10">
                     <div className="flex items-center gap-3">
                         <div className={`p-2 rounded-lg ${sme.smeType === 'Company' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'}`}>
-                            {sme.smeType === 'Company' ? <Building size={24} /> : <User size={24} />}
+                            <ProfileIcon size={24} />
                         </div>
                         <div>
                             <h2 className="text-xl font-bold text-gray-900">{sme.name}</h2>
@@ -69,15 +71,17 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
                         {/* Company Details (if applicable) */}
                         {sme.smeType === 'Company' && (
                             <div className="col-span-full bg-blue-50/50 p-6 rounded-xl border border-blue-100">
-                                <h3 className="font-bold text-blue-900 mb-4 flex items-center gap-2 text-lg">
+                                <h3 className="font-bold text-blue-900 mb-6 flex items-center gap-2 text-lg">
                                     <Building size={20} /> Company Details
                                 </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-2">
-                                    <LabelValue label="Company Name" value={sme.companyName} />
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <LabelValue label="Company Name" value={sme.companyName} icon={Briefcase} />
                                     <LabelValue label="Contact Number" value={sme.companyContactNumber} icon={Phone} />
                                     <LabelValue label="Contact Person" value={sme.companyContactPerson} icon={User} />
                                     <LabelValue label="Location" value={sme.companyLocation} icon={MapPin} />
-                                    <LabelValue label="Address" value={sme.companyAddress} icon={MapPin} />
+                                    <div className="md:col-span-2">
+                                        <LabelValue label="Address" value={sme.companyAddress} icon={Home} />
+                                    </div>
                                 </div>
                             </div>
                         )}
