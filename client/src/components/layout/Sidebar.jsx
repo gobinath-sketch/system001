@@ -103,15 +103,7 @@ const Sidebar = () => {
         return location.pathname.startsWith(path);
     };
 
-    // Get user initials for avatar
-    const getUserInitials = () => {
-        if (!user?.name) return 'U';
-        const names = user.name.split(' ');
-        if (names.length >= 2) {
-            return names[0][0] + names[1][0];
-        }
-        return names[0][0];
-    };
+
 
     return (
         <>
@@ -126,10 +118,7 @@ const Sidebar = () => {
                 {/* User Profile Section */}
                 {!isCollapsed && (
                     <div className="p-6 text-center border-b border-white/10 whitespace-nowrap">
-                        {/* Avatar */}
-                        <div className="w-20 h-20 mx-auto mb-3 rounded-full bg-accent-yellow flex items-center justify-center text-primary-blue-dark font-bold text-2xl shadow-lg">
-                            {getUserInitials()}
-                        </div>
+
                         {/* User Name */}
                         <h3 className="text-white font-bold text-lg mb-1">{user?.name || 'User'}</h3>
                         {/* User Email */}
@@ -141,14 +130,7 @@ const Sidebar = () => {
                     </div>
                 )}
 
-                {/* Collapsed Avatar */}
-                {isCollapsed && (
-                    <div className="p-4 flex justify-center border-b border-white/10">
-                        <div className="w-12 h-12 rounded-full bg-accent-yellow flex items-center justify-center text-primary-blue-dark font-bold text-lg shadow-lg">
-                            {getUserInitials()}
-                        </div>
-                    </div>
-                )}
+
 
                 {/* Navigation Menu */}
                 <nav className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-4">
