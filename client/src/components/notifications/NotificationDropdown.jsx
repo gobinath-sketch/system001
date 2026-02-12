@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Check, FileText, DollarSign, Briefcase, X, ArrowLeft, Search, Filter, Bell as BellIcon, CheckCheck } from 'lucide-react';
-import notificationIcon from '../../assets/notification-icon.png';
+import NotificationBellIcon from '../common/NotificationBellIcon';
 import searchIconVideo from '../../assets/search1.webm';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -250,7 +250,7 @@ const NotificationDropdown = () => {
                 className="relative p-2 text-gray-500 hover:text-primary-blue hover:bg-gray-100 rounded-full transition-all duration-200 hover:scale-110"
                 aria-label="Notifications"
             >
-                <img src={notificationIcon} alt="Notifications" className="w-7 h-7" />
+                <NotificationBellIcon className="w-7 h-7" />
                 {unreadCount > 0 && (
                     <span className="absolute top-0 right-0 h-5 w-5 bg-gradient-to-br from-red-500 to-pink-600 text-white text-xs flex items-center justify-center rounded-full animate-pulse shadow-lg">
                         {unreadCount > 9 ? '9+' : unreadCount}
@@ -298,7 +298,7 @@ const NotificationDropdown = () => {
                                         <div className="flex items-start gap-4 mb-4">
                                             <div className={`p-4 rounded-2xl flex-shrink-0 shadow-lg ${getStyleConfig(selectedNotification.type).iconBg}`}>
                                                 {getStyleConfig(selectedNotification.type).icon === 'notification' ? (
-                                                    <img src={notificationIcon} alt="Notification" className="w-7 h-7 brightness-0 invert" />
+                                                    <NotificationBellIcon className="w-7 h-7 brightness-0 invert" />
                                                 ) : (
                                                     React.createElement(getStyleConfig(selectedNotification.type).icon, {
                                                         size: 28,
@@ -446,7 +446,7 @@ const NotificationDropdown = () => {
                                     {filteredNotifications.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-full text-center">
                                             <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-8 rounded-full shadow-lg mb-6 ring-4 ring-blue-50 animate-pulse">
-                                                <img src={notificationIcon} alt="No notifications" className="w-16 h-16 opacity-40" />
+                                                <NotificationBellIcon className="w-16 h-16 opacity-40" />
                                             </div>
                                             <h4 className="text-slate-800 font-bold text-xl mb-2">All caught up!</h4>
                                             <p className="text-slate-500 text-sm max-w-xs mx-auto">
@@ -576,7 +576,7 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
                 group-hover:scale-110 transition-transform duration-300
             `}>
                 {Icon === 'notification' ? (
-                    <img src={notificationIcon} alt="Notification" className="w-[22px] h-[22px] brightness-0 invert" />
+                    <NotificationBellIcon className="w-[22px] h-[22px] brightness-0 invert" />
                 ) : (
                     <Icon size={20} className={style.iconColor} strokeWidth={2.5} />
                 )}
