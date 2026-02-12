@@ -156,8 +156,18 @@ const OpportunitySchema = new mongoose.Schema({
         duration: { type: String },
         region: { type: String },
 
-        // Resource Support, Content Development, Project Support
-        // (Structural support - fields to be defined later)
+        // Resource Support
+        resourceType: { type: String },
+        resourceCount: { type: Number },
+
+        // Content Development
+        contentType: { type: String },
+        deliveryFormat: { type: String },
+
+        // Product Support
+        projectScope: { type: String },
+        teamSize: { type: Number },
+
         description: { type: String },
         requirements: { type: String }
     },

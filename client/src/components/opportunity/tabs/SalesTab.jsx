@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { Upload, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
 
@@ -395,6 +395,141 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                             </div>
                         </>
                     )}
+
+                    {/* Resource Support-Specific Fields */}
+                    {opportunity.type === 'Resource Support' && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Resource Type *</label>
+                                <input
+                                    type="text"
+                                    value={formData.typeSpecificDetails?.resourceType || ''}
+                                    onChange={(e) => handleChange('typeSpecificDetails', 'resourceType', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="e.g., Trainer, Consultant"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Resource Count *</label>
+                                <input
+                                    type="number"
+                                    value={formData.typeSpecificDetails?.resourceCount || ''}
+                                    onChange={(e) => handleChange('typeSpecificDetails', 'resourceCount', parseInt(e.target.value) || 0)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <input
+                                    type="text"
+                                    value={formData.requirementSummary || ''}
+                                    onChange={(e) => handleChange('root', 'requirementSummary', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="Enter requirement summary"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* Content Development-Specific Fields */}
+                    {opportunity.type === 'Content Development' && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Content Type *</label>
+                                <input
+                                    type="text"
+                                    value={formData.typeSpecificDetails?.contentType || ''}
+                                    onChange={(e) => handleChange('typeSpecificDetails', 'contentType', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="e.g., Course Material"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Format *</label>
+                                <input
+                                    type="text"
+                                    value={formData.typeSpecificDetails?.deliveryFormat || ''}
+                                    onChange={(e) => handleChange('typeSpecificDetails', 'deliveryFormat', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="e.g., PDF, Video"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <input
+                                    type="text"
+                                    value={formData.requirementSummary || ''}
+                                    onChange={(e) => handleChange('root', 'requirementSummary', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="Enter requirement summary"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* Product Support-Specific Fields */}
+                    {opportunity.type === 'Product Support' && (
+                        <>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Project Scope *</label>
+                                <input
+                                    type="text"
+                                    value={formData.typeSpecificDetails?.projectScope || ''}
+                                    onChange={(e) => handleChange('typeSpecificDetails', 'projectScope', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="e.g., Full Stack Development"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Team Size *</label>
+                                <input
+                                    type="number"
+                                    value={formData.typeSpecificDetails?.teamSize || ''}
+                                    onChange={(e) => handleChange('typeSpecificDetails', 'teamSize', parseInt(e.target.value) || 0)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="0"
+                                />
+                            </div>
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <input
+                                    type="text"
+                                    value={formData.requirementSummary || ''}
+                                    onChange={(e) => handleChange('root', 'requirementSummary', e.target.value)}
+                                    disabled={!isEditing}
+                                    className={inputClass}
+                                    placeholder="Enter requirement summary"
+                                />
+                            </div>
+                        </>
+                    )}
+
+                    {/* Requirement/Job Description Document - Common for All */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Document</label>
+                        {opportunity.requirementDocument ? (
+                            <a
+                                href={`http://localhost:5000/${opportunity.requirementDocument.replace(/\\/g, '/')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors"
+                                title="View Requirement Document"
+                            >
+                                <FileText size={14} /> View Document
+                            </a>
+                        ) : (
+                            <span className="text-sm text-gray-400 italic p-2 block">Not Uploaded</span>
+                        )}
+                    </div>
                 </div>
             </Card >
 
