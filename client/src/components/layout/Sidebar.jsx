@@ -110,25 +110,38 @@ const Sidebar = () => {
             {/* Sidebar */}
             <div
                 className={`
-          fixed top-0 left-0 h-screen bg-gradient-to-b from-primary-blue-dark to-primary-blue
+          fixed top-0 left-0 h-screen bg-gradient-to-b from-primary-blue-dark/90 to-primary-blue/90 backdrop-blur-xl border-r border-white/20
           transition-all duration-300 z-40 flex flex-col shadow-2xl overflow-hidden
           ${isCollapsed ? 'w-20' : 'w-72'}
         `}
             >
-                {/* User Profile Section */}
-                {!isCollapsed && (
-                    <div className="p-6 text-center border-b border-white/10 whitespace-nowrap">
-
-                        {/* User Name */}
-                        <h3 className="text-white font-bold text-lg mb-1">{user?.name || 'User'}</h3>
-                        {/* User Email */}
-                        <p className="text-white/70 text-sm mb-3">{user?.email || 'user@example.com'}</p>
-                        {/* Role Badge */}
-                        <span className="inline-block px-3 py-1 bg-accent-yellow text-primary-blue-dark text-xs font-semibold rounded-full">
-                            {user?.role || 'Role'}
-                        </span>
-                    </div>
-                )}
+                {/* Glass Shine Effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/20 blur-3xl rounded-full pointer-events-none" />
+                {/* Header - User & Toggle */}
+                <div className={`flex items-center p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+                    {!isCollapsed && (
+                        <>
+                            <div className="mr-3">
+                                <img
+                                    src="/gk-globe-logo.png"
+                                    alt="Logo"
+                                    className="w-10 h-10 object-contain drop-shadow-lg"
+                                />
+                            </div>
+                            <div className="flex-1 overflow-hidden mr-3">
+                                <h3 className="text-white font-bold text-sm truncate">{user?.name || 'User'}</h3>
+                                <p className="text-white/70 text-xs truncate">{user?.role || 'Role'}</p>
+                            </div>
+                        </>
+                    )}
+                    <button
+                        onClick={() => setIsCollapsed(!isCollapsed)}
+                        className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0"
+                    >
+                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                    </button>
+                </div>
 
 
 
@@ -161,13 +174,7 @@ const Sidebar = () => {
                     })}
                 </nav>
 
-                {/* Collapse Toggle */}
-                <button
-                    onClick={() => setIsCollapsed(!isCollapsed)}
-                    className="mx-4 mt-2 mb-4 p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex items-center justify-center"
-                >
-                    {isCollapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-                </button>
+
 
                 {/* Logout Button */}
                 <div className="w-full mb-6 flex justify-center">
