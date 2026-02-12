@@ -39,7 +39,7 @@ const DeliveryDocuments = ({ opportunity, canEdit, handleUpload, uploading, isSa
                                         onClick={() => document.getElementById(`doc-upload-${docType}`).click()}
                                         disabled={uploading}
                                         className="w-full"
-                                        variant={opportunity.deliveryDocuments?.[docType] ? 'primary' : 'warning'}
+                                    // variant="primary" // Default is primary (Blue), removed conditional warning color
                                     >
                                         {opportunity.deliveryDocuments?.[docType] ? 'Replace' : 'Upload'}
                                     </UploadButton>

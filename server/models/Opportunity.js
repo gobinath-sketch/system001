@@ -54,6 +54,10 @@ const OpportunitySchema = new mongoose.Schema({
         type: String
     },
 
+    requirementDocument: {
+        type: String // File path
+    },
+
     // ===== STAGE 3: PROPOSAL FIELDS =====
 
     proposalDocument: {

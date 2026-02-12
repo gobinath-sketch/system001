@@ -55,6 +55,8 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
         teamSize: ''
     });
 
+    const [requirementDoc, setRequirementDoc] = useState(null); // New state for file
+
     useEffect(() => {
         if (isOpen) {
             fetchClients();
@@ -81,6 +83,10 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleFileChange = (e) => {
+        setRequirementDoc(e.target.files[0]);
     };
 
     const handleClientSelect = (e) => {
@@ -139,18 +145,24 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                 };
             }
 
-            const payload = {
-                type: formData.type,
-                clientId: formData.clientId,
-                selectedContactPerson: formData.selectedContactPerson,
-                requirementSummary: formData.requirementSummary,
-                participants: parseInt(formData.batchSize) || 0,
-                days: parseInt(formData.duration) || 0,
-                typeSpecificDetails
-            };
+            const payload = new FormData();
+            payload.append('type', formData.type);
+            payload.append('clientId', formData.clientId);
+            payload.append('selectedContactPerson', formData.selectedContactPerson);
+            payload.append('requirementSummary', formData.requirementSummary);
+            payload.append('participants', parseInt(formData.batchSize) || 0);
+            payload.append('days', parseInt(formData.duration) || 0);
+            payload.append('typeSpecificDetails', JSON.stringify(typeSpecificDetails)); // Stringify nested object
+
+            if (requirementDoc) {
+                payload.append('requirementDocument', requirementDoc);
+            }
 
             await axios.post('http://localhost:5000/api/opportunities', payload, {
-                headers: { Authorization: `Bearer ${token}` }
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
             });
 
             addToast('Opportunity created successfully', 'success');
@@ -178,6 +190,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                 projectScope: '',
                 teamSize: ''
             });
+            setRequirementDoc(null);
             onSuccess();
             onClose();
         } catch (err) {
@@ -436,6 +449,19 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                 </div>
                             </div>
                         )}
+
+                        <div className="border-b pb-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Requirement Document (Optional)
+                            </label>
+                            <input
+                                type="file"
+                                onChange={handleFileChange}
+                                className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                accept=".pdf,.doc,.docx,.txt"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Upload relevant requirement documents (PDF, DOCX, TXT).</p>
+                        </div>
 
                         <div className="flex justify-end space-x-4">
                             <button

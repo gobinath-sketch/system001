@@ -103,13 +103,29 @@ const getAccessibleUserIds = async (user) => {
 // @route   POST /api/opportunities
 // @desc    Create new opportunity (Sales only - Base details)
 // @access  Private (Sales Executive, Sales Manager)
-router.post('/', protect, authorize('Sales Executive', 'Sales Manager'), async (req, res) => {
-    const {
-        type, clientId, participants, days, requirementSummary,
-        typeSpecificDetails, selectedContactPerson
-    } = req.body;
-
+router.post('/', protect, authorize('Sales Executive', 'Sales Manager'), upload.single('requirementDocument'), async (req, res) => {
     try {
+        // Parse JSON fields if coming from FormData
+        const body = req.body;
+        // If multipart/form-data, non-file fields are in req.body. 
+        // typeSpecificDetails might be a JSON string if manually appended, or object if using array notation. 
+        // Let's assume frontend sends it as a JSON string to keep it simple with FormData.
+
+        let typeSpecificDetails = body.typeSpecificDetails;
+        if (typeof typeSpecificDetails === 'string') {
+            try {
+                typeSpecificDetails = JSON.parse(typeSpecificDetails);
+            } catch (e) {
+                console.error('Error parsing typeSpecificDetails:', e);
+                typeSpecificDetails = {};
+            }
+        }
+
+        const {
+            type, clientId, participants, days, requirementSummary,
+            selectedContactPerson
+        } = body;
+
         // GENERATE OPPORTUNITY ID: GKT-YY-CODE-MM-XXX
         const today = new Date();
         const yy = today.getFullYear().toString().substr(-2);
@@ -137,14 +153,14 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager'), async (
             return res.status(404).json({ message: 'Client not found' });
         }
 
-        const opportunity = await Opportunity.create({
+        const opportunityData = {
             opportunityNumber,
             type,
             client: clientId,
-            participants,
-            days,
+            participants: parseInt(participants) || 0,
+            days: parseInt(days) || 0,
             requirementSummary,
-            selectedContactPerson, // Added field
+            selectedContactPerson,
             typeSpecificDetails: typeSpecificDetails || {},
             commonDetails: {
                 trainingSector: client.sector, // Auto-fetch from client
@@ -157,7 +173,14 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager'), async (
                 role: req.user.role,
                 details: `New ${type} opportunity created via dashboard.`
             }]
-        });
+        };
+
+        // Handle File Upload
+        if (req.file) {
+            opportunityData.requirementDocument = req.file.path;
+        }
+
+        const opportunity = await Opportunity.create(opportunityData);
 
         // NOTIFICATION: Notify Delivery Team about new opportunity
         // Target: All "Delivery Team" users (as "concerned" users are not yet assigned)
