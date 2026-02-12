@@ -2,13 +2,20 @@ const express = require('express');
 const router = express.Router();
 const SME = require('../models/SME');
 const { protect, authorize } = require('../middleware/authMiddleware');
-const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+
+// Ensure upload directory exists
+const uploadDir = path.join(__dirname, '../uploads/smes/');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // File Upload Config for SME documents
 const storage = multer.diskStorage({
     destination(req, file, cb) {
-        cb(null, 'uploads/smes/');
+        cb(null, uploadDir);
     },
     filename(req, file, cb) {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -29,17 +36,30 @@ const upload = multer({
     }
 });
 
+const uploadMiddleware = (req, res, next) => {
+    upload.fields([
+        { name: 'sowDocument', maxCount: 1 },
+        { name: 'ndaDocument', maxCount: 1 },
+        { name: 'contentUpload', maxCount: 1 },
+        { name: 'idProof', maxCount: 1 },
+        { name: 'panDocument', maxCount: 1 },
+        { name: 'gstDocument', maxCount: 1 }
+    ])(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+            console.error('Multer Error:', err);
+            return res.status(400).json({ message: `Upload Error: ${err.message}` });
+        } else if (err) {
+            console.error('Upload Unknown Error:', err);
+            return res.status(500).json({ message: `Upload Error: ${err.message}` });
+        }
+        next();
+    });
+};
+
 // @route   POST /api/smes
 // @desc    Create new SME (Company or Freelancer)
 // @access  Private (Sales, Manager, Director, Delivery Team)
-router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Team'), upload.fields([
-    { name: 'sowDocument', maxCount: 1 },
-    { name: 'ndaDocument', maxCount: 1 },
-    { name: 'contentUpload', maxCount: 1 },
-    { name: 'idProof', maxCount: 1 },
-    { name: 'panDocument', maxCount: 1 },
-    { name: 'gstDocument', maxCount: 1 } // Added
-]), async (req, res) => {
+router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Team'), uploadMiddleware, async (req, res) => {
     try {
         const smeData = { ...req.body, createdBy: req.user._id };
 
@@ -142,14 +162,7 @@ router.get('/:id', protect, async (req, res) => {
 // @route   PUT /api/smes/:id
 // @desc    Update SME
 // @access  Private (Sales, Manager, Director, Delivery Team)
-router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Team'), upload.fields([
-    { name: 'sowDocument', maxCount: 1 },
-    { name: 'ndaDocument', maxCount: 1 },
-    { name: 'contentUpload', maxCount: 1 },
-    { name: 'idProof', maxCount: 1 },
-    { name: 'panDocument', maxCount: 1 },
-    { name: 'gstDocument', maxCount: 1 } // Added
-]), async (req, res) => {
+router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Team'), uploadMiddleware, async (req, res) => {
     try {
         const sme = await SME.findById(req.params.id);
 

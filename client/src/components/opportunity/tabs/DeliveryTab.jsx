@@ -8,6 +8,7 @@ import { useAuth } from '../../../context/AuthContext';
 import BillingDetails from '../sections/BillingDetails';
 import OperationalExpensesBreakdown from '../sections/OperationalExpensesBreakdown';
 import DeliveryDocuments from '../sections/DeliveryDocuments';
+import AddSMEModal from '../../sme/AddSMEModal';
 
 const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }, ref) => {
     const { addToast } = useToast();
@@ -17,6 +18,7 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [expenseUploading, setExpenseUploading] = useState(null);
+    const [isSMEModalOpen, setIsSMEModalOpen] = useState(false);
 
     const [formData, setFormData] = useState({});
 
@@ -166,6 +168,28 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
         });
     };
 
+    const handleSMEChange = (e) => {
+        const value = e.target.value;
+        if (value === 'ADD_NEW_SME') {
+            setIsSMEModalOpen(true);
+        } else {
+            handleChange('root', 'selectedSME', value);
+        }
+    };
+
+    const handleSMESuccess = (newSme) => {
+        // Add new SME to list
+        const formattedSme = {
+            ...newSme,
+            companyName: newSme.companyName || 'N/A'
+        };
+        setSmes(prev => [...prev, formattedSme]);
+
+        // Select the new SME
+        handleChange('root', 'selectedSME', newSme._id);
+        setIsSMEModalOpen(false);
+    };
+
     // handleVendorChange removed
 
     const handleInvoiceUpload = async (e) => {
@@ -291,13 +315,14 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                         <div className={`flex items-center border rounded-lg overflow-hidden ${!isEditing ? 'bg-gray-100 border-gray-200' : 'bg-gray-50 border-gray-200 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
                             <select
                                 value={formData.selectedSME || ''}
-                                onChange={(e) => handleChange('root', 'selectedSME', e.target.value)}
+                                onChange={handleSMEChange}
                                 disabled={!isEditing}
                                 className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none ${!isEditing ? 'cursor-not-allowed text-gray-500' : 'text-gray-900'}`}
                             >
                                 <option value="">-- Select SME --</option>
-                                {filteredSMEs.map(s => (
-                                    <option key={s._id} value={s._id}>
+                                <option value="ADD_NEW_SME" className="text-brand-blue font-bold">+ Add New SME</option>
+                                {filteredSMEs.map((s, index) => (
+                                    <option key={s._id || index} value={s._id}>
                                         {s.smeType === 'Company' ? `${s.name} – ${s.companyName}` : `${s.name} – Freelancer`}
                                     </option>
                                 ))}
@@ -502,12 +527,17 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                 />
             )}
 
-            {/* 5. Delivery Documents */}
             <DeliveryDocuments
                 opportunity={opportunity}
                 canEdit={canEdit && isEditing}
                 handleUpload={handleDeliveryDocUpload}
                 uploading={uploading}
+            />
+
+            <AddSMEModal
+                isOpen={isSMEModalOpen}
+                onClose={() => setIsSMEModalOpen(false)}
+                onSuccess={handleSMESuccess}
             />
         </div>
     );
