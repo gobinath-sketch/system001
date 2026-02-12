@@ -19,6 +19,15 @@ const CustomTooltip = ({ active, payload, formatMoney }) => {
     return null;
 };
 
+import ibmLogo from '../../assets/logos/ibm.svg';
+import redhatLogo from '../../assets/logos/redhat.svg';
+import microsoftLogo from '../../assets/logos/microsoft.svg';
+import blockchainLogo from '../../assets/logos/blockchain.svg';
+import tableauLogo from '../../assets/logos/tableau.svg';
+import mulesoftLogo from '../../assets/logos/mulesoft.svg';
+import aiAllianceLogo from '../../assets/logos/ai_alliance.svg';
+import trendingLogo from '../../assets/logos/trending.svg';
+
 const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXCHANGE_RATE }) => {
     // Glass Style for Cards
     const glassCardStyle = {
@@ -48,6 +57,18 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
     // Technology list from dropdown
     const TECHNOLOGIES = ['IBM', 'Red hat', 'Microsoft', 'Blockchain', 'Tableau', 'Mulesoft', 'AI alliance', 'Trending technologies'];
+
+    // Logo Mappings
+    const LOGO_MAP = {
+        'IBM': ibmLogo,
+        'Red hat': redhatLogo,
+        'Microsoft': microsoftLogo,
+        'Blockchain': blockchainLogo,
+        'Tableau': tableauLogo,
+        'Mulesoft': mulesoftLogo,
+        'AI alliance': aiAllianceLogo,
+        'Trending technologies': trendingLogo
+    };
 
     // Get available years from opportunities
     const availableYears = [...new Set(allOpps.map(opp =>
@@ -323,9 +344,18 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                 key={index}
                                 className="flex items-center justify-between py-3 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors mb-1 last:mb-0"
                             >
-                                <span className="font-semibold text-gray-800 text-sm">
-                                    {tech.name}
-                                </span>
+                                <div className="flex items-center">
+                                    {LOGO_MAP[tech.name] && (
+                                        <img
+                                            src={LOGO_MAP[tech.name]}
+                                            alt={`${tech.name} logo`}
+                                            className="w-5 h-5 object-contain mr-3"
+                                        />
+                                    )}
+                                    <span className="font-semibold text-gray-800 text-sm">
+                                        {tech.name}
+                                    </span>
+                                </div>
                                 <span className={`font-bold text-sm ${tech.value > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                                     {formatMoney(tech.value)}
                                 </span>
