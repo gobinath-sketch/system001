@@ -110,7 +110,7 @@ const Sidebar = () => {
             {/* Sidebar */}
             <div
                 className={`
-          fixed top-0 left-0 h-screen bg-gradient-to-b from-primary-blue-dark/90 to-primary-blue/90 backdrop-blur-xl border-r border-white/20
+          fixed top-0 left-0 h-screen bg-gradient-to-b from-primary-blue/90 to-black/90 backdrop-blur-xl border-r border-white/20
           transition-all duration-300 z-40 flex flex-col shadow-2xl overflow-hidden
           ${isCollapsed ? 'w-20' : 'w-72'}
         `}
@@ -131,7 +131,7 @@ const Sidebar = () => {
                             </div>
                             <div className="flex-1 overflow-hidden mr-3">
                                 <h3 className="text-white font-bold text-sm truncate">{user?.name || 'User'}</h3>
-                                <p className="text-white/70 text-xs truncate">{user?.role || 'Role'}</p>
+                                <p className="text-white text-xs truncate">{user?.role || 'Role'}</p>
                             </div>
                         </>
                     )}
@@ -160,7 +160,7 @@ const Sidebar = () => {
                   transition-all duration-200 group whitespace-nowrap
                   ${active
                                         ? 'bg-white/20 text-white shadow-md'
-                                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                                        : 'text-white hover:bg-white/10 hover:text-white'
                                     }
                 `}
                             >
