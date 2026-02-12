@@ -29,10 +29,10 @@ const RealisticToggle = ({ checked, onChange }) => {
         }
 
         .realistic-toggle-wrapper .label {
-            height: 25px; /* Reduced from 30px */
-            width: 50px;  /* Reduced from 60px */
+            height: 20px; /* Reduced from 25px */
+            width: 40px;  /* Reduced from 50px */
             background-color: #ffffff;
-            border-radius: 12.5px; /* Reduced from 15px */
+            border-radius: 10px; /* Reduced from 12.5px */
             box-shadow: 
                 inset 0 0 5px 4px rgba(255, 255, 255, 1),
                 inset 0 0 10px 1px rgba(0, 0, 0, 0.488), 
@@ -66,10 +66,10 @@ const RealisticToggle = ({ checked, onChange }) => {
             justify-content: center;
             font-weight: bold;
             color: #140707ef;
-            font-size: 11px; /* Reduced from 12px */
+            font-size: 9px; /* Reduced from 11px */
             
-            height: 19px; /* Reduced from 22px */
-            width: 19px;  /* Reduced from 22px */
+            height: 16px; /* Reduced from 19px */
+            width: 16px;  /* Reduced from 19px */
             border-radius: 50%;
             background-color: #000000;
             background-image: linear-gradient(
@@ -78,14 +78,14 @@ const RealisticToggle = ({ checked, onChange }) => {
                 #ffffff 11%,
                 #726f6f 62%
             );
-            left: 3px; /* Adjust for padding */
+            left: 2px; /* Adjust for padding */
             box-shadow: 0 2px 1px rgba(0, 0, 0, 0.3), 5px 5px 5px rgba(0, 0, 0, 0.3);
             transition: 0.4s;
         }
 
         /* Checked State (Knob Move) */
         .realistic-toggle-wrapper #currency-checkbox:checked ~ .label::before {
-            left: 28px; /* Calculated: width(50) - knob(19) - padding(3) = 28 */
+            left: 22px; /* Calculated: width(40) - knob(16) - padding(2) = 22 */
             content: "$"; /* Checked = USD */
             color: #fff;
             background-color: #000000;
