@@ -45,7 +45,8 @@ const OperationalExpensesBreakdown = ({
         console.log('DEBUG: Recalculating expenses due to days/pax change. Days:', days, 'Pax:', pax);
 
         const expCategories = [
-            'trainerCost', 'material', 'labs', 'gkRoyalty', 'accommodation', 'perDiem'
+            'trainerCost', 'material', 'labs', 'gkRoyalty', 'accommodation', 'perDiem',
+            'venue', 'travel'
         ];
 
         expCategories.forEach(category => {
@@ -114,6 +115,11 @@ const OperationalExpensesBreakdown = ({
             case 'accommodation':
             case 'perDiem':
                 return rate * days;
+            case 'venue':
+            case 'travel':
+                if (type === 'costPerDay') return rate * days;
+                if (type === 'totalCost') return rate;
+                return rate;
             default:
                 // For other categories, default to direct rate/amount if logic undefined
                 return rate;
@@ -201,6 +207,12 @@ const OperationalExpensesBreakdown = ({
                                 {category === 'gkRoyalty' && <div className="col-span-2 text-xs text-gray-400 mb-1">Pax: {pax}, Days: {days}</div>}
                                 {(category === 'accommodation' || category === 'perDiem') && <div className="col-span-2 text-xs text-gray-400 mb-1">Days: {days}</div>}
                                 <div className="col-span-2"><Input label={category === 'gkRoyalty' ? 'Rate / Pax / Day' : 'Rate / Day'} value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>
+                            </>
+                        )}
+                        {(category === 'venue' || category === 'travel') && (
+                            <>
+                                {selectedType === 'costPerDay' && <div className="col-span-2"><Input label="Cost / Day" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>}
+                                {selectedType === 'totalCost' && <div className="col-span-2"><Input label="Total Cost" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>}
                             </>
                         )}
                     </div>
@@ -339,7 +351,9 @@ const OperationalExpensesBreakdown = ({
                         {renderInputGroup('gkRoyalty', 'GK Royalty', null, 'Fixed: Cost / Pax / Day')}
                         {renderInputGroup('accommodation', 'Accommodation', null, 'Fixed: Cost / Day')}
                         {renderInputGroup('perDiem', 'Per Diem', null, 'Fixed: Cost / Day')}
-                        {['venue', 'travel', 'vouchersCost', 'localConveyance'].map(key => renderOtherExpense(key))}
+                        {renderInputGroup('venue', 'Venue Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
+                        {renderInputGroup('travel', 'Travel Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
+                        {['vouchersCost', 'localConveyance'].map(key => renderOtherExpense(key))}
                     </div>
                 ) : (
                     <>
@@ -350,9 +364,11 @@ const OperationalExpensesBreakdown = ({
                             {renderInputGroup('gkRoyalty', 'GK Royalty', null, 'Fixed: Cost / Pax / Day')}
                             {renderInputGroup('accommodation', 'Accommodation', null, 'Fixed: Cost / Day')}
                             {renderInputGroup('perDiem', 'Per Diem', null, 'Fixed: Cost / Day')}
+                            {renderInputGroup('venue', 'Venue Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
+                            {renderInputGroup('travel', 'Travel Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
                         </div>
                         <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt-4">
-                            {['venue', 'travel', 'vouchersCost', 'localConveyance'].map(key => renderOtherExpense(key))}
+                            {['vouchersCost', 'localConveyance'].map(key => renderOtherExpense(key))}
                         </div>
                     </>
                 )}
