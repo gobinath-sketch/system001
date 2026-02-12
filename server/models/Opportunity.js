@@ -98,8 +98,6 @@ const OpportunitySchema = new mongoose.Schema({
 
 
 
-    // ===== VENDOR & SME SELECTION =====
-
     // selectedVendor removed
 
     selectedSME: {
@@ -137,6 +135,7 @@ const OpportunitySchema = new mongoose.Schema({
             type: String,
             enum: ['Virtual', 'Classroom', 'Hybrid']
         },
+        // batchSize removed (use participants)
         // batchSize removed (use participants)
         trainingLocation: { type: String }, // Only for Classroom/Hybrid
 
