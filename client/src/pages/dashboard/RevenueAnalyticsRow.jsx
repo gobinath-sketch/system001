@@ -1,6 +1,78 @@
 import React, { useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
+const shiftColor = (hex, amount) => {
+    const safeHex = hex.replace('#', '');
+    const fullHex = safeHex.length === 3
+        ? safeHex.split('').map((c) => c + c).join('')
+        : safeHex;
+
+    const num = parseInt(fullHex, 16);
+    const clamp = (v) => Math.max(0, Math.min(255, v));
+
+    const r = clamp((num >> 16) + amount);
+    const g = clamp(((num >> 8) & 0x00ff) + amount);
+    const b = clamp((num & 0x0000ff) + amount);
+
+    return `#${(r << 16 | g << 8 | b).toString(16).padStart(6, '0')}`;
+};
+
+const ThreeDBar = (props) => {
+    const { x, y, width, height, fill } = props;
+
+    if (height <= 0 || width <= 0) return null;
+
+    const depth = Math.min(10, Math.max(5, width * 0.15));
+    const topLift = Math.min(8, Math.max(4, depth * 0.7));
+    const front = fill || '#2563eb';
+    const topFace = shiftColor(front, 30);
+    const sideFace = shiftColor(front, -35);
+    const baseShadow = 'rgba(0,0,0,0.12)';
+
+    return (
+        <g>
+            <ellipse
+                cx={x + width / 2 + depth * 0.4}
+                cy={y + height + 3}
+                rx={width * 0.52}
+                ry={4}
+                fill={baseShadow}
+            />
+
+            <polygon
+                points={`
+                    ${x},${y}
+                    ${x + depth},${y - topLift}
+                    ${x + width + depth},${y - topLift}
+                    ${x + width},${y}
+                `}
+                fill={topFace}
+            />
+
+            <polygon
+                points={`
+                    ${x + width},${y}
+                    ${x + width + depth},${y - topLift}
+                    ${x + width + depth},${y + height - topLift}
+                    ${x + width},${y + height}
+                `}
+                fill={sideFace}
+            />
+
+            <rect x={x} y={y} width={width} height={height} rx={4} fill={front} />
+
+            <rect
+                x={x + 2}
+                y={y + 3}
+                width={Math.max(0, width * 0.18)}
+                height={Math.max(0, height - 6)}
+                rx={2}
+                fill="rgba(255,255,255,0.20)"
+            />
+        </g>
+    );
+};
+
 const CustomTooltip = ({ active, payload, formatMoney }) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
@@ -249,10 +321,15 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     fill: '#ef4444'
                                 }
                             ]}
-                            margin={{ top: 20, right: 30, left: 10, bottom: 5 }}
+                            margin={{ top: 30, right: 36, left: 6, bottom: 5 }}
                         >
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#d1d5db" />
+                            <XAxis
+                                dataKey="name"
+                                tick={{ fontSize: 12, fill: '#4b5563', fontWeight: 600 }}
+                                axisLine={{ stroke: '#6b7280' }}
+                                tickLine={{ stroke: '#6b7280' }}
+                            />
                             <YAxis
                                 tickFormatter={(value) => {
                                     if (currency === 'INR') {
@@ -268,7 +345,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     return `$${value}`;
                                 }}
                                 width={45}
-                                tick={{ fontSize: 10 }}
+                                tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 600 }}
+                                axisLine={{ stroke: '#6b7280' }}
+                                tickLine={{ stroke: '#6b7280' }}
                             />
                             <Tooltip
                                 formatter={(value) => {
@@ -278,7 +357,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     return `$${value.toLocaleString('en-US', { maximumFractionDigits: 0 })}`; // Already USD
                                 }}
                             />
-                            <Bar dataKey="value" barSize={50} radius={[4, 4, 0, 0]}>
+                            <Bar dataKey="value" barSize={48} shape={<ThreeDBar />}>
                                 {
                                     [
                                         { name: 'Target', fill: '#2563eb' },
