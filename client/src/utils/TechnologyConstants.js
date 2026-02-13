@@ -6,7 +6,8 @@ import tableauLogo from '../assets/logos/tableau.svg';
 import mulesoftLogo from '../assets/logos/mulesoft.svg';
 import aiAllianceLogo from '../assets/logos/ai_alliance.svg';
 import googleLogo from '../assets/logos/google.svg';
-import trendingLogo from '../assets/logos/trending.svg';
+import emergingTechnologiesLogo from '../assets/logos/emerging_technologies.svg';
+import otherTechnologiesLogo from '../assets/logos/other_technologies.svg';
 
 export const TECHNOLOGIES = [
     'IBM',
@@ -30,7 +31,8 @@ export const LOGO_MAP = {
     'Mulesoft': mulesoftLogo,
     'Google': googleLogo,
     'AI alliance': aiAllianceLogo,
-    'Emerging technologies': trendingLogo
+    'Emerging technologies': emergingTechnologiesLogo,
+    'Other technologies': otherTechnologiesLogo
 };
 
 export const getTechnologyLogo = (techName) => {
