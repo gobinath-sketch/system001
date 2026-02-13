@@ -488,9 +488,11 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                         <div className="flex items-center mb-2">
                             <button
                                 onClick={() => setSelectedTechCategory(null)}
-                                className="mr-2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                                aria-label="Back to technology list"
+                                title="Back"
+                                className="mr-2 h-7 w-7 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white hover:bg-gray-100 shadow-sm transition-colors"
                             >
-                                <ChevronLeft size={16} className="text-gray-600" />
+                                <ChevronLeft size={15} className="text-gray-700" />
                             </button>
                             <span className="font-bold text-sm text-primary-blue">{selectedTechCategory}</span>
                         </div>
