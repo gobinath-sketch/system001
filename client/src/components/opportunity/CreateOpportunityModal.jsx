@@ -52,7 +52,10 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
 
         // Product Support fields
         projectScope: '',
-        teamSize: ''
+        teamSize: '',
+
+        // Custom Technology Input
+        customTechnology: ''
     });
 
     const [requirementDoc, setRequirementDoc] = useState(null); // New state for file
@@ -108,7 +111,9 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
 
             if (formData.type === 'Training') {
                 typeSpecificDetails = {
-                    technology: formData.technology,
+                    technology: (formData.technology === 'Emerging technologies' || formData.technology === 'Other technologies')
+                        ? `${formData.technology} - ${formData.customTechnology}`
+                        : formData.technology,
                     trainingName: formData.trainingName,
                     modeOfTraining: formData.modeOfTraining,
                     trainingLocation: formData.trainingLocation
@@ -188,7 +193,10 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                 contentType: '',
                 deliveryFormat: '',
                 projectScope: '',
-                teamSize: ''
+                deliveryFormat: '',
+                projectScope: '',
+                teamSize: '',
+                customTechnology: ''
             });
             setRequirementDoc(null);
             onSuccess();
@@ -297,6 +305,20 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                             className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
                                             required
                                         />
+
+                                        {(formData.technology === 'Emerging technologies' || formData.technology === 'Other technologies') && (
+                                            <div className="mt-2">
+                                                <input
+                                                    type="text"
+                                                    name="customTechnology"
+                                                    value={formData.customTechnology}
+                                                    onChange={handleChange}
+                                                    placeholder={`Enter specific ${formData.technology.toLowerCase().replace(' technologies', '')} technology`}
+                                                    className="w-full bg-white border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-sm"
+                                                    required
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                     <div>
                                         <label className="block text-sm font-medium text-gray-700 mb-1">Training Name/Requirement *</label>

@@ -216,43 +216,45 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         // Technology Distribution (List format with grouping)
         const techMap = {};
         const emergingBreakdown = {};
+        const otherBreakdown = {};
 
-        // Initialize standard technologies with 0
+        // Initialize all technologies with 0
         TECHNOLOGIES.forEach(tech => {
-            // Emerging technologies is now a catch-all bucket, so we handle it dynamically
-            if (tech !== 'Emerging technologies') {
-                techMap[tech] = 0;
-            }
+            techMap[tech] = 0;
         });
-        // Ensure Emerging technologies is initialized
-        techMap['Emerging technologies'] = 0;
 
         filteredOpps.forEach(opp => {
-            let tech = opp.typeSpecificDetails?.technology;
+            let tech = opp.typeSpecificDetails?.technology || '';
             const value = opp.poValue || 0;
 
             if (value > 0 && tech) {
-                // If technology is standard (and not "Emerging technologies" literal), add to its bucket
-                if (TECHNOLOGIES.includes(tech) && tech !== 'Emerging technologies') {
-                    techMap[tech] = (techMap[tech] || 0) + value;
-                } else {
-                    // Everything else (Entered manual text, or literal "Emerging technologies") goes to Emerging Bucket
+                // Check for composite names "Category - Specific"
+                if (tech.startsWith('Emerging technologies - ')) {
                     techMap['Emerging technologies'] = (techMap['Emerging technologies'] || 0) + value;
-
-                    // Add to breakdown if it's not the literal category name
-                    const breakdownName = tech === 'Emerging technologies' ? 'Unspecified Emerging' : tech;
-                    emergingBreakdown[breakdownName] = (emergingBreakdown[breakdownName] || 0) + value;
+                    const specificTech = tech.replace('Emerging technologies - ', '');
+                    emergingBreakdown[specificTech] = (emergingBreakdown[specificTech] || 0) + value;
+                } else if (tech.startsWith('Other technologies - ')) {
+                    techMap['Other technologies'] = (techMap['Other technologies'] || 0) + value;
+                    const specificTech = tech.replace('Other technologies - ', '');
+                    otherBreakdown[specificTech] = (otherBreakdown[specificTech] || 0) + value;
+                }
+                // Handle standard technologies and plain categories
+                else if (TECHNOLOGIES.includes(tech)) {
+                    techMap[tech] = (techMap[tech] || 0) + value;
+                    // If it's the category name itself without detail, track as unspecified
+                    if (tech === 'Emerging technologies') {
+                        emergingBreakdown['Unspecified'] = (emergingBreakdown['Unspecified'] || 0) + value;
+                    } else if (tech === 'Other technologies') {
+                        otherBreakdown['Unspecified'] = (otherBreakdown['Unspecified'] || 0) + value;
+                    }
                 }
             }
         });
 
-        const techData = [
-            ...TECHNOLOGIES.filter(t => t !== 'Emerging technologies').map(tech => ({
-                name: tech,
-                value: techMap[tech]
-            })),
-            { name: 'Emerging technologies', value: techMap['Emerging technologies'] }
-        ].filter(item => item.value > 0 || (TECHNOLOGIES.includes(item.name) && item.name !== 'Emerging technologies')); // Keep standard techs even if 0
+        const techData = TECHNOLOGIES.map(tech => ({
+            name: tech,
+            value: techMap[tech]
+        }));
 
 
 
@@ -311,7 +313,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
             techData,
             typeData,
-            emergingBreakdown
+            emergingBreakdown,
+            otherBreakdown
         });
 
     }, [allOpps, activeYear, filter, yearlyTarget]);
@@ -481,6 +484,19 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                             <div className="absolute left-full top-0 ml-2 z-50 hidden group-hover:block bg-white p-3 border border-gray-200 shadow-xl rounded-lg min-w-[200px]">
                                                 <p className="font-bold text-xs text-black mb-2 border-b pb-1">Breakdown</p>
                                                 {Object.entries(filteredData.emergingBreakdown).map(([subTech, val]) => (
+                                                    <div key={subTech} className="flex justify-between text-xs mb-1">
+                                                        <span className="text-gray-600 mr-2">{subTech}:</span>
+                                                        <span className="font-bold text-black">{formatMoney(val)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {/* Hover Breakdown for Other Technologies */}
+                                        {tech.name === 'Other technologies' && filteredData.otherBreakdown && Object.keys(filteredData.otherBreakdown).length > 0 && (
+                                            <div className="absolute left-full top-0 ml-2 z-50 hidden group-hover:block bg-white p-3 border border-gray-200 shadow-xl rounded-lg min-w-[200px]">
+                                                <p className="font-bold text-xs text-black mb-2 border-b pb-1">Breakdown</p>
+                                                {Object.entries(filteredData.otherBreakdown).map(([subTech, val]) => (
                                                     <div key={subTech} className="flex justify-between text-xs mb-1">
                                                         <span className="text-gray-600 mr-2">{subTech}:</span>
                                                         <span className="font-bold text-black">{formatMoney(val)}</span>

@@ -17,7 +17,8 @@ export const TECHNOLOGIES = [
     'Mulesoft',
     'Google',
     'AI alliance',
-    'Emerging technologies'
+    'Emerging technologies',
+    'Other technologies'
 ];
 
 export const LOGO_MAP = {

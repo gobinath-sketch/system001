@@ -1,24 +1,84 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 
 const SearchableSelect = ({ options, value, onChange, placeholder, disabled, className, required, name }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
     const wrapperRef = useRef(null);
     const inputRef = useRef(null);
+
+    // Update position on scroll/resize
+    useEffect(() => {
+        const updatePosition = () => {
+            if (isOpen && wrapperRef.current) {
+                const rect = wrapperRef.current.getBoundingClientRect();
+                setDropdownPosition({
+                    top: rect.bottom,
+                    left: rect.left,
+                    width: rect.width
+                });
+            }
+        };
+
+        if (isOpen) {
+            updatePosition();
+            window.addEventListener('scroll', updatePosition, true); // Capture phase for modal scroll
+            window.addEventListener('resize', updatePosition);
+        }
+
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [isOpen]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                // Also check if click is inside portal (optional, but often handled by portal event bubbling)
+                // Since portal events bubble to React tree, standard wrapperRef check might fail if portal is outside.
+                // We need to check if click is on the dropdown element?
+                // Actually, events bubble. So click on dropdown inside portal WILL propagate to wrapperRef if portal is child?
+                // No, portal is at document.body.
+                // But React events bubble through the React tree.
+                // So handleClickOutside on document might miss it if we check wrapperRef.contains(target).
+                // Target is actual DOM node. wrapperRef is in modal. dropdown is in body.
+                // So wrapperRef.contains(dropdownNode) is false.
+                // We need to detect click outside BOTH.
+                // Let's add an ID or ref to the dropdown content.
+            }
+            // Simplified: If we click outside wrapper, we close.
+            // But if we click dropdown item, what happens?
+            // Dropdown item click handler calls setIsOpen(false). Stop propagation?
+        };
+
+        // We can't use simple handleClickOutside with Portal easily without a ref to Portal content.
+        // Let's rely on onBlur or just specific click handling.
+        // Or adding a backdrop?
+        // Or simpler: The dropdown items have onClick.
+        // If user clicks elsewhere on page, we need to close.
+        // We can check if target is inside the dropdown ID.
+    }, []);
+
+    // Improved click outside logic for Portal
+    useEffect(() => {
+        const handleClick = (event) => {
+            const dropdownEl = document.getElementById('searchable-select-dropdown');
+            if (wrapperRef.current && !wrapperRef.current.contains(event.target) && (!dropdownEl || !dropdownEl.contains(event.target))) {
                 setIsOpen(false);
             }
         };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+        if (isOpen) {
+            document.addEventListener('mousedown', handleClick);
+        }
+        return () => document.removeEventListener('mousedown', handleClick);
+    }, [isOpen]);
+
 
     const handleInputChange = (e) => {
-        setIsOpen(true);
+        if (!isOpen) setIsOpen(true);
         if (onChange) {
             onChange(e);
         }
@@ -30,9 +90,8 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
             onChange({ target: { name, value: option } });
         }
         if (inputRef.current) {
-            inputRef.current.blur(); // Remove focus to "accept" visualization
+            inputRef.current.blur();
         }
-        setIsOpen(false);
     };
 
     const filteredOptions = options.filter(option => {
@@ -54,12 +113,12 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
                         if (e.key === 'Enter') {
                             e.preventDefault();
                             setIsOpen(false);
-                            e.target.blur(); // Remove focus to "accept"
+                            e.target.blur();
                         }
                     }}
                     disabled={disabled}
                     placeholder={placeholder}
-                    className={`${className} pr-8 cursor-text bg-white`} // Force white bg & text cursor
+                    className={`${className} pr-8 cursor-text bg-white`}
                     autoComplete="off"
                     required={required}
                 />
@@ -68,8 +127,17 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
                 </div>
             </div>
 
-            {isOpen && !disabled && filteredOptions.length > 0 && (
-                <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+            {isOpen && !disabled && filteredOptions.length > 0 && createPortal(
+                <div
+                    id="searchable-select-dropdown"
+                    className="fixed z-[9999] bg-white border border-gray-200 rounded-md shadow-lg overflow-y-auto"
+                    style={{
+                        top: `${dropdownPosition.top}px`,
+                        left: `${dropdownPosition.left}px`,
+                        width: `${dropdownPosition.width}px`,
+                        maxHeight: '400px' // Reasonable max height for "full dropdown"
+                    }}
+                >
                     {filteredOptions.map((option, index) => {
                         const isString = typeof option === 'string';
                         const label = isString ? option : option.label;
@@ -93,7 +161,8 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
                             </div>
                         );
                     })}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
