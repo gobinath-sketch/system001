@@ -556,9 +556,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                             {/* Indicators for clickable items */}
                                             {(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') && (
                                                 <div className="flex items-center ml-2 space-x-[-4px]">
-                                                    <ChevronRight size={14} className="text-blue-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '0ms' }} />
-                                                    <ChevronRight size={14} className="text-blue-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '150ms' }} />
-                                                    <ChevronRight size={14} className="text-blue-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '300ms' }} />
+                                                    <ChevronRight size={15} strokeWidth={2.75} className="text-blue-900 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '0ms' }} />
+                                                    <ChevronRight size={15} strokeWidth={2.75} className="text-blue-900 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '150ms' }} />
+                                                    <ChevronRight size={15} strokeWidth={2.75} className="text-blue-900 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '300ms' }} />
                                                 </div>
                                             )}
                                         </div>
