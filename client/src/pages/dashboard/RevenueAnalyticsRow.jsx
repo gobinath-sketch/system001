@@ -343,7 +343,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     fill: '#16a34a'
                                 },
                                 {
-                                    name: 'Remaining',
+                                    name: 'Difference',
                                     value: currency === 'INR'
                                         ? Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue)
                                         : Math.max(0, (filteredData.adjustedTarget - filteredData.achievedRevenue)) / EXCHANGE_RATE,
@@ -392,7 +392,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     [
                                         { name: 'Target', fill: '#2563eb' },
                                         { name: 'Achieved', fill: '#16a34a' },
-                                        { name: 'Remaining', fill: '#ef4444' }
+                                        { name: 'Difference', fill: '#ef4444' }
                                     ].map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.fill} />
                                     ))
@@ -413,7 +413,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                         <p className="font-bold text-green-600 truncate text-lg" title={formatMoney(filteredData.achievedRevenue)}>{formatMoney(filteredData.achievedRevenue)}</p>
                     </div>
                     <div>
-                        <p className="text-black font-bold text-xs font-semibold">Remaining</p>
+                        <p className="text-black font-bold text-xs font-semibold">Difference</p>
                         <p className="font-bold text-red-500 truncate text-lg" title={formatMoney(Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue))}>
                             {formatMoney(Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue))}
                         </p>
@@ -455,9 +455,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                 </div>
             </div>
 
-            {/* 3. Revenue by Opportunity Type (PIE CHART) */}
+            {/* 3. Revenue by Opportunity Closure (PIE CHART) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
-                <h3 className="text-sm font-bold text-black mb-2">Revenue by Opportunity Type</h3>
+                <h3 className="text-sm font-bold text-black mb-2">Revenue by Opportunity Closure</h3>
                 <div className="flex-1 min-h-[240px]">
                     {allOpps.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-black font-bold">

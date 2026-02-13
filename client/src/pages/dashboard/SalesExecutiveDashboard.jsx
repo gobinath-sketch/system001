@@ -311,9 +311,9 @@ const SalesExecutiveDashboard = ({ user }) => {
             {/* 3. Second Analytics Row */}
             <div className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-                    {/* Left: Total Opportunities by Type (Count) */}
+                    {/* Left: otal Opportunities Ongoing / Completed (Count) */}
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
-                        <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Total Opportunities by Type</h3>
+                        <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
                         <div className="flex-1 w-full min-h-[205px]">
                             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={205}>
                                 <BarChart data={analyticsData.typeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>

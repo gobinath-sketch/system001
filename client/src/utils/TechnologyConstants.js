@@ -5,6 +5,7 @@ import blockchainLogo from '../assets/logos/blockchain.svg';
 import tableauLogo from '../assets/logos/tableau.svg';
 import mulesoftLogo from '../assets/logos/mulesoft.svg';
 import aiAllianceLogo from '../assets/logos/ai_alliance.svg';
+import googleLogo from '../assets/logos/google.svg';
 import trendingLogo from '../assets/logos/trending.svg';
 
 export const TECHNOLOGIES = [
@@ -14,8 +15,9 @@ export const TECHNOLOGIES = [
     'Blockchain',
     'Tableau',
     'Mulesoft',
+    'Google',
     'AI alliance',
-    'Trending technologies'
+    'Emerging technologies'
 ];
 
 export const LOGO_MAP = {
@@ -25,8 +27,9 @@ export const LOGO_MAP = {
     'Blockchain': blockchainLogo,
     'Tableau': tableauLogo,
     'Mulesoft': mulesoftLogo,
+    'Google': googleLogo,
     'AI alliance': aiAllianceLogo,
-    'Trending technologies': trendingLogo
+    'Emerging technologies': trendingLogo
 };
 
 export const getTechnologyLogo = (techName) => {

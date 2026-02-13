@@ -325,7 +325,7 @@ const SalesManagerDashboard = () => {
                 {/* 1. Revenue by Type */}
                 <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
                     <div className="flex justify-between items-center mb-3">
-                        <h3 className="text-sm font-bold text-gray-800">Revenue by Opportunity Type</h3>
+                        <h3 className="text-sm font-bold text-gray-800">Revenue by Opportunity closure </h3>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-500">Filter:</span>
                             <select
