@@ -644,6 +644,13 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     verticalAlign="bottom"
                                     align="center"
                                     wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+                                    formatter={(value, entry) => {
+                                        const { payload } = entry;
+                                        const percentage = filteredData.achievedRevenue > 0
+                                            ? ((payload.value / filteredData.achievedRevenue) * 100).toFixed(0)
+                                            : 0;
+                                        return <span className="text-black font-semibold">{value} <span className="text-black font-normal">({percentage}%)</span></span>;
+                                    }}
                                 />
                             </PieChart>
                         </ResponsiveContainer>
