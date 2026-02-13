@@ -20,6 +20,7 @@ import ApprovalsPage from './pages/ApprovalsPage';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import FinanceModulePage from './pages/finance/FinanceModulePage';
 import FinanceDetails from './pages/finance/FinanceDetails';
+import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
 import { ToastProvider } from './context/ToastContext';
@@ -61,6 +62,7 @@ function App() {
                 <Route path="/finance/dashboard" element={<ProtectedRoute><Layout><FinanceDashboard /></Layout></ProtectedRoute>} />
                 <Route path="/finance" element={<ProtectedRoute><Layout><FinanceModulePage /></Layout></ProtectedRoute>} />
                 <Route path="/finance/:id" element={<ProtectedRoute><Layout><FinanceDetails /></Layout></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
               </Routes>
             </Router>
           </ToastProvider>

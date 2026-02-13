@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -10,7 +10,8 @@ import {
     FileText,
     ChevronLeft,
     ChevronRight,
-    CreditCard
+    CreditCard,
+    Settings
 } from 'lucide-react';
 
 import LogoutButton from '../common/LogoutButton';
@@ -33,6 +34,32 @@ const Sidebar = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [isCollapsed, setIsCollapsed] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState('');
+    const settingsKey = `app_settings_v2:${String(user?.id || user?.email || user?.name || 'anonymous').toLowerCase()}`;
+
+    useEffect(() => {
+        const loadAvatar = () => {
+            try {
+                const raw = localStorage.getItem(settingsKey);
+                if (!raw) {
+                    setAvatarUrl('');
+                    return;
+                }
+                const parsed = JSON.parse(raw);
+                setAvatarUrl(parsed?.profile?.avatarDataUrl || '');
+            } catch {
+                setAvatarUrl('');
+            }
+        };
+
+        loadAvatar();
+        window.addEventListener('settings-updated', loadAvatar);
+        window.addEventListener('storage', loadAvatar);
+        return () => {
+            window.removeEventListener('settings-updated', loadAvatar);
+            window.removeEventListener('storage', loadAvatar);
+        };
+    }, [settingsKey]);
 
     const handleLogout = () => {
         logout();
@@ -48,7 +75,8 @@ const Sidebar = () => {
             return [
                 { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/executive' },
                 { label: 'Client', icon: Users, path: '/clients' },
-                { label: 'Opportunities', icon: Briefcase, path: '/opportunities' }
+                { label: 'Opportunities', icon: Briefcase, path: '/opportunities' },
+                { label: 'Settings', icon: Settings, path: '/settings' }
             ];
         }
 
@@ -58,7 +86,8 @@ const Sidebar = () => {
                 { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/manager' },
                 { label: 'Client', icon: Users, path: '/clients' },
                 { label: 'Team Opportunities', icon: Briefcase, path: '/opportunities' },
-                { label: 'Approvals', icon: FileText, path: '/approvals' }
+                { label: 'Approvals', icon: FileText, path: '/approvals' },
+                { label: 'Settings', icon: Settings, path: '/settings' }
             ];
         }
 
@@ -67,7 +96,8 @@ const Sidebar = () => {
             return [
                 { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/delivery' },
                 { label: 'SME Management', icon: Users, path: '/smes' },
-                { label: 'Opportunities', icon: Package, path: '/opportunities' }
+                { label: 'Opportunities', icon: Package, path: '/opportunities' },
+                { label: 'Settings', icon: Settings, path: '/settings' }
             ];
         }
 
@@ -75,7 +105,8 @@ const Sidebar = () => {
         if (user.role === 'Finance') {
             return [
                 { label: 'Dashboard', icon: LayoutDashboard, path: '/finance/dashboard' },
-                { label: 'Finance', icon: CreditCard, path: '/finance' }
+                { label: 'Finance', icon: CreditCard, path: '/finance' },
+                { label: 'Settings', icon: Settings, path: '/settings' }
             ];
         }
 
@@ -85,7 +116,8 @@ const Sidebar = () => {
                 { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/businesshead' },
                 { label: 'Client', icon: Users, path: '/clients' },
                 { label: 'Opportunities', icon: Briefcase, path: '/opportunities' },
-                { label: 'Approvals', icon: FileText, path: '/approvals' }
+                { label: 'Approvals', icon: FileText, path: '/approvals' },
+                { label: 'Settings', icon: Settings, path: '/settings' }
             ];
         }
 
@@ -122,12 +154,20 @@ const Sidebar = () => {
                 <div className={`flex items-center p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     {!isCollapsed && (
                         <>
-                            <div className="mr-3">
-                                <img
-                                    src="/gk-globe-logo.png"
-                                    alt="Logo"
-                                    className="w-10 h-10 object-contain drop-shadow-lg"
-                                />
+                            <div className="mr-3 w-11 h-11 rounded-md overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
+                                {avatarUrl ? (
+                                    <img
+                                        src={avatarUrl}
+                                        alt="Profile"
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <img
+                                        src="/profile-default.svg"
+                                        alt="Logo"
+                                        className="w-full h-full object-contain p-1 drop-shadow-lg"
+                                    />
+                                )}
                             </div>
                             <div className="flex-1 overflow-hidden mr-3">
                                 <h3 className="text-white font-bold text-sm truncate">{user?.name || 'User'}</h3>
@@ -218,3 +258,5 @@ const Sidebar = () => {
 };
 
 export default Sidebar;
+
+
