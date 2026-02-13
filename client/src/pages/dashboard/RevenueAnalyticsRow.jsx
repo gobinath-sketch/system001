@@ -424,15 +424,14 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             {/* 2. Revenue by Technology (LIST FORMAT) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <h3 className="text-sm font-bold text-black mb-3">Revenue by Technology</h3>
-                <div className="flex-1 min-h-0">
-                    <div
-                        className="h-full grid gap-1.5"
-                        style={{ gridTemplateRows: `repeat(${Math.max(filteredData.techData.length, 1)}, minmax(0, 1fr))` }}
-                    >
-                        {filteredData.techData.map((tech, index) => (
+                <div className={`flex-1 min-h-0 ${filteredData.techData.length > 9 ? 'overflow-y-auto pr-1' : 'overflow-y-hidden'}`}>
+                    <div className="space-y-1.5">
+                        {[...filteredData.techData]
+                            .sort((a, b) => (b.value || 0) - (a.value || 0))
+                            .map((tech, index) => (
                             <div
                                 key={index}
-                                className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors min-h-0"
+                                className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                             >
                                 <div className="flex items-center">
                                     {LOGO_MAP[tech.name] && (
@@ -450,7 +449,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     {formatMoney(tech.value)}
                                 </span>
                             </div>
-                        ))}
+                            ))}
                     </div>
                 </div>
             </div>
