@@ -480,8 +480,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                         : filteredData.otherBreakdown
                                 ).map(([subTech, val]) => (
                                     <div key={subTech} className="flex justify-between items-center px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
-                                        <span className="text-gray-700 text-xs font-medium">{subTech}</span>
-                                        <span className="font-bold text-black text-xs">{formatMoney(val)}</span>
+                                        <span className="text-black text-[13.5px] font-medium">{subTech}</span>
+                                        <span className="font-bold text-black text-[13.5px]">{formatMoney(val)}</span>
                                     </div>
                                 ))}
                                 {Object.keys(
@@ -508,7 +508,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                                 setSelectedTechCategory(tech.name);
                                             }
                                         }}
-                                        className={`group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer hover:ring-1 hover:ring-primary-blue' : ''
+                                        className={`group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer' : ''
                                             }`}
                                     >
                                         <div className="flex items-center">
@@ -527,7 +527,11 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
                                             {/* Indicators for clickable items */}
                                             {(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') && (
-                                                <ChevronRight size={14} className="ml-1 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                <div className="flex items-center ml-2 space-x-[-4px]">
+                                                    <ChevronRight size={14} className="text-blue-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '0ms' }} />
+                                                    <ChevronRight size={14} className="text-blue-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '150ms' }} />
+                                                    <ChevronRight size={14} className="text-blue-500 animate-[pulse_1s_ease-in-out_infinite]" style={{ animationDelay: '300ms' }} />
+                                                </div>
                                             )}
                                         </div>
                                         <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-black font-bold'}`}>
