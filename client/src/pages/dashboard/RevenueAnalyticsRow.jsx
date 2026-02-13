@@ -494,16 +494,16 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                             </button>
                             <span className="font-bold text-sm text-primary-blue">{selectedTechCategory}</span>
                         </div>
-                        <div className="flex-1 overflow-y-auto pr-1">
-                            <div className="space-y-1.5">
+                        <div className="flex-1">
+                            <div className="space-y-1">
                                 {Object.entries(
                                     selectedTechCategory === 'Emerging technologies'
                                         ? filteredData.emergingBreakdown
                                         : filteredData.otherBreakdown
                                 ).map(([subTech, val]) => (
-                                    <div key={subTech} className="flex justify-between items-center px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
-                                        <span className="text-black text-[13.5px] font-medium">{subTech}</span>
-                                        <span className="font-bold text-black text-[13.5px]">
+                                    <div key={subTech} className="flex justify-between items-center px-3 py-1.5 rounded-lg bg-gray-50 border border-gray-100">
+                                        <span className="text-black text-[13px] font-medium">{subTech}</span>
+                                        <span className="font-bold text-black text-[13px]">
                                             {formatMoney(val)} <span className="text-gray-500 text-xs text-[11px] font-normal">
                                                 ({filteredData.achievedRevenue > 0 ? ((val / filteredData.achievedRevenue) * 100).toFixed(0) : 0}%)
                                             </span>
@@ -522,8 +522,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                     </div>
                 ) : (
                     // Main List View
-                    <div className={`flex-1 min-h-0 ${filteredData.techData.length > 9 ? 'overflow-y-auto pr-1' : 'overflow-y-hidden'}`}>
-                        <div className="space-y-1.5">
+                    <div className="flex-1 min-h-0">
+                        <div className="space-y-1">
                             {[...filteredData.techData]
                                 .sort((a, b) => (b.value || 0) - (a.value || 0))
                                 .map((tech, index) => (
@@ -534,7 +534,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                                 setSelectedTechCategory(tech.name);
                                             }
                                         }}
-                                        className={`group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer' : ''
+                                        className={`group relative flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer' : ''
                                             }`}
                                     >
                                         <div className="flex items-center">
