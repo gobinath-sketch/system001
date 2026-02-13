@@ -206,7 +206,7 @@ const SalesExecutiveDashboard = ({ user }) => {
     };
 
     return (
-        <div className="p-4 space-y-4 bg-bg-page h-full">
+        <div className="p-4 pb-4 space-y-4 bg-bg-page h-full">
             {/* Header */}
             {/* Header Removed */}
 
@@ -310,17 +310,17 @@ const SalesExecutiveDashboard = ({ user }) => {
 
             {/* 3. Second Analytics Row */}
             <div className="space-y-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                     {/* Left: Total Opportunities by Type (Count) */}
-                    <div style={glassCardStyle} className="p-4 flex flex-col h-[280px]">
-                        <h3 className="text-sm font-bold text-gray-800 mb-3">Total Opportunities by Type</h3>
-                        <div className="flex-1 w-full min-h-0">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={analyticsData.typeDist} layout="vertical" margin={{ left: 1, right: 30 }}>
+                    <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
+                        <h3 className="text-sm font-bold text-gray-800 mb-3 md:mb-4">Total Opportunities by Type</h3>
+                        <div className="flex-1 w-full min-h-[205px]">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={205}>
+                                <BarChart data={analyticsData.typeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} />
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="type" type="category" width={130} tick={{ fontSize: 10 }} />
-                                    <Tooltip />
+                                    <YAxis dataKey="type" type="category" width={112} tick={{ fontSize: 10 }} />
+                                    <Tooltip cursor={false} />
                                     <Bar dataKey="count" name="Opportunities" fill={brandBlue} barSize={15} radius={[0, 4, 4, 0]} label={{ position: 'right', fill: brandBlue, fontSize: 10 }} />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -328,9 +328,9 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
 
                     {/* Right: Top 5 Clients by Revenue (using PO Amount) */}
-                    <div style={glassCardStyle} className="p-4 flex flex-col h-[280px]">
-                        <h3 className="text-sm font-bold text-gray-800 mb-3">Top 5 Clients by Revenue</h3>
-                        <div className="flex-1 overflow-auto">
+                    <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
+                        <h3 className="text-sm font-bold text-gray-800 mb-3 md:mb-4">Top 5 Clients by Revenue</h3>
+                        <div className="flex-1 overflow-hidden">
                             {(() => {
                                 // Calculate top 5 clients using PO Amount (poValue)
                                 const clientMap = {};
@@ -353,23 +353,32 @@ const SalesExecutiveDashboard = ({ user }) => {
                                     );
                                 }
 
+                                const normalizedTopClients = [...topClients];
+                                while (normalizedTopClients.length < 5) {
+                                    normalizedTopClients.push({
+                                        name: 'No client',
+                                        revenue: 0,
+                                        isPlaceholder: true
+                                    });
+                                }
+
                                 return (
-                                    <div className="space-y-3">
-                                        {topClients.map((client, index) => (
+                                    <div className="h-full grid grid-rows-5 gap-2">
+                                        {normalizedTopClients.map((client, index) => (
                                             <div
                                                 key={index}
-                                                className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                                                className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors min-h-0 ${client.isPlaceholder ? 'bg-gray-50/60' : 'bg-gray-50 hover:bg-gray-100'}`}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-bold text-sm">
+                                                    <div className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm ${client.isPlaceholder ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
                                                         {index + 1}
                                                     </div>
-                                                    <span className="font-medium text-gray-800 text-sm">
+                                                    <span className={`font-medium text-sm ${client.isPlaceholder ? 'text-gray-400' : 'text-gray-800'}`}>
                                                         {client.name}
                                                     </span>
                                                 </div>
-                                                <span className="font-bold text-green-600 text-sm">
-                                                    {formatMoney(client.revenue)}
+                                                <span className={`font-bold text-sm ${client.isPlaceholder ? 'text-gray-400' : 'text-green-600'}`}>
+                                                    {client.isPlaceholder ? '-' : formatMoney(client.revenue)}
                                                 </span>
                                             </div>
                                         ))}

@@ -511,7 +511,7 @@ const SalesManagerDashboard = () => {
                                 <CartesianGrid strokeDasharray="3 3" />
                                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                                 <YAxis tick={{ fontSize: 10 }} allowDecimals={false} />
-                                <Tooltip contentStyle={{ fontSize: '11px' }} />
+                                <Tooltip cursor={false} contentStyle={{ fontSize: '11px' }} />
                                 <Legend wrapperStyle={{ fontSize: '10px' }} />
                                 <Bar dataKey="inProgress" name="In Progress" fill="#FCD34D" stackId="a" />
                                 <Bar dataKey="completed" name="Completed" fill="#10B981" stackId="a" />
@@ -548,6 +548,7 @@ const SalesManagerDashboard = () => {
                                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                                 <YAxis tick={{ fontSize: 10 }} tickFormatter={formatCompactCurrency} />
                                 <Tooltip
+                                    cursor={false}
                                     content={({ active, payload, label }) => {
                                         if (active && payload && payload.length) {
                                             const data = payload[0].payload;

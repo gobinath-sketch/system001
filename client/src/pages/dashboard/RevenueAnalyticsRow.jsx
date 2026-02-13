@@ -108,7 +108,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         position: 'relative'
     };
 
-    const [selectedYear, setSelectedYear] = useState(2026); // Default to current year
+    const [selectedYear, setSelectedYear] = useState(null);
     const [filter, setFilter] = useState('Yearly');
     const [filteredData, setFilteredData] = useState({
         achievedRevenue: 0,
@@ -136,15 +136,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         opp.commonDetails?.year || new Date(opp.createdAt).getFullYear()
     ))].filter(year => !isNaN(year) && year > 0).sort((a, b) => b - a);
 
-    // Update selected year when opportunities load
-    useEffect(() => {
-        if (allOpps.length > 0 && availableYears.length > 0) {
-            const latestYear = availableYears[0];
-            if (!isNaN(latestYear) && latestYear !== selectedYear) {
-                setSelectedYear(latestYear);
-            }
-        }
-    }, [allOpps.length]); // Only run when allOpps length changes
+    const activeYear = selectedYear && availableYears.includes(selectedYear)
+        ? selectedYear
+        : (availableYears[0] || null);
 
     // Helper to get month index from name or number
     const getMonthIndex = (month) => {
@@ -157,6 +151,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
     // Filter Logic
     useEffect(() => {
+        if (!activeYear) return;
+
         let targetFactor = 1;
 
         // Filter Opportunities by Year and Time Period
@@ -165,7 +161,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             const oppYear = opp.commonDetails?.year || new Date(opp.createdAt).getFullYear();
 
             // Filter by selected year
-            if (oppYear !== selectedYear) return false;
+            if (oppYear !== activeYear) return false;
 
             // If Yearly filter, include all from this year
             if (filter === 'Yearly') {
@@ -289,7 +285,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             typeData
         });
 
-    }, [allOpps, selectedYear, filter, yearlyTarget]);
+    }, [allOpps, activeYear, filter, yearlyTarget]);
 
     const diff = filteredData.adjustedTarget - filteredData.achievedRevenue;
     const isPositive = diff <= 0;
@@ -306,7 +302,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                     <div className="flex gap-2">
                         {/* Year Selector */}
                         <select
-                            value={selectedYear}
+                            value={activeYear || ''}
                             onChange={(e) => setSelectedYear(Number(e.target.value))}
                             className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500"
                         >
@@ -332,8 +328,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                     </div>
                 </div>
 
-                <div className="flex-1 w-full min-h-0 border-b border-gray-100 pb-1 mb-1">
-                    <ResponsiveContainer width="100%" height="90%" minWidth={0} minHeight={0}>
+                <div className="flex-1 w-full min-h-[220px] border-b border-gray-100 pb-1 mb-1">
+                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
                         <BarChart
                             data={[
                                 {
@@ -383,6 +379,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                 tickLine={{ stroke: '#6b7280' }}
                             />
                             <Tooltip
+                                cursor={false}
                                 formatter={(value) => {
                                     if (currency === 'INR') {
                                         return `₹${value.toLocaleString('en-IN')}`; // Already INR
@@ -427,26 +424,29 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             {/* 2. Revenue by Technology (LIST FORMAT) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <h3 className="text-sm font-bold text-gray-800 mb-3">Revenue by Technology</h3>
-                <div className="flex-1 overflow-auto flex flex-col justify-between">
-                    <div className="flex-1 flex flex-col justify-between">
+                <div className="flex-1 min-h-0">
+                    <div
+                        className="h-full grid gap-1.5"
+                        style={{ gridTemplateRows: `repeat(${Math.max(filteredData.techData.length, 1)}, minmax(0, 1fr))` }}
+                    >
                         {filteredData.techData.map((tech, index) => (
                             <div
                                 key={index}
-                                className="flex items-center justify-between py-3 px-4 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors mb-1 last:mb-0"
+                                className="flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors min-h-0"
                             >
                                 <div className="flex items-center">
                                     {LOGO_MAP[tech.name] && (
                                         <img
                                             src={LOGO_MAP[tech.name]}
                                             alt={`${tech.name} logo`}
-                                            className="w-5 h-5 object-contain mr-3"
+                                            className="w-4 h-4 object-contain mr-2.5"
                                         />
                                     )}
-                                    <span className="font-semibold text-gray-800 text-sm">
+                                    <span className="font-semibold text-gray-800 text-[13px] leading-tight">
                                         {tech.name}
                                     </span>
                                 </div>
-                                <span className={`font-bold text-sm ${tech.value > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-gray-400'}`}>
                                     {formatMoney(tech.value)}
                                 </span>
                             </div>
@@ -458,9 +458,13 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             {/* 3. Revenue by Opportunity Type (PIE CHART) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <h3 className="text-sm font-bold text-gray-800 mb-2">Revenue by Opportunity Type</h3>
-                <div className="flex-1 min-h-0">
-                    {filteredData.typeData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+                <div className="flex-1 min-h-[240px]">
+                    {allOpps.length === 0 ? (
+                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                            <p>Loading revenue data...</p>
+                        </div>
+                    ) : filteredData.typeData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
                             <PieChart>
                                 <defs>
                                     <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="180%">
@@ -482,8 +486,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     data={filteredData.typeData}
                                     cx="50%"
                                     cy="52%"
-                                    innerRadius={70}
-                                    outerRadius={100}
+                                    innerRadius={60}
+                                    outerRadius={92}
                                     paddingAngle={0}
                                     dataKey="value"
                                     stroke="none"
@@ -501,8 +505,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     data={filteredData.typeData}
                                     cx="50%"
                                     cy="50%"
-                                    innerRadius={70}
-                                    outerRadius={100}
+                                    innerRadius={60}
+                                    outerRadius={92}
                                     paddingAngle={0}
                                     dataKey="value"
                                     stroke="none"
@@ -515,7 +519,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                         />
                                     ))}
                                 </Pie>
-                                <Tooltip content={<CustomTooltip formatMoney={formatMoney} />} />
+                                <Tooltip cursor={false} content={<CustomTooltip formatMoney={formatMoney} />} />
                                 <Legend
                                     layout="horizontal"
                                     verticalAlign="bottom"

@@ -190,7 +190,7 @@ const ManagerDashboard = ({ user: userProp }) => {
                                         height={80}
                                     />
                                     <YAxis tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}K`} />
-                                    <Tooltip formatter={(value) => `₹${value.toLocaleString()}`} />
+                                    <Tooltip cursor={false} formatter={(value) => `₹${value.toLocaleString()}`} />
                                     <Legend />
                                     <Bar dataKey="target" name="Target" fill="#FCD34D" />
                                     <Bar dataKey="achieved" name="Achieved" fill="#1E40AF" />

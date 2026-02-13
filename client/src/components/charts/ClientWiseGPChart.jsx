@@ -175,7 +175,7 @@ const ClientWiseGPChart = () => {
                             tickFormatter={formatCurrency}
                             tick={{ fontSize: 12 }}
                         />
-                        <Tooltip content={<CustomTooltip />} />
+                        <Tooltip cursor={false} content={<CustomTooltip />} />
                         <Legend
                             wrapperStyle={{ paddingTop: '20px' }}
                             iconType="rect"

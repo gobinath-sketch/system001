@@ -121,7 +121,7 @@ const DeliveryDashboard = () => {
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} allowDecimals={false} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                                    cursor={{ fill: '#F3F4F6' }}
+                                    cursor={false}
                                 />
                                 <Bar dataKey="count" fill="#003D7A" radius={[4, 4, 0, 0]} barSize={40} />
                             </BarChart>
@@ -139,6 +139,7 @@ const DeliveryDashboard = () => {
                                 <XAxis type="number" hide />
                                 <YAxis type="category" dataKey="name" width={100} axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#374151' }} />
                                 <Tooltip
+                                    cursor={false}
                                     formatter={(value) => [formatMoney(value), 'Spend']}
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                                 />
@@ -159,6 +160,7 @@ const DeliveryDashboard = () => {
                             <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
                             <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} domain={[0, 'auto']} />
                             <Tooltip
+                                cursor={false}
                                 formatter={(value) => [`${value}%`, 'Avg GP']}
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
                             />
