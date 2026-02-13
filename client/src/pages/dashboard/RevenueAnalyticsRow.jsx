@@ -19,15 +19,19 @@ const shiftColor = (hex, amount) => {
 };
 
 const ThreeDBar = (props) => {
-    const { x, y, width, height, fill } = props;
+    const { x, y, width, height, fill, payload } = props;
 
     if (height <= 0 || width <= 0) return null;
 
     const depth = Math.min(10, Math.max(5, width * 0.15));
     const topLift = Math.min(8, Math.max(4, depth * 0.7));
-    const front = fill || '#2563eb';
-    const topFace = shiftColor(front, 30);
-    const sideFace = shiftColor(front, -35);
+    const front = payload.color || fill || '#2563eb';
+    // Use the same color for top/side if user wants "same color front to back", 
+    // but usually 3D needs shading. 
+    // "give it as same color which is in front to the back" -> imply no shading or same base color.
+    // Let's use slight shading but based on the correct color.
+    const topFace = front;
+    const sideFace = front;
     const baseShadow = 'rgba(0,0,0,0.12)';
 
     return (
@@ -60,7 +64,7 @@ const ThreeDBar = (props) => {
                 fill={sideFace}
             />
 
-            <rect x={x} y={y} width={width} height={height} rx={4} fill={front} />
+            <rect x={x} y={y} width={width} height={height} rx={4} fill={fill} />
 
             <rect
                 x={x + 2}
@@ -380,13 +384,19 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                 {
                                     name: 'Difference',
                                     value: currency === 'INR'
-                                        ? Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue)
-                                        : Math.max(0, (filteredData.adjustedTarget - filteredData.achievedRevenue)) / EXCHANGE_RATE,
-                                    fill: '#ef4444'
+                                        ? Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget)
+                                        : Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget) / EXCHANGE_RATE,
+                                    fill: (filteredData.achievedRevenue - filteredData.adjustedTarget) >= 0 ? '#16a34a' : '#ef4444'
                                 }
                             ]}
                             margin={{ top: 30, right: 36, left: 6, bottom: 5 }}
                         >
+                            <defs>
+                                <linearGradient id="achievedGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#d946ef" />
+                                    <stop offset="100%" stopColor="#8b5cf6" />
+                                </linearGradient>
+                            </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#d1d5db" />
                             <XAxis
                                 dataKey="name"
@@ -426,8 +436,11 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                 {
                                     [
                                         { name: 'Target', fill: '#2563eb' },
-                                        { name: 'Achieved', fill: '#16a34a' },
-                                        { name: 'Difference', fill: '#ef4444' }
+                                        { name: 'Achieved', fill: 'url(#achievedGradient)', color: '#d946ef' },
+                                        {
+                                            name: 'Difference',
+                                            fill: (filteredData.achievedRevenue - filteredData.adjustedTarget) >= 0 ? '#16a34a' : '#ef4444'
+                                        }
                                     ].map((entry, index) => (
                                         <Cell key={`cell-${index}`} fill={entry.fill} />
                                     ))
@@ -441,16 +454,25 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                 <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Target</p>
-                        <p className="font-bold text-blue-600 truncate text-lg" title={formatMoney(filteredData.adjustedTarget)}>{formatMoney(filteredData.adjustedTarget)}</p>
+                        <p className="font-bold text-blue-600 truncate text-lg" title={formatMoney(filteredData.adjustedTarget)}>
+                            {formatMoney(filteredData.adjustedTarget)} <span className="text-xs text-gray-500">(100%)</span>
+                        </p>
                     </div>
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Achieved</p>
-                        <p className="font-bold text-green-600 truncate text-lg" title={formatMoney(filteredData.achievedRevenue)}>{formatMoney(filteredData.achievedRevenue)}</p>
+                        <p className="font-bold truncate text-lg" style={{ color: '#d946ef' }} title={formatMoney(filteredData.achievedRevenue)}>
+                            {formatMoney(filteredData.achievedRevenue)} <span className="text-xs text-gray-500">
+                                ({filteredData.adjustedTarget > 0 ? ((filteredData.achievedRevenue / filteredData.adjustedTarget) * 100).toFixed(0) : 0}%)
+                            </span>
+                        </p>
                     </div>
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Difference</p>
-                        <p className="font-bold text-red-500 truncate text-lg" title={formatMoney(Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue))}>
-                            {formatMoney(Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue))}
+                        <p className={`font-bold truncate text-lg ${filteredData.achievedRevenue >= filteredData.adjustedTarget ? 'text-green-600' : 'text-red-500'}`}
+                            title={formatMoney(Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget))}>
+                            {formatMoney(Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget))} <span className="text-xs text-gray-500">
+                                ({filteredData.adjustedTarget > 0 ? ((Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget) / filteredData.adjustedTarget) * 100).toFixed(0) : 0}%)
+                            </span>
                         </p>
                     </div>
                 </div>
