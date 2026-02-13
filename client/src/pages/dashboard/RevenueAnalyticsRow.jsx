@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MoreHorizontal } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const shiftColor = (hex, amount) => {
@@ -114,7 +115,11 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         achievedRevenue: 0,
         adjustedTarget: 0,
         techData: [],
-        typeData: []
+        achievedRevenue: 0,
+        adjustedTarget: 0,
+        techData: [],
+        typeData: [],
+        emergingBreakdown: {} // New state for breakdown
     });
 
     // Color Palette
@@ -208,24 +213,51 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         const achievedRev = filteredOpps.reduce((sum, opp) => sum + (opp.poValue || 0), 0);
 
 
-        // Technology Distribution (List format with all technologies)
+        // Technology Distribution (List format with grouping)
         const techMap = {};
-        // Initialize all technologies with 0
+        const emergingBreakdown = {};
+        const EMERGING_SUB_TECHS = ['Artificial Intelligence', 'Machine Learning', 'Data Science', 'Robotics'];
+
+        // Initialize standard technologies with 0
         TECHNOLOGIES.forEach(tech => {
             techMap[tech] = 0;
         });
+        // Initialize 'Other technologies'
+        techMap['Other technologies'] = 0;
 
         filteredOpps.forEach(opp => {
             let tech = opp.typeSpecificDetails?.technology;
-            if (tech && TECHNOLOGIES.includes(tech)) {
-                techMap[tech] = (techMap[tech] || 0) + (opp.poValue || 0);
+            const value = opp.poValue || 0;
+
+            if (value > 0) {
+                // Case 1: Emerging Tech Sub-categories
+                if (tech && EMERGING_SUB_TECHS.includes(tech)) {
+                    techMap['Emerging technologies'] = (techMap['Emerging technologies'] || 0) + value;
+                    emergingBreakdown[tech] = (emergingBreakdown[tech] || 0) + value;
+                }
+                // Case 2: Explicit "Emerging technologies"
+                else if (tech === 'Emerging technologies') {
+                    techMap['Emerging technologies'] = (techMap['Emerging technologies'] || 0) + value;
+                    emergingBreakdown['General Emerging'] = (emergingBreakdown['General Emerging'] || 0) + value;
+                }
+                // Case 3: Standard Defined Technologies
+                else if (tech && TECHNOLOGIES.includes(tech)) {
+                    techMap[tech] = (techMap[tech] || 0) + value;
+                }
+                // Case 4: Everything else goes to "Other technologies"
+                else if (tech) {
+                    techMap['Other technologies'] = (techMap['Other technologies'] || 0) + value;
+                }
             }
         });
 
-        const techData = TECHNOLOGIES.map(tech => ({
-            name: tech,
-            value: techMap[tech]
-        }));
+        const techData = [
+            ...TECHNOLOGIES.map(tech => ({
+                name: tech,
+                value: techMap[tech]
+            })),
+            { name: 'Other technologies', value: techMap['Other technologies'] }
+        ].filter(item => item.value > 0 || TECHNOLOGIES.includes(item.name)); // Keep standard techs even if 0, but hide 'Other' if 0
 
 
 
@@ -281,8 +313,10 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         setFilteredData({
             achievedRevenue: achievedRev,
             adjustedTarget: yearlyTarget * targetFactor,
+
             techData,
-            typeData
+            typeData,
+            emergingBreakdown
         });
 
     }, [allOpps, activeYear, filter, yearlyTarget]);
@@ -429,26 +463,41 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                         {[...filteredData.techData]
                             .sort((a, b) => (b.value || 0) - (a.value || 0))
                             .map((tech, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                            >
-                                <div className="flex items-center">
-                                    {LOGO_MAP[tech.name] && (
-                                        <img
-                                            src={LOGO_MAP[tech.name]}
-                                            alt={`${tech.name} logo`}
-                                            className="w-4 h-4 object-contain mr-2.5"
-                                        />
-                                    )}
-                                    <span className="font-semibold text-black text-[13px] leading-tight">
-                                        {tech.name}
+                                <div
+                                    key={index}
+                                    className="group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
+                                >
+                                    <div className="flex items-center">
+                                        {LOGO_MAP[tech.name] ? (
+                                            <img
+                                                src={LOGO_MAP[tech.name]}
+                                                alt={`${tech.name} logo`}
+                                                className="w-4 h-4 object-contain mr-2.5"
+                                            />
+                                        ) : tech.name === 'Other technologies' ? (
+                                            <MoreHorizontal size={16} className="text-gray-500 mr-2.5" />
+                                        ) : null}
+                                        <span className="font-semibold text-black text-[13px] leading-tight">
+                                            {tech.name}
+                                        </span>
+
+                                        {/* Hover Breakdown for Emerging Technologies */}
+                                        {tech.name === 'Emerging technologies' && filteredData.emergingBreakdown && Object.keys(filteredData.emergingBreakdown).length > 0 && (
+                                            <div className="absolute left-full top-0 ml-2 z-50 hidden group-hover:block bg-white p-3 border border-gray-200 shadow-xl rounded-lg min-w-[200px]">
+                                                <p className="font-bold text-xs text-black mb-2 border-b pb-1">Breakdown</p>
+                                                {Object.entries(filteredData.emergingBreakdown).map(([subTech, val]) => (
+                                                    <div key={subTech} className="flex justify-between text-xs mb-1">
+                                                        <span className="text-gray-600 mr-2">{subTech}:</span>
+                                                        <span className="font-bold text-black">{formatMoney(val)}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-black font-bold'}`}>
+                                        {formatMoney(tech.value)}
                                     </span>
                                 </div>
-                                <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-black font-bold'}`}>
-                                    {formatMoney(tech.value)}
-                                </span>
-                            </div>
                             ))}
                     </div>
                 </div>
