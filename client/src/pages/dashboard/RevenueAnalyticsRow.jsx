@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, ChevronRight, ChevronLeft } from 'lucide-react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const shiftColor = (hex, amount) => {
@@ -121,6 +121,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         typeData: [],
         emergingBreakdown: {} // New state for breakdown
     });
+
+    // State for toggling breakdown view
+    const [selectedTechCategory, setSelectedTechCategory] = useState(null); // 'Emerging technologies' or 'Other technologies' or null
 
     // Color Palette
     // Color Palette - Specific Mapping
@@ -456,66 +459,89 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             {/* 2. Revenue by Technology (LIST FORMAT) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <h3 className="text-sm font-bold text-black mb-3">Revenue by Technology</h3>
-                <div className={`flex-1 min-h-0 ${filteredData.techData.length > 9 ? 'overflow-y-auto pr-1' : 'overflow-y-hidden'}`}>
-                    <div className="space-y-1.5">
-                        {[...filteredData.techData]
-                            .sort((a, b) => (b.value || 0) - (a.value || 0))
-                            .map((tech, index) => (
-                                <div
-                                    key={index}
-                                    className="group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
-                                >
-                                    <div className="flex items-center">
-                                        {LOGO_MAP[tech.name] ? (
-                                            <img
-                                                src={LOGO_MAP[tech.name]}
-                                                alt={`${tech.name} logo`}
-                                                className="w-4 h-4 object-contain mr-2.5"
-                                            />
-                                        ) : tech.name === 'Other technologies' ? (
-                                            <MoreHorizontal size={16} className="text-gray-500 mr-2.5" />
-                                        ) : null}
-                                        <span className="font-semibold text-black text-[13px] leading-tight">
-                                            {tech.name}
-                                        </span>
 
-                                        {/* Hover Breakdown for Emerging Technologies */}
-                                        {tech.name === 'Emerging technologies' && filteredData.emergingBreakdown && Object.keys(filteredData.emergingBreakdown).length > 0 && (
-                                            <div className="absolute left-full top-0 ml-2 z-50 hidden group-hover:block bg-white p-3 border border-gray-200 shadow-xl rounded-lg min-w-[200px]">
-                                                <p className="font-bold text-xs text-black mb-2 border-b pb-1">Breakdown</p>
-                                                {Object.entries(filteredData.emergingBreakdown).map(([subTech, val]) => (
-                                                    <div key={subTech} className="flex justify-between text-xs mb-1">
-                                                        <span className="text-gray-600 mr-2">{subTech}:</span>
-                                                        <span className="font-bold text-black">{formatMoney(val)}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-
-                                        {/* Hover Breakdown for Other Technologies */}
-                                        {tech.name === 'Other technologies' && filteredData.otherBreakdown && Object.keys(filteredData.otherBreakdown).length > 0 && (
-                                            <div className="absolute left-full top-0 ml-2 z-50 hidden group-hover:block bg-white p-3 border border-gray-200 shadow-xl rounded-lg min-w-[200px]">
-                                                <p className="font-bold text-xs text-black mb-2 border-b pb-1">Breakdown</p>
-                                                {Object.entries(filteredData.otherBreakdown).map(([subTech, val]) => (
-                                                    <div key={subTech} className="flex justify-between text-xs mb-1">
-                                                        <span className="text-gray-600 mr-2">{subTech}:</span>
-                                                        <span className="font-bold text-black">{formatMoney(val)}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
+                {selectedTechCategory ? (
+                    // Breakdown View
+                    <div className="flex-1 flex flex-col min-h-0">
+                        <div className="flex items-center mb-2">
+                            <button
+                                onClick={() => setSelectedTechCategory(null)}
+                                className="mr-2 p-1 hover:bg-gray-100 rounded-full transition-colors"
+                            >
+                                <ChevronLeft size={16} className="text-gray-600" />
+                            </button>
+                            <span className="font-bold text-sm text-primary-blue">{selectedTechCategory}</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto pr-1">
+                            <div className="space-y-1.5">
+                                {Object.entries(
+                                    selectedTechCategory === 'Emerging technologies'
+                                        ? filteredData.emergingBreakdown
+                                        : filteredData.otherBreakdown
+                                ).map(([subTech, val]) => (
+                                    <div key={subTech} className="flex justify-between items-center px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                                        <span className="text-gray-700 text-xs font-medium">{subTech}</span>
+                                        <span className="font-bold text-black text-xs">{formatMoney(val)}</span>
                                     </div>
-                                    <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-black font-bold'}`}>
-                                        {formatMoney(tech.value)}
-                                    </span>
-                                </div>
-                            ))}
+                                ))}
+                                {Object.keys(
+                                    selectedTechCategory === 'Emerging technologies'
+                                        ? filteredData.emergingBreakdown
+                                        : filteredData.otherBreakdown
+                                ).length === 0 && (
+                                        <p className="text-xs text-gray-500 text-center py-4">No specific data available.</p>
+                                    )}
+                            </div>
+                        </div>
                     </div>
-                </div>
+                ) : (
+                    // Main List View
+                    <div className={`flex-1 min-h-0 ${filteredData.techData.length > 9 ? 'overflow-y-auto pr-1' : 'overflow-y-hidden'}`}>
+                        <div className="space-y-1.5">
+                            {[...filteredData.techData]
+                                .sort((a, b) => (b.value || 0) - (a.value || 0))
+                                .map((tech, index) => (
+                                    <div
+                                        key={index}
+                                        onClick={() => {
+                                            if (tech.name === 'Emerging technologies' || tech.name === 'Other technologies') {
+                                                setSelectedTechCategory(tech.name);
+                                            }
+                                        }}
+                                        className={`group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer hover:ring-1 hover:ring-primary-blue' : ''
+                                            }`}
+                                    >
+                                        <div className="flex items-center">
+                                            {LOGO_MAP[tech.name] ? (
+                                                <img
+                                                    src={LOGO_MAP[tech.name]}
+                                                    alt={`${tech.name} logo`}
+                                                    className="w-4 h-4 object-contain mr-2.5"
+                                                />
+                                            ) : tech.name === 'Other technologies' ? (
+                                                <MoreHorizontal size={16} className="text-gray-500 mr-2.5" />
+                                            ) : null}
+                                            <span className="font-semibold text-black text-[13px] leading-tight">
+                                                {tech.name}
+                                            </span>
+
+                                            {/* Indicators for clickable items */}
+                                            {(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') && (
+                                                <ChevronRight size={14} className="ml-1 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                            )}
+                                        </div>
+                                        <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-black font-bold'}`}>
+                                            {formatMoney(tech.value)}
+                                        </span>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+                )}
             </div>
 
             {/* 3. Revenue by Opportunity Closure (PIE CHART) */}
-            <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
+            < div style={glassCardStyle} className="p-4 flex flex-col h-[350px]" >
                 <h3 className="text-sm font-bold text-black mb-2">Revenue by Opportunity Closure</h3>
                 <div className="flex-1 min-h-[240px]">
                     {allOpps.length === 0 ? (
@@ -593,8 +619,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                         </div>
                     )}
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
