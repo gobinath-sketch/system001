@@ -216,48 +216,43 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         // Technology Distribution (List format with grouping)
         const techMap = {};
         const emergingBreakdown = {};
-        const EMERGING_SUB_TECHS = ['Artificial Intelligence', 'Machine Learning', 'Data Science', 'Robotics'];
 
         // Initialize standard technologies with 0
         TECHNOLOGIES.forEach(tech => {
-            techMap[tech] = 0;
+            // Emerging technologies is now a catch-all bucket, so we handle it dynamically
+            if (tech !== 'Emerging technologies') {
+                techMap[tech] = 0;
+            }
         });
-        // Initialize 'Other technologies'
-        techMap['Other technologies'] = 0;
+        // Ensure Emerging technologies is initialized
+        techMap['Emerging technologies'] = 0;
 
         filteredOpps.forEach(opp => {
             let tech = opp.typeSpecificDetails?.technology;
             const value = opp.poValue || 0;
 
-            if (value > 0) {
-                // Case 1: Emerging Tech Sub-categories
-                if (tech && EMERGING_SUB_TECHS.includes(tech)) {
-                    techMap['Emerging technologies'] = (techMap['Emerging technologies'] || 0) + value;
-                    emergingBreakdown[tech] = (emergingBreakdown[tech] || 0) + value;
-                }
-                // Case 2: Explicit "Emerging technologies"
-                else if (tech === 'Emerging technologies') {
-                    techMap['Emerging technologies'] = (techMap['Emerging technologies'] || 0) + value;
-                    emergingBreakdown['General Emerging'] = (emergingBreakdown['General Emerging'] || 0) + value;
-                }
-                // Case 3: Standard Defined Technologies
-                else if (tech && TECHNOLOGIES.includes(tech)) {
+            if (value > 0 && tech) {
+                // If technology is standard (and not "Emerging technologies" literal), add to its bucket
+                if (TECHNOLOGIES.includes(tech) && tech !== 'Emerging technologies') {
                     techMap[tech] = (techMap[tech] || 0) + value;
-                }
-                // Case 4: Everything else goes to "Other technologies"
-                else if (tech) {
-                    techMap['Other technologies'] = (techMap['Other technologies'] || 0) + value;
+                } else {
+                    // Everything else (Entered manual text, or literal "Emerging technologies") goes to Emerging Bucket
+                    techMap['Emerging technologies'] = (techMap['Emerging technologies'] || 0) + value;
+
+                    // Add to breakdown if it's not the literal category name
+                    const breakdownName = tech === 'Emerging technologies' ? 'Unspecified Emerging' : tech;
+                    emergingBreakdown[breakdownName] = (emergingBreakdown[breakdownName] || 0) + value;
                 }
             }
         });
 
         const techData = [
-            ...TECHNOLOGIES.map(tech => ({
+            ...TECHNOLOGIES.filter(t => t !== 'Emerging technologies').map(tech => ({
                 name: tech,
                 value: techMap[tech]
             })),
-            { name: 'Other technologies', value: techMap['Other technologies'] }
-        ].filter(item => item.value > 0 || TECHNOLOGIES.includes(item.name)); // Keep standard techs even if 0, but hide 'Other' if 0
+            { name: 'Emerging technologies', value: techMap['Emerging technologies'] }
+        ].filter(item => item.value > 0 || (TECHNOLOGIES.includes(item.name) && item.name !== 'Emerging technologies')); // Keep standard techs even if 0
 
 
 

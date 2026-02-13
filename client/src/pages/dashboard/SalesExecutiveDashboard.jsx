@@ -268,11 +268,11 @@ const SalesExecutiveDashboard = ({ user }) => {
                         </div>
                         <button
                             onClick={() => setShowDocModal(true)}
-                            className="text-xs text-black font-bold hover:text-primary-blue transition-colors"
+                            className="px-3 py-1 bg-gray-100 rounded-md text-xs font-bold text-black border border-gray-200 hover:bg-gray-200 transition-colors"
                         >
                             <div className="flex items-center gap-1">
                                 <span>View</span>
-                                <ChevronRight size={16} />
+                                <ChevronRight size={14} />
                             </div>
                         </button>
                     </div>
@@ -313,13 +313,13 @@ const SalesExecutiveDashboard = ({ user }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                     {/* Left: otal Opportunities Ongoing / Completed (Count) */}
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
-                        <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
+                        <h3 className="text-base font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
                         <div className="flex-1 w-full min-h-[205px]">
                             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={205}>
                                 <BarChart data={analyticsData.typeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} />
                                     <XAxis type="number" hide />
-                                    <YAxis dataKey="type" type="category" width={112} tick={{ fontSize: 10 }} />
+                                    <YAxis dataKey="type" type="category" width={112} tick={{ fontSize: 12, fill: '#000000', fontWeight: 'bold' }} />
                                     <Tooltip cursor={false} />
                                     <Bar dataKey="count" name="Opportunities" fill={brandBlue} barSize={15} radius={[0, 4, 4, 0]} label={{ position: 'right', fill: brandBlue, fontSize: 10 }} />
                                 </BarChart>

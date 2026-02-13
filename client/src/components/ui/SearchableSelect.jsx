@@ -69,7 +69,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
             </div>
 
             {isOpen && !disabled && filteredOptions.length > 0 && (
-                <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-[100] w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                     {filteredOptions.map((option, index) => {
                         const isString = typeof option === 'string';
                         const label = isString ? option : option.label;
