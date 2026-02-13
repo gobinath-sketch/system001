@@ -120,14 +120,14 @@ const SalesExecutiveDashboard = ({ user }) => {
                 {Icon && <Icon size={20} className={iconColor} />}
             </div>
             <div>
-                <p className="text-xs text-gray-500 font-medium">{title}</p>
-                <p className="text-lg font-bold text-gray-800">{value}</p>
-                {subtext && <p className="text-[10px] text-gray-400">{subtext}</p>}
+                <p className="text-xs text-black font-bold">{title}</p>
+                <p className="text-lg font-bold text-black">{value}</p>
+                {subtext && <p className="text-[10px] text-black font-bold">{subtext}</p>}
             </div>
         </div>
     );
 
-    if (loading) return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
+    if (loading) return <div className="p-8 text-center text-black font-bold">Loading Dashboard...</div>;
 
     // Chart Theme Colors - Brand Colors
     const brandBlue = '#003D7A';
@@ -171,9 +171,9 @@ const SalesExecutiveDashboard = ({ user }) => {
                             {isAchieved ? <CheckCircle size={16} className="text-green-600" /> : <Target size={16} className="text-red-600" />}
                         </div>
                         <div>
-                            <p className="text-xs text-gray-500 font-medium">Revenue Target</p>
+                            <p className="text-xs text-black font-bold">Revenue Target</p>
                             <div className="flex items-baseline space-x-2">
-                                <h3 className="text-lg font-bold text-gray-800">{formatMoney(achieved)}</h3>
+                                <h3 className="text-lg font-bold text-black">{formatMoney(achieved)}</h3>
                                 {isAchieved && <span className="text-lg">😊</span>}
                             </div>
                         </div>
@@ -181,7 +181,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                 </div>
 
                 <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-gray-500">
+                    <div className="flex justify-between text-[10px] text-black font-bold">
                         <span>Progress</span>
                         <span>Target: {formatMoney(target)}</span>
                     </div>
@@ -219,20 +219,20 @@ const SalesExecutiveDashboard = ({ user }) => {
                         <div className="p-1.5 rounded-full bg-blue-100">
                             <Users size={16} className="text-blue-600" />
                         </div>
-                        <span className="text-xs text-gray-500 font-medium">Clients (Total: {clientHealth.active + clientHealth.mid + clientHealth.inactive})</span>
+                        <span className="text-sm text-black font-bold">Clients (Total: {clientHealth.active + clientHealth.mid + clientHealth.inactive})</span>
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                            <p className="text-lg font-bold text-green-600">{clientHealth.active}</p>
-                            <p className="text-[10px] text-gray-400">Active</p>
+                            <p className="text-2xl font-bold text-green-600">{clientHealth.active}</p>
+                            <p className="text-xs text-black font-bold">Active</p>
                         </div>
                         <div className="border-l border-r border-gray-100">
-                            <p className="text-lg font-bold text-yellow-600">{clientHealth.mid}</p>
-                            <p className="text-[10px] text-gray-400">Mid</p>
+                            <p className="text-2xl font-bold text-yellow-600">{clientHealth.mid}</p>
+                            <p className="text-xs text-black font-bold">Mid</p>
                         </div>
                         <div>
-                            <p className="text-lg font-bold text-red-600">{clientHealth.inactive}</p>
-                            <p className="text-[10px] text-gray-400">Inactive</p>
+                            <p className="text-2xl font-bold text-red-600">{clientHealth.inactive}</p>
+                            <p className="text-xs text-black font-bold">Inactive</p>
                         </div>
                     </div>
                 </div>
@@ -243,16 +243,16 @@ const SalesExecutiveDashboard = ({ user }) => {
                         <div className="p-1.5 rounded-full bg-purple-100">
                             <Briefcase size={16} className="text-purple-600" />
                         </div>
-                        <span className="text-xs text-gray-500 font-medium">Opportunities</span>
+                        <span className="text-sm text-black font-bold">Opportunities</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-center">
                         <div>
-                            <p className="text-lg font-bold text-yellow-600">{stats?.inProgressOpportunities || 0}</p>
-                            <p className="text-[10px] text-gray-400">In Progress</p>
+                            <p className="text-2xl font-bold text-yellow-600">{stats?.inProgressOpportunities || 0}</p>
+                            <p className="text-xs text-black font-bold">In Progress</p>
                         </div>
                         <div className="border-l border-gray-100">
-                            <p className="text-lg font-bold text-green-600">{stats?.completedOpportunities || 0}</p>
-                            <p className="text-[10px] text-gray-400">Completed</p>
+                            <p className="text-2xl font-bold text-green-600">{stats?.completedOpportunities || 0}</p>
+                            <p className="text-xs text-black font-bold">Completed</p>
                         </div>
                     </div>
                 </div>
@@ -264,11 +264,11 @@ const SalesExecutiveDashboard = ({ user }) => {
                             <div className="p-1.5 rounded-full bg-indigo-100">
                                 <CheckCircle size={16} className="text-indigo-600" />
                             </div>
-                            <span className="text-xs text-gray-500 font-medium">Billing</span>
+                            <span className="text-sm text-black font-bold">Billing</span>
                         </div>
                         <button
                             onClick={() => setShowDocModal(true)}
-                            className="text-[10px] text-gray-400 hover:text-primary-blue transition-colors"
+                            className="text-xs text-black font-bold hover:text-primary-blue transition-colors"
                         >
                             <div className="flex items-center gap-1">
                                 <span>View</span>
@@ -278,22 +278,22 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
-                            <p className="text-lg font-bold text-gray-800">
+                            <p className="text-2xl font-bold text-black">
                                 {allOpps.length}
                             </p>
-                            <p className="text-[10px] text-gray-400">Total</p>
+                            <p className="text-xs text-black font-bold">Total</p>
                         </div>
                         <div className="border-l border-gray-100">
-                            <p className="text-lg font-bold text-blue-600">
+                            <p className="text-2xl font-bold text-blue-600">
                                 {allOpps.filter(opp => opp.poDocument).length}
                             </p>
-                            <p className="text-[10px] text-gray-400">POs</p>
+                            <p className="text-xs text-black font-bold">POs</p>
                         </div>
                         <div className="border-l border-gray-100">
-                            <p className="text-lg font-bold text-indigo-600">
+                            <p className="text-2xl font-bold text-indigo-600">
                                 {allOpps.filter(opp => opp.invoiceDocument).length}
                             </p>
-                            <p className="text-[10px] text-gray-400">Invoices</p>
+                            <p className="text-xs text-black font-bold">Invoices</p>
                         </div>
                     </div>
                 </div>
@@ -313,7 +313,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                     {/* Left: Total Opportunities by Type (Count) */}
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
-                        <h3 className="text-sm font-bold text-gray-800 mb-3 md:mb-4">Total Opportunities by Type</h3>
+                        <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Total Opportunities by Type</h3>
                         <div className="flex-1 w-full min-h-[205px]">
                             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={205}>
                                 <BarChart data={analyticsData.typeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
@@ -329,7 +329,7 @@ const SalesExecutiveDashboard = ({ user }) => {
 
                     {/* Right: Top 5 Clients by Revenue (using PO Amount) */}
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
-                        <h3 className="text-sm font-bold text-gray-800 mb-3 md:mb-4">Top 5 Clients by Revenue</h3>
+                        <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Top 5 Clients by Revenue</h3>
                         <div className="flex-1 overflow-hidden">
                             {(() => {
                                 // Calculate top 5 clients using PO Amount (poValue)
@@ -347,7 +347,7 @@ const SalesExecutiveDashboard = ({ user }) => {
 
                                 if (topClients.length === 0) {
                                     return (
-                                        <div className="flex items-center justify-center h-full text-gray-400 text-sm">
+                                        <div className="flex items-center justify-center h-full text-black font-bold text-sm">
                                             No client data available
                                         </div>
                                     );
@@ -370,14 +370,14 @@ const SalesExecutiveDashboard = ({ user }) => {
                                                 className={`flex items-center justify-between px-3 py-2 rounded-lg transition-colors min-h-0 ${client.isPlaceholder ? 'bg-gray-50/60' : 'bg-gray-50 hover:bg-gray-100'}`}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm ${client.isPlaceholder ? 'bg-gray-200 text-gray-500' : 'bg-blue-100 text-blue-700'}`}>
+                                                    <div className={`flex items-center justify-center w-7 h-7 rounded-full font-bold text-sm ${client.isPlaceholder ? 'bg-gray-200 text-black' : 'bg-blue-100 text-blue-700'}`}>
                                                         {index + 1}
                                                     </div>
-                                                    <span className={`font-medium text-sm ${client.isPlaceholder ? 'text-gray-400' : 'text-gray-800'}`}>
+                                                    <span className={`font-bold text-sm ${client.isPlaceholder ? 'text-black font-bold' : 'text-black font-bold'}`}>
                                                         {client.name}
                                                     </span>
                                                 </div>
-                                                <span className={`font-bold text-sm ${client.isPlaceholder ? 'text-gray-400' : 'text-green-600'}`}>
+                                                <span className={`font-bold text-sm ${client.isPlaceholder ? 'text-black font-bold' : 'text-green-600'}`}>
                                                     {client.isPlaceholder ? '-' : formatMoney(client.revenue)}
                                                 </span>
                                             </div>

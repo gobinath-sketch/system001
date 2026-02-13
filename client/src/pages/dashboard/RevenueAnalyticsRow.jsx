@@ -78,12 +78,12 @@ const CustomTooltip = ({ active, payload, formatMoney }) => {
         const data = payload[0].payload;
         return (
             <div className="bg-white p-3 border border-gray-100 shadow-lg rounded-lg text-sm">
-                <p className="font-bold text-gray-800 mb-1">{data.name}</p>
-                <p className="text-gray-600 mb-0.5">
+                <p className="font-bold text-black mb-1">{data.name}</p>
+                <p className="text-black font-bold mb-0.5">
                     Revenue: <span className="font-semibold text-primary-blue">{formatMoney(data.value)}</span>
                 </p>
-                <p className="text-gray-500 text-xs">
-                    Count: <span className="font-medium text-gray-700">{data.count}</span> Opportunities
+                <p className="text-black font-bold text-xs">
+                    Count: <span className="font-medium text-black font-bold">{data.count}</span> Opportunities
                 </p>
             </div>
         );
@@ -298,13 +298,13 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             {/* 1. Revenue Summary Box */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-sm font-bold text-gray-800">Revenue Summary</h3>
+                    <h3 className="text-sm font-bold text-black">Revenue Summary</h3>
                     <div className="flex gap-2">
                         {/* Year Selector */}
                         <select
                             value={activeYear || ''}
                             onChange={(e) => setSelectedYear(Number(e.target.value))}
-                            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500"
+                            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500 text-black font-bold"
                         >
                             {availableYears.map(year => (
                                 <option key={year} value={year}>{year}</option>
@@ -315,7 +315,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                         <select
                             value={filter}
                             onChange={(e) => setFilter(e.target.value)}
-                            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500"
+                            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500 text-black font-bold"
                         >
                             <option value="Yearly">Yearly</option>
                             <option value="H1">H1 (Jan-Jun)</option>
@@ -355,9 +355,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#d1d5db" />
                             <XAxis
                                 dataKey="name"
-                                tick={{ fontSize: 12, fill: '#4b5563', fontWeight: 600 }}
-                                axisLine={{ stroke: '#6b7280' }}
-                                tickLine={{ stroke: '#6b7280' }}
+                                tick={{ fontSize: 12, fill: '#000000', fontWeight: 'bold' }}
+                                axisLine={{ stroke: '#000000' }}
+                                tickLine={{ stroke: '#000000' }}
                             />
                             <YAxis
                                 tickFormatter={(value) => {
@@ -374,9 +374,9 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     return `$${value}`;
                                 }}
                                 width={45}
-                                tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 600 }}
-                                axisLine={{ stroke: '#6b7280' }}
-                                tickLine={{ stroke: '#6b7280' }}
+                                tick={{ fontSize: 10, fill: '#000000', fontWeight: 'bold' }}
+                                axisLine={{ stroke: '#000000' }}
+                                tickLine={{ stroke: '#000000' }}
                             />
                             <Tooltip
                                 cursor={false}
@@ -405,15 +405,15 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                 {/* Numeric Summary Footer */}
                 <div className="grid grid-cols-3 gap-2 text-center">
                     <div>
-                        <p className="text-gray-500 text-xs font-semibold">Target</p>
+                        <p className="text-black font-bold text-xs font-semibold">Target</p>
                         <p className="font-bold text-blue-600 truncate text-lg" title={formatMoney(filteredData.adjustedTarget)}>{formatMoney(filteredData.adjustedTarget)}</p>
                     </div>
                     <div>
-                        <p className="text-gray-500 text-xs font-semibold">Achieved</p>
+                        <p className="text-black font-bold text-xs font-semibold">Achieved</p>
                         <p className="font-bold text-green-600 truncate text-lg" title={formatMoney(filteredData.achievedRevenue)}>{formatMoney(filteredData.achievedRevenue)}</p>
                     </div>
                     <div>
-                        <p className="text-gray-500 text-xs font-semibold">Remaining</p>
+                        <p className="text-black font-bold text-xs font-semibold">Remaining</p>
                         <p className="font-bold text-red-500 truncate text-lg" title={formatMoney(Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue))}>
                             {formatMoney(Math.max(0, filteredData.adjustedTarget - filteredData.achievedRevenue))}
                         </p>
@@ -423,7 +423,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
             {/* 2. Revenue by Technology (LIST FORMAT) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
-                <h3 className="text-sm font-bold text-gray-800 mb-3">Revenue by Technology</h3>
+                <h3 className="text-sm font-bold text-black mb-3">Revenue by Technology</h3>
                 <div className="flex-1 min-h-0">
                     <div
                         className="h-full grid gap-1.5"
@@ -442,11 +442,11 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                             className="w-4 h-4 object-contain mr-2.5"
                                         />
                                     )}
-                                    <span className="font-semibold text-gray-800 text-[13px] leading-tight">
+                                    <span className="font-semibold text-black text-[13px] leading-tight">
                                         {tech.name}
                                     </span>
                                 </div>
-                                <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                                <span className={`font-bold text-[13px] leading-tight ${tech.value > 0 ? 'text-green-600' : 'text-black font-bold'}`}>
                                     {formatMoney(tech.value)}
                                 </span>
                             </div>
@@ -457,10 +457,10 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
 
             {/* 3. Revenue by Opportunity Type (PIE CHART) */}
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
-                <h3 className="text-sm font-bold text-gray-800 mb-2">Revenue by Opportunity Type</h3>
+                <h3 className="text-sm font-bold text-black mb-2">Revenue by Opportunity Type</h3>
                 <div className="flex-1 min-h-[240px]">
                     {allOpps.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <div className="h-full flex flex-col items-center justify-center text-black font-bold">
                             <p>Loading revenue data...</p>
                         </div>
                     ) : filteredData.typeData.length > 0 ? (
@@ -529,7 +529,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                             </PieChart>
                         </ResponsiveContainer>
                     ) : (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                        <div className="h-full flex flex-col items-center justify-center text-black font-bold">
                             <p>No revenue data available</p>
                         </div>
                     )}
