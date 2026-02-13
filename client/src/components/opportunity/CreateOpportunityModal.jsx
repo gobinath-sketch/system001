@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, MoreHorizontal } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import AddClientModal from '../clients/AddClientModal';
 
@@ -300,7 +300,10 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                             name="technology"
                                             value={formData.technology}
                                             onChange={handleChange}
-                                            options={getTechnologyOptions()}
+                                            options={getTechnologyOptions().map(opt => ({
+                                                ...opt,
+                                                icon: opt.value === 'Other technologies' ? <MoreHorizontal size={18} className="text-gray-500" /> : opt.icon
+                                            }))}
                                             placeholder="Select or type technology"
                                             className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
                                             required
@@ -313,7 +316,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                                                     name="customTechnology"
                                                     value={formData.customTechnology}
                                                     onChange={handleChange}
-                                                    placeholder={`Enter specific ${formData.technology.toLowerCase().replace(' technologies', '')} technology`}
+                                                    placeholder={`Enter technology`}
                                                     className="w-full bg-white border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-sm"
                                                     required
                                                 />

@@ -151,11 +151,17 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
                                 onClick={() => handleOptionClick(optionValue)}
                             >
                                 {icon && (
-                                    <img
-                                        src={icon}
-                                        alt=""
-                                        className="w-5 h-5 object-contain mr-3"
-                                    />
+                                    typeof icon === 'string' ? (
+                                        <img
+                                            src={icon}
+                                            alt=""
+                                            className="w-5 h-5 object-contain mr-3"
+                                        />
+                                    ) : (
+                                        <div className="mr-3 text-gray-500">
+                                            {icon}
+                                        </div>
+                                    )
                                 )}
                                 <span>{label}</span>
                             </div>

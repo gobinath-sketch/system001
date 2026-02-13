@@ -268,7 +268,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                         </div>
                         <button
                             onClick={() => setShowDocModal(true)}
-                            className="px-3 py-1 bg-gray-100 rounded-md text-xs font-bold text-black border border-gray-200 hover:bg-gray-200 transition-colors"
+                            className="px-3 py-1 bg-blue-600 rounded-md text-xs font-bold text-white border border-blue-600 hover:bg-blue-700 transition-colors"
                         >
                             <div className="flex items-center gap-1">
                                 <span>View</span>

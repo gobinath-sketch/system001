@@ -1,6 +1,6 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText, MoreHorizontal } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
 
@@ -210,16 +210,59 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
                     {/* Training-Specific Fields */}
                     {opportunity.type === 'Training' && (
                         <>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Technology *</label>
-                                <SearchableSelect
-                                    value={formData.typeSpecificDetails?.technology || ''}
-                                    onChange={(e) => handleChange('typeSpecificDetails', 'technology', e.target.value)}
-                                    options={getTechnologyOptions()}
-                                    placeholder="Select or type technology"
-                                    disabled={!isEditing}
-                                    className={selectClass}
-                                />
+                            <div className={
+                                (formData.typeSpecificDetails?.technology?.startsWith('Emerging technologies') ||
+                                    formData.typeSpecificDetails?.technology?.startsWith('Other technologies'))
+                                    ? "col-span-1 grid grid-cols-2 gap-2"
+                                    : ""
+                            }>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Technology *</label>
+                                    <SearchableSelect
+                                        value={
+                                            formData.typeSpecificDetails?.technology?.includes('Emerging technologies')
+                                                ? 'Emerging technologies'
+                                                : formData.typeSpecificDetails?.technology?.includes('Other technologies')
+                                                    ? 'Other technologies'
+                                                    : formData.typeSpecificDetails?.technology || ''
+                                        }
+                                        onChange={(e) => {
+                                            const selected = e.target.value;
+                                            if (selected === 'Emerging technologies' || selected === 'Other technologies') {
+                                                handleChange('typeSpecificDetails', 'technology', `${selected} - `);
+                                            } else {
+                                                handleChange('typeSpecificDetails', 'technology', selected);
+                                            }
+                                        }}
+                                        options={getTechnologyOptions().map(opt => ({
+                                            ...opt,
+                                            icon: opt.value === 'Other technologies' ? <MoreHorizontal size={18} className="text-gray-500" /> : opt.icon
+                                        }))}
+                                        placeholder="Select technology"
+                                        disabled={!isEditing}
+                                        className={selectClass}
+                                    />
+                                </div>
+
+                                {(formData.typeSpecificDetails?.technology?.startsWith('Emerging technologies') ||
+                                    formData.typeSpecificDetails?.technology?.startsWith('Other technologies')) && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                {formData.typeSpecificDetails?.technology?.startsWith('Emerging') ? 'Specific Emerging' : 'Specific Technology'}
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.typeSpecificDetails?.technology?.split(' - ')[1] || ''}
+                                                onChange={(e) => {
+                                                    const category = formData.typeSpecificDetails?.technology?.split(' - ')[0];
+                                                    handleChange('typeSpecificDetails', 'technology', `${category} - ${e.target.value}`);
+                                                }}
+                                                disabled={!isEditing}
+                                                className={inputClass}
+                                                placeholder="Specify..."
+                                            />
+                                        </div>
+                                    )}
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Training Name/Requirement *</label>
