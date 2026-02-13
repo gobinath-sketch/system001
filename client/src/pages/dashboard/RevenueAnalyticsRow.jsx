@@ -462,6 +462,41 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                     {filteredData.typeData.length > 0 ? (
                         <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                             <PieChart>
+                                <defs>
+                                    <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="180%">
+                                        <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.2" />
+                                    </filter>
+                                    {filteredData.typeData.map((entry, index) => {
+                                        const baseColor = TYPE_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+                                        return (
+                                            <linearGradient key={`type-grad-${index}`} id={`typeGrad-${index}`} x1="0" y1="0" x2="1" y2="1">
+                                                <stop offset="0%" stopColor={shiftColor(baseColor, 22)} />
+                                                <stop offset="55%" stopColor={baseColor} />
+                                                <stop offset="100%" stopColor={shiftColor(baseColor, -22)} />
+                                            </linearGradient>
+                                        );
+                                    })}
+                                </defs>
+
+                                <Pie
+                                    data={filteredData.typeData}
+                                    cx="50%"
+                                    cy="52%"
+                                    innerRadius={70}
+                                    outerRadius={100}
+                                    paddingAngle={0}
+                                    dataKey="value"
+                                    stroke="none"
+                                    legendType="none"
+                                >
+                                    {filteredData.typeData.map((entry, index) => {
+                                        const baseColor = TYPE_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+                                        return (
+                                            <Cell key={`depth-${index}`} fill={shiftColor(baseColor, -35)} />
+                                        );
+                                    })}
+                                </Pie>
+
                                 <Pie
                                     data={filteredData.typeData}
                                     cx="50%"
@@ -471,11 +506,12 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     paddingAngle={0}
                                     dataKey="value"
                                     stroke="none"
+                                    style={{ filter: 'url(#donutShadow)' }}
                                 >
                                     {filteredData.typeData.map((entry, index) => (
                                         <Cell
                                             key={`cell-${index}`}
-                                            fill={TYPE_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length]}
+                                            fill={`url(#typeGrad-${index})`}
                                         />
                                     ))}
                                 </Pie>
