@@ -46,7 +46,18 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
     });
 
     // Color Palette
-    const COLORS = ['#003D7A', '#10b981', '#D4AF37', '#FF8042', '#8884d8', '#82ca9d', '#ffc658'];
+    // Color Palette - Specific Mapping
+    const TYPE_COLORS = {
+        'Training': '#0f172a',
+        'Lab Support': '#1e40af',
+        'Vouchers': '#2563eb',
+        'Product Support': '#3b82f6',
+        'Resource Support': '#60a5fa',
+        'Content Development': '#93c5fd'
+    };
+
+    // Fallback colors for unknown types
+    const FALLBACK_COLORS = ['#cbd5e1', '#94a3b8', '#64748b'];
 
     // Get available years from opportunities
     const availableYears = [...new Set(allOpps.map(opp =>
@@ -163,13 +174,35 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                 typeMap[type].count += 1;
             }
         });
+        // Defined sort order
+        const ORDERED_TYPES = [
+            'Training',
+            'Lab Support',
+            'Vouchers',
+            'Product Support',
+            'Resource Support',
+            'Content Development'
+        ];
+
         const typeData = Object.keys(typeMap)
             .map(key => ({
                 name: key,
                 value: typeMap[key].revenue,
                 count: typeMap[key].count
             }))
-            .filter(i => i.value > 0);
+            .filter(i => i.value > 0)
+            .sort((a, b) => {
+                const indexA = ORDERED_TYPES.indexOf(a.name);
+                const indexB = ORDERED_TYPES.indexOf(b.name);
+                // If both found, sort by index
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                // If only A found, A comes first
+                if (indexA !== -1) return -1;
+                // If only B found, B comes first
+                if (indexB !== -1) return 1;
+                // If neither found, sort alphabetically
+                return a.name.localeCompare(b.name);
+            });
 
 
 
@@ -361,7 +394,10 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                                     stroke="none"
                                 >
                                     {filteredData.typeData.map((entry, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                        <Cell
+                                            key={`cell-${index}`}
+                                            fill={TYPE_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length]}
+                                        />
                                     ))}
                                 </Pie>
                                 <Tooltip content={<CustomTooltip formatMoney={formatMoney} />} />
