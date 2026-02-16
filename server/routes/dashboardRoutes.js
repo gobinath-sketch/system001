@@ -84,23 +84,24 @@ router.get('/client-health', protect, async (req, res) => {
 
         const clients = await Client.find(query);
 
-        const threeYearsAgo = new Date();
-        threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+        const oneYearAgo = new Date();
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
         let activeCount = 0;
         let midCount = 0;
         let inactiveCount = 0;
 
         for (const client of clients) {
-            const oppCount = await Opportunity.countDocuments({
+            const completedOppCount = await Opportunity.countDocuments({
                 client: client._id,
-                createdAt: { $gte: threeYearsAgo },
+                createdAt: { $gte: oneYearAgo },
+                progressPercentage: 100,
                 ...query
             });
 
-            if (oppCount > 5) {
+            if (completedOppCount >= 3) {
                 activeCount++;
-            } else if (oppCount > 1) {
+            } else if (completedOppCount >= 1) {
                 midCount++;
             } else {
                 inactiveCount++;
