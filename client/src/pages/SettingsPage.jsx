@@ -1,7 +1,7 @@
 ﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     AlertTriangle,
-    Bell,
+
     Download,
     Edit3,
     Globe2,
@@ -38,17 +38,7 @@ const DEFAULT_SETTINGS = (user) => ({
         weekStartsOn: 'Monday',
         avatarDataUrl: ''
     },
-    notifications: {
-        emailAlerts: true,
-        inAppAlerts: true,
-        approvalsOnly: false,
-        weeklySummary: true,
-        loginAlerts: true,
-        soundEnabled: false,
-        quietHours: false,
-        quietStart: '22:00',
-        quietEnd: '07:00'
-    },
+
     preferences: {
         compactTables: false,
         reducedMotion: false,
@@ -72,7 +62,7 @@ const loadSettings = (user) => {
             ...DEFAULT_SETTINGS(user),
             ...parsed,
             profile: { ...DEFAULT_SETTINGS(user).profile, ...(parsed.profile || {}) },
-            notifications: { ...DEFAULT_SETTINGS(user).notifications, ...(parsed.notifications || {}) },
+
             preferences: { ...DEFAULT_SETTINGS(user).preferences, ...(parsed.preferences || {}) },
             workspace: { ...DEFAULT_SETTINGS(user).workspace, ...(parsed.workspace || {}) }
         };
@@ -87,7 +77,7 @@ const sectionGroups = [
         items: [
             { id: 'profile', label: 'Profile', icon: UserCircle2 },
             { id: 'preferences', label: 'Preferences', icon: LayoutGrid },
-            { id: 'notifications', label: 'Notifications', icon: Bell }
+
         ]
     },
     {
@@ -252,11 +242,10 @@ const SettingsPage = () => {
                                 </div>
                                 <button
                                     onClick={handleEditSave}
-                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold transition ${
-                                        isEditing
-                                            ? 'bg-primary-blue hover:bg-primary-blue-light'
-                                            : 'bg-green-600 hover:bg-green-700'
-                                    }`}
+                                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold transition ${isEditing
+                                        ? 'bg-primary-blue hover:bg-primary-blue-light'
+                                        : 'bg-green-600 hover:bg-green-700'
+                                        }`}
                                 >
                                     {isEditing ? <Save size={16} /> : <Edit3 size={16} />}
                                     {isEditing ? (isSaving ? 'Saving...' : 'Save Changes') : 'Edit Changes'}
@@ -445,61 +434,7 @@ const SettingsPage = () => {
                                 </section>
                             )}
 
-                            {activeSection === 'notifications' && (
-                                <section className="space-y-3">
-                                    {[
-                                        ['emailAlerts', 'Email alerts for critical updates'],
-                                        ['inAppAlerts', 'In-app notifications'],
-                                        ['approvalsOnly', 'Only approval-related notifications'],
-                                        ['weeklySummary', 'Weekly summary digest'],
-                                        ['loginAlerts', 'New login alerts'],
-                                        ['soundEnabled', 'Enable notification sound']
-                                    ].map(([key, label]) => (
-                                        <label key={key} className="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3">
-                                            <span className="text-sm font-medium text-gray-700">{label}</span>
-                                            <input
-                                                type="checkbox"
-                                                checked={settings.notifications[key]}
-                                                onChange={(e) => updateSection('notifications', key, e.target.checked)}
-                                                disabled={!isEditing}
-                                            />
-                                        </label>
-                                    ))}
-                                    <label className="flex items-center justify-between border border-gray-200 rounded-lg px-4 py-3">
-                                        <span className="text-sm font-medium text-gray-700">Enable quiet hours</span>
-                                        <input
-                                            type="checkbox"
-                                            checked={settings.notifications.quietHours}
-                                            onChange={(e) => updateSection('notifications', 'quietHours', e.target.checked)}
-                                            disabled={!isEditing}
-                                        />
-                                    </label>
-                                    {settings.notifications.quietHours && (
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border border-gray-200 rounded-lg p-3">
-                                            <label className="block">
-                                                <span className="text-xs text-gray-500">Quiet From</span>
-                                                <input
-                                                    type="time"
-                                                    value={settings.notifications.quietStart}
-                                                    onChange={(e) => updateSection('notifications', 'quietStart', e.target.value)}
-                                                    disabled={!isEditing}
-                                                    className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3"
-                                                />
-                                            </label>
-                                            <label className="block">
-                                                <span className="text-xs text-gray-500">Quiet Till</span>
-                                                <input
-                                                    type="time"
-                                                    value={settings.notifications.quietEnd}
-                                                    onChange={(e) => updateSection('notifications', 'quietEnd', e.target.value)}
-                                                    disabled={!isEditing}
-                                                    className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3"
-                                                />
-                                            </label>
-                                        </div>
-                                    )}
-                                </section>
-                            )}
+
 
                             {activeSection === 'password' && (
                                 <section className="space-y-5">
