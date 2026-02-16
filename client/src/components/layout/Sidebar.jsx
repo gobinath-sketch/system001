@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
 import {
     LayoutDashboard,
@@ -197,7 +198,7 @@ const Sidebar = () => {
 
 
                 {/* Navigation Menu */}
-                <nav className="flex-1 overflow-y-auto overflow-x-hidden py-6 px-4">
+                <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-6 ${isCollapsed ? 'px-2.5' : 'px-4'}`}>
                     {menuItems.map((item) => {
                         const Icon = item.icon;
                         const active = isActive(item.path);
@@ -206,49 +207,28 @@ const Sidebar = () => {
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className="relative block mb-3 group"
+                                className="block mb-3"
                                 style={{ textDecoration: 'none' }}
                             >
-                                {/* Shadow Layer */}
-                                <span
-                                    className="absolute inset-0 bg-black/25 rounded-lg transition-transform duration-300 ease-out group-hover:translate-y-1 group-active:translate-y-0.5"
-                                    style={{ transform: 'translateY(2px)' }}
-                                />
+                                <StyledWrapper>
+                                    <div className={`button ${active ? 'active' : ''} ${isCollapsed ? 'justify-center px-2 py-3' : ''}`}>
+                                        <Icon
+                                            size={isCollapsed ? 20 : 20}
+                                            strokeWidth={isCollapsed ? 2.2 : 2}
+                                            className={`relative z-10 shrink-0 transition-colors duration-300 ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]' : 'text-white/95'}`}
+                                        />
 
-                                {/* Edge Layer */}
-                                <span
-                                    className="absolute inset-0 rounded-lg"
-                                    style={{
-                                        background: active
-                                            ? 'linear-gradient(to left, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 1) 8%, rgba(255, 255, 255, 1) 92%, rgba(255, 255, 255, 0.9) 100%)'
-                                            : 'linear-gradient(to left, hsl(217, 33%, 16%) 0%, hsl(217, 33%, 32%) 8%, hsl(217, 33%, 32%) 92%, hsl(217, 33%, 16%) 100%)'
-                                    }}
-                                />
+                                        {!isCollapsed && (
+                                            <span className="ml-3 font-medium truncate relative z-10 text-sm">
+                                                {item.label}
+                                            </span>
+                                        )}
 
-                                {/* Front Layer */}
-                                <div
-                                    className={`
-                                        relative flex items-center space-x-3 px-4 py-3 rounded-lg
-                                        transition-transform duration-300 ease-out
-                                        group-hover:-translate-y-1.5 group-active:-translate-y-0.5
-                                        whitespace-nowrap overflow-hidden
-                                        ${active
-                                            ? 'bg-white text-primary-blue-dark shadow-2xl'
-                                            : 'bg-primary-blue-dark/80 text-white'
-                                        }
-                                    `}
-                                    style={{ transform: 'translateY(-4px)' }}
-                                >
-                                    {/* Simple shine effect for active state */}
-                                    {active && (
-                                        <div className="absolute inset-0 bg-gradient-to-br from-white/50 via-transparent to-transparent pointer-events-none" />
-                                    )}
-                                    <Icon size={20} className={active ? 'text-primary-blue-dark relative z-10' : 'text-white'} />
-                                    {!isCollapsed && (
-                                        <span className={`flex-1 font-medium select-none ${active ? 'relative z-10' : ''}`}>{item.label}</span>
-                                    )}
-                                    {!isCollapsed && active && <ChevronRight size={16} className="text-primary-blue-dark relative z-10" />}
-                                </div>
+                                        {!isCollapsed && active && (
+                                            <ChevronRight size={16} className="ml-auto text-white/80 relative z-10" />
+                                        )}
+                                    </div>
+                                </StyledWrapper>
                             </Link>
                         );
                     })}
@@ -267,6 +247,87 @@ const Sidebar = () => {
         </>
     );
 };
+
+const StyledWrapper = styled.div`
+  /* Ensures the link fills the width */
+  width: 100%;
+
+  .button {
+    /* Use 100% width to fill sidebar container instead of fixed min-width */
+    width: 100%;
+    min-height: 56px; /* Increased height for better icon visibility */
+    
+    /* Layout */
+    display: flex;
+    align-items: center;
+    position: relative;
+    cursor: pointer;
+
+    padding: 12px 17px;
+    border: 0;
+    border-radius: 7px;
+
+    /* Base Styles */
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.1) 0%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    backdrop-filter: blur(4px); /* Adds glass effect */
+
+    color: rgb(255, 255, 255, 0.75); /* Slightly brighter text for better contrast */
+
+    transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+  }
+
+  /* Active State Styling */
+  .button.active {
+    color: rgb(255, 255, 255, 1);
+    transform: scale(1.05);
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.2) 0%,
+      rgba(255, 255, 255, 0.08) 100%
+    ); /* Brighter glass for active state */
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
+  }
+
+  .button.active::before {
+    opacity: 1;
+  }
+
+  .button::before {
+    content: "";
+    width: 70%;
+    height: 1px;
+
+    position: absolute;
+    bottom: 0;
+    left: 15%;
+
+    background: rgb(255, 255, 255);
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 1) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    opacity: 0.2;
+
+    transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+  }
+
+  .button:hover {
+    color: rgb(255, 255, 255, 1);
+    transform: scale(1.05) translateY(-3px); /* Adjusted scale for sidebar context */
+    z-index: 10;
+  }
+
+  .button:hover::before {
+    opacity: 1;
+  }
+`;
 
 export default Sidebar;
 
