@@ -12,7 +12,8 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
 
     // Data States
     const [clients, setClients] = useState([]);
-    const [loading, setLoading] = useState(true);
+
+
 
     // New Client Modal State
     const [showClientModal, setShowClientModal] = useState(false);
@@ -60,6 +61,19 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
 
     const [requirementDoc, setRequirementDoc] = useState(null); // New state for file
 
+    const fetchClients = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get('http://localhost:5000/api/clients', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setClients(res.data);
+        } catch (err) {
+            console.error('Error fetching clients:', err);
+            addToast('Failed to load clients. Please reload.', 'error');
+        }
+    };
+
     useEffect(() => {
         if (isOpen) {
             fetchClients();
@@ -69,20 +83,8 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
         }
     }, [isOpen, preselectedClientId]);
 
-    const fetchClients = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await axios.get('http://localhost:5000/api/clients', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setClients(res.data);
-            setLoading(false);
-        } catch (err) {
-            console.error('Error fetching clients:', err);
-            addToast('Failed to load clients. Please reload.', 'error');
-            setLoading(false);
-        }
-    };
+
+
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -104,7 +106,7 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
         e.preventDefault();
         try {
             const token = localStorage.getItem('token');
-            const selectedClient = clients.find(c => c._id === formData.clientId);
+
 
             // Build typeSpecificDetails based on opportunity type
             let typeSpecificDetails = {};
@@ -191,8 +193,6 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                 resourceType: '',
                 resourceCount: '',
                 contentType: '',
-                deliveryFormat: '',
-                projectScope: '',
                 deliveryFormat: '',
                 projectScope: '',
                 teamSize: '',
