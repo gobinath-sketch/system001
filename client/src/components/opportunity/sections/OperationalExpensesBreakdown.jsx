@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, Eye } from 'lucide-react';
-import Card from '../../ui/Card';
+import {
+    Upload,
+    Eye,
+    GraduationCap,
+    Package,
+    FlaskConical,
+    BadgePercent,
+    Hotel,
+    UtensilsCrossed,
+    Building2,
+    Plane,
+    Ticket,
+    Car,
+    Wallet
+} from 'lucide-react';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { useAuth } from '../../../context/AuthContext';
 
@@ -27,6 +40,18 @@ const OperationalExpensesBreakdown = ({
 
     const [localBreakdown, setLocalBreakdown] = useState({});
     const initializedTypes = useRef(new Set());
+    const expenseIcons = {
+        trainerCost: GraduationCap,
+        material: Package,
+        labs: FlaskConical,
+        gkRoyalty: BadgePercent,
+        accommodation: Hotel,
+        perDiem: UtensilsCrossed,
+        venue: Building2,
+        travel: Plane,
+        vouchersCost: Ticket,
+        localConveyance: Car
+    };
 
     // Sync local state on prop change
     useEffect(() => {
@@ -130,6 +155,7 @@ const OperationalExpensesBreakdown = ({
         const data = localBreakdown[category] || {};
         const selectedType = data.type || (typeOptions ? typeOptions[0].value : '');
         const currentTotal = activeData.expenses?.[category] || 0;
+        const Icon = expenseIcons[category] || Wallet;
 
         const typeLabel = typeOptions
             ? (typeOptions.find(o => o.value === data.type)?.label || data.type)
@@ -149,10 +175,13 @@ const OperationalExpensesBreakdown = ({
         };
 
         return (
-            <div className={`bg-gray-50 border border-gray-200 rounded-lg ${!canEdit ? 'p-2' : 'p-3'} mb-4 last:mb-0 h-full`}>
-                <div className={`flex justify-between items-center ${!canEdit ? 'mb-1' : 'mb-2'}`}>
-                    <span className={`font-bold text-gray-800 ${!canEdit ? 'text-xs' : 'text-sm'}`}>{label}</span>
-                    <span className={`font-bold text-primary-blue ${!canEdit ? 'text-xs' : 'text-sm'}`}>
+            <div className={`bg-white/80 border border-slate-200 rounded-xl ${!canEdit ? 'p-3 flex flex-col justify-center' : 'p-3'} h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]`}>
+                <div className={`flex justify-between items-center ${!canEdit ? 'mb-2' : 'mb-2'}`}>
+                    <span className={`inline-flex items-center gap-2 font-semibold text-slate-700 ${!canEdit ? 'text-sm' : 'text-sm'}`}>
+                        <Icon size={15} className="text-slate-500" />
+                        {label}
+                    </span>
+                    <span className={`font-bold text-slate-800 ${!canEdit ? 'text-sm' : 'text-sm'}`}>
                         {CURRENCY_SYMBOL} {(currentTotal / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                 </div>
@@ -163,12 +192,12 @@ const OperationalExpensesBreakdown = ({
                             <select
                                 value={selectedType}
                                 onChange={(e) => updateBreakdown(category, 'type', e.target.value)}
-                                className="w-full text-xs p-1.5 border border-gray-300 rounded bg-white text-gray-700 focus:outline-none focus:border-blue-500"
+                                className="w-full text-xs p-1.5 border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-sky-500"
                             >
                                 {typeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
                             </select>
                         ) : (
-                            <div className="text-xs text-gray-500 italic border-b border-gray-200 pb-1 mb-1">{fixedTypeLabel}</div>
+                            <div className="text-xs text-slate-500 italic border-b border-slate-200 pb-1 mb-1">{fixedTypeLabel}</div>
                         )}
                     </div>
                 )}
@@ -217,23 +246,23 @@ const OperationalExpensesBreakdown = ({
                         )}
                     </div>
                 ) : (
-                    <div className="flex justify-between items-center text-[11px] text-gray-600">
-                        <span className="text-gray-500">{typeLabel}</span>
-                        <span className="font-medium text-gray-800">
+                    <div className="flex justify-between items-center text-sm text-slate-600 leading-relaxed">
+                        <span className="text-slate-500">{typeLabel}</span>
+                        <span className="font-semibold text-slate-800">
                             {CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}
                         </span>
                     </div>
                 )}
 
                 {(canEdit || opportunity.expenseDocuments?.[category]?.length > 0) && (
-                    <div className={`flex justify-end ${!canEdit ? 'mt-1 pt-1' : 'mt-1 pt-1'} border-t border-gray-100`}>
+                    <div className={`flex justify-end ${!canEdit ? 'mt-1 pt-1' : 'mt-1 pt-1'} border-t border-slate-100`}>
                         <div className="flex items-center space-x-2">
                             {opportunity.expenseDocuments?.[category]?.length > 0 && (
                                 <a
                                     href={`http://localhost:5000/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-gray-400 hover:text-primary-blue"
+                                    className="text-slate-400 hover:text-sky-700"
                                     title="View Document"
                                 >
                                     <Eye size={14} />
@@ -251,7 +280,7 @@ const OperationalExpensesBreakdown = ({
                                     <button
                                         onClick={() => document.getElementById(`upload-${category}`).click()}
                                         disabled={uploading === category}
-                                        className="transition-colors text-gray-400 hover:text-primary-blue"
+                                        className="transition-colors text-slate-400 hover:text-sky-700"
                                         title="Upload Document"
                                     >
                                         <Upload size={14} />
@@ -267,13 +296,15 @@ const OperationalExpensesBreakdown = ({
 
     // Helper to render "Other Expenses" (Venue, Travel, etc.)
     const renderOtherExpense = (key) => {
+        const Icon = expenseIcons[key] || Wallet;
         return (
-            <div key={key} className={`bg-white border border-gray-200 rounded-lg ${!canEdit ? 'p-2' : 'p-3'} h-full`}>
-                <div className={`flex justify-between items-center ${!canEdit ? 'mb-1' : 'mb-2'}`}>
-                    <span className={`font-bold text-gray-600 ${!canEdit ? 'text-xs' : 'text-sm'} capitalize`}>
+            <div key={key} className={`bg-white/80 border border-slate-200 rounded-xl ${!canEdit ? 'p-3 flex flex-col justify-center' : 'p-3'} h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]`}>
+                <div className={`flex justify-between items-center ${!canEdit ? 'mb-2' : 'mb-2'}`}>
+                    <span className={`inline-flex items-center gap-2 font-semibold text-slate-700 ${!canEdit ? 'text-sm' : 'text-sm'} capitalize`}>
+                        <Icon size={15} className="text-slate-500" />
                         {key.replace('Cost', '').replace(/([A-Z])/g, ' $1').trim()}
                     </span>
-                    <span className={`font-bold text-gray-800 ${!canEdit ? 'text-xs' : 'text-sm'}`}>
+                    <span className={`font-bold text-slate-800 ${!canEdit ? 'text-sm' : 'text-sm'}`}>
                         {CURRENCY_SYMBOL} {((activeData.expenses?.[key] || 0) / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                 </div>
@@ -294,14 +325,14 @@ const OperationalExpensesBreakdown = ({
 
                 {/* Document Upload / View */}
                 {(canEdit || opportunity.expenseDocuments?.[key]?.length > 0) && (
-                    <div className={`flex justify-end ${!canEdit ? 'mt-1 pt-1' : 'mt-2 pt-2'} border-t border-gray-100`}>
+                    <div className={`flex justify-end ${!canEdit ? 'mt-1 pt-1' : 'mt-2 pt-2'} border-t border-slate-100`}>
                         <div className="flex items-center space-x-2">
                             {opportunity.expenseDocuments?.[key]?.length > 0 && (
                                 <a
                                     href={`http://localhost:5000/${opportunity.expenseDocuments[key][0].replace(/\\/g, '/')}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-gray-400 hover:text-primary-blue"
+                                    className="text-slate-400 hover:text-sky-700"
                                     title="View Document"
                                 >
                                     <Eye size={14} />
@@ -319,7 +350,7 @@ const OperationalExpensesBreakdown = ({
                                     <button
                                         onClick={() => document.getElementById(`upload-${key}`).click()}
                                         disabled={uploading === key}
-                                        className="transition-colors text-gray-400 hover:text-primary-blue"
+                                        className="transition-colors text-slate-400 hover:text-sky-700"
                                         title="Upload Document"
                                     >
                                         <Upload size={14} />
@@ -334,17 +365,17 @@ const OperationalExpensesBreakdown = ({
     };
 
     return (
-        <Card className="h-full flex flex-col">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-100">
-                <h3 className="text-lg font-bold text-primary-blue">Operational Expenses Breakdown</h3>
-                <div className="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded">
-                    Pax: <span className="text-gray-800 font-bold">{pax}</span> &bull; Days: <span className="text-gray-800 font-bold">{days}</span>
+        <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200/70">
+                <h3 className="text-[20px] leading-tight font-semibold tracking-tight text-slate-800">Operational Expenses Breakdown</h3>
+                <div className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded">
+                    Pax: <span className="text-slate-800 font-bold">{pax}</span> • Days: <span className="text-slate-800 font-bold">{days}</span>
                 </div>
             </div>
 
             <div className="flex-grow overflow-y-auto pr-1">
                 {!canEdit ? (
-                    <div className="grid gap-4 grid-flow-col grid-rows-5 auto-cols-fr">
+                    <div className="grid h-full gap-4 grid-flow-col grid-rows-5 auto-cols-fr">
                         {renderInputGroup('trainerCost', 'Trainer Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Training Cost' }])}
                         {renderInputGroup('material', 'Material Cost', [{ value: 'costPerPax', label: 'Cost / Pax' }, { value: 'overallCost', label: 'Overall Cost' }])}
                         {renderInputGroup('labs', 'Lab Cost', [{ value: 'costPerPaxDay', label: 'Cost / Pax / Day' }, { value: 'costPerPaxAllDays', label: 'Cost / Pax (All Days)' }, { value: 'totalCost', label: 'Total Cost' }])}
@@ -374,16 +405,16 @@ const OperationalExpensesBreakdown = ({
                 )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-gray-100 flex justify-between items-center bg-gray-50 p-3 rounded-lg">
-                <span className="text-sm font-bold text-gray-700">Total Expenses</span>
-                <span className="text-xl font-bold text-primary-blue">
+            <div className="mt-4 pt-3 border-t border-slate-200/70 flex justify-between items-center bg-gradient-to-r from-slate-100 to-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-sm font-semibold text-slate-700">Total Expenses</span>
+                <span className="text-2xl font-bold text-slate-800">
                     {CURRENCY_SYMBOL} {((Object.keys(activeData.expenses || {}).reduce((sum, key) => {
                         if (key === 'breakdown' || key === 'marketingPercent' || key === 'contingencyPercent' || key === 'targetGpPercent' || key === 'marketing' || key === 'contingency') return sum;
                         return sum + (parseFloat(activeData.expenses[key]) || 0);
                     }, 0)) / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                 </span>
             </div>
-        </Card>
+        </div>
     );
 };
 
@@ -396,13 +427,13 @@ const Input = ({ label, value, onChange }) => {
         <div>
             {label && <label className="block text-[10px] uppercase font-bold text-gray-500 mb-0.5">{label}</label>}
             <div className="relative">
-                {!isNonCurrencyField && <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-600 text-xs font-semibold">{CURRENCY_SYMBOL}</span>}
+                {!isNonCurrencyField && <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-600 text-xs font-semibold">{CURRENCY_SYMBOL}</span>}
                 <input
                     type="number"
                     value={value || ''}
                     onChange={e => onChange(e.target.value)}
                     onWheel={(e) => e.target.blur()}
-                    className={`w-full text-right ${!isNonCurrencyField ? 'pl-6' : 'pl-2'} pr-2 py-1.5 bg-white border-2 border-blue-300 rounded text-sm font-bold focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-gray-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
+                    className={`w-full text-right ${!isNonCurrencyField ? 'pl-6' : 'pl-2'} pr-2 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
                     placeholder="0"
                 />
             </div>
