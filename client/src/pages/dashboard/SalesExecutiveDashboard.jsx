@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, ChevronRight, X } from 'lucide-react';
 import DocumentStatusCard from '../../components/dashboard/DocumentStatusCard';
@@ -110,7 +111,102 @@ const SalesExecutiveDashboard = ({ user }) => {
         }
     };
 
-    // Glass Style for Cards
+    // --- Global Time Filter State ---
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+    const [timeFilter, setTimeFilter] = useState('Yearly');
+
+    // Helper: Get available years - STRICTLY from 'year' field or 'startDate' (No createdAt)
+    const availableYears = React.useMemo(() => {
+        const years = allOpps.map(opp => {
+            // Priority 1: Explicit Year Field
+            const y = opp.commonDetails?.year;
+            if (y && !isNaN(Number(y)) && Number(y) > 0) return Number(y);
+
+            // Priority 2: Training Start Date Year
+            if (opp.commonDetails?.startDate) {
+                const dateYear = new Date(opp.commonDetails.startDate).getFullYear();
+                if (!isNaN(dateYear) && dateYear > 1900) return dateYear;
+            }
+
+            return null;
+        });
+        return [...new Set([...years, new Date().getFullYear()])]
+            .filter(year => year !== null && year > 1900)
+            .sort((a, b) => b - a);
+    }, [allOpps]);
+
+    // Initialize Year once data is loaded
+    // Initialize Year removed (defaulted to current year above)
+
+    // Helper: Month Index
+    const getMonthIndex = (month) => {
+        if (!month) return -1;
+        if (typeof month === 'number') return month - 1;
+        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+        const normalized = month.toString().toLowerCase().substring(0, 3);
+        return months.indexOf(normalized);
+    };
+
+    // --- Filter Logic ---
+    const filteredOpps = React.useMemo(() => {
+        if (!selectedYear) return allOpps;
+
+        return allOpps.filter(opp => {
+            // Determine Opp Year (Logic matching availableYears)
+            let oppYear = Number(opp.commonDetails?.year);
+            if (!oppYear || isNaN(oppYear) || oppYear <= 0) {
+                if (opp.commonDetails?.startDate) {
+                    oppYear = new Date(opp.commonDetails.startDate).getFullYear();
+                }
+            }
+
+            // If still no valid year, ignore this opp for year filtering? 
+            // Or treat as "Unassigned"? But filter requires match.
+            if (!oppYear || oppYear !== selectedYear) return false;
+
+            if (timeFilter === 'Yearly') return true;
+
+            let monthIdx = getMonthIndex(opp.commonDetails?.monthOfTraining);
+            if (monthIdx === -1) {
+                const createdDate = new Date(opp.createdAt);
+                monthIdx = createdDate.getMonth();
+            }
+
+            if (timeFilter === 'H1') return monthIdx >= 0 && monthIdx <= 5;
+            if (timeFilter === 'H2') return monthIdx >= 6 && monthIdx <= 11;
+            if (timeFilter === 'Q1') return monthIdx >= 0 && monthIdx <= 2;
+            if (timeFilter === 'Q2') return monthIdx >= 3 && monthIdx <= 5;
+            if (timeFilter === 'Q3') return monthIdx >= 6 && monthIdx <= 8;
+            if (timeFilter === 'Q4') return monthIdx >= 9 && monthIdx <= 11;
+
+            return true;
+        });
+    }, [allOpps, selectedYear, timeFilter]);
+
+    // --- Recalculate KPI Stats based on Filtered Data ---
+    const filteredStats = React.useMemo(() => {
+        return {
+            totalOpportunities: filteredOpps.length,
+            progress30: filteredOpps.filter(o => o.progressPercentage < 50).length,
+            progress50: filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80).length,
+            progress80: filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100).length,
+            progress100: filteredOpps.filter(o => o.progressPercentage === 100).length
+        };
+    }, [filteredOpps]);
+
+    // --- Recalculate Type Distribution for Chart ---
+    const filteredTypeDist = React.useMemo(() => {
+        const dist = OPPORTUNITY_TYPES.map(type => {
+            const count = filteredOpps.filter(o => o.type === type).length;
+            const revenue = filteredOpps
+                .filter(o => o.type === type)
+                .reduce((sum, o) => sum + (o.poValue || 0), 0);
+            return { type, count, revenue };
+        });
+        return dist;
+    }, [filteredOpps]);
+
+
     const glassCardStyle = {
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
         backdropFilter: 'blur(10px)',
@@ -142,93 +238,55 @@ const SalesExecutiveDashboard = ({ user }) => {
         </div>
     );
 
+    // --- Portal Rendering ---
+    const FilterControls = () => {
+        const portalRoot = document.getElementById('header-filter-portal');
+        if (!portalRoot) return null;
+
+        return createPortal(
+            <div className="flex items-center space-x-2">
+                <select
+                    value={selectedYear || ''}
+                    onChange={(e) => setSelectedYear(Number(e.target.value))}
+                    className="h-8 pl-2 pr-6 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                    {availableYears.map(year => (
+                        <option key={year} value={year}>{year}</option>
+                    ))}
+                </select>
+
+                <select
+                    value={timeFilter}
+                    onChange={(e) => setTimeFilter(e.target.value)}
+                    className="h-8 pl-2 pr-6 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                    <option value="Yearly">Yearly</option>
+                    <option value="H1">H1</option>
+                    <option value="H2">H2</option>
+                    <option value="Q1">Q1</option>
+                    <option value="Q2">Q2</option>
+                    <option value="Q3">Q3</option>
+                    <option value="Q4">Q4</option>
+                </select>
+            </div>,
+            portalRoot
+        );
+    };
+
     if (loading) return <div className="p-8 text-center text-black font-bold">Loading Dashboard...</div>;
 
     // Chart Theme Colors - Brand Colors
     const brandBlue = '#003D7A';
-    const brandGreen = '#10b981';
-    const brandGold = '#D4AF37';
-
-    // Prepare trend data with currency conversion
-    const trendData = monthlyTrends.map(item => ({
-        ...item,
-        revenue: currency === 'INR' ? item.revenue : (item.revenue / EXCHANGE_RATE)
-    }));
-
-    // --- New Progress Card Component - Compact ---
-    const ProgressCard = ({ target, achieved, currency }) => {
-        const percentage = target > 0 ? (achieved / target) * 100 : 0;
-        const period = performance?.period || 'Yearly';
-        const diff = achieved - target;
-        const isAchieved = percentage >= 100;
-
-        let statusColor = 'bg-red-500'; // Default Red (Under)
-        let textColor = 'text-red-600';
-        let barColor = 'bg-red-500';
-
-        if (isAchieved) {
-            if (percentage > 100) {
-                statusColor = 'bg-blue-500';
-                textColor = 'text-blue-600';
-                barColor = 'bg-blue-500';
-            } else {
-                statusColor = 'bg-green-500';
-                textColor = 'text-green-600';
-                barColor = 'bg-green-500';
-            }
-        }
-
-        return (
-            <div style={glassCardStyle} className="p-4 flex flex-col justify-between h-full">
-                <div className="flex justify-between items-start mb-1">
-                    <div className="flex items-center space-x-2">
-                        <div className={`p-1.5 rounded-full ${isAchieved ? 'bg-green-100' : 'bg-red-100'}`}>
-                            {isAchieved ? <CheckCircle size={16} className="text-green-600" /> : <Target size={16} className="text-red-600" />}
-                        </div>
-                        <div>
-                            <p className="text-xs text-black font-bold">Revenue Target</p>
-                            <div className="flex items-baseline space-x-2">
-                                <h3 className="text-lg font-bold text-black">{formatMoney(achieved)}</h3>
-                                {isAchieved && <span className="text-lg">😊</span>}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-black font-bold">
-                        <span>Progress</span>
-                        <span>Target: {formatMoney(target)}</span>
-                    </div>
-                    {/* Progress Bar */}
-                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                        <div
-                            className={`h-2 rounded-full transition-all duration-1000 ${barColor}`}
-                            style={{ width: `${Math.min(percentage, 100)}%` }}
-                        ></div>
-                    </div>
-
-                    {/* Status Text */}
-                    <div className={`text-[10px] font-bold ${textColor} text-right`}>
-                        {isAchieved
-                            ? `Exceeded by ${formatMoney(diff)}`
-                            : `Lagging by ${formatMoney(Math.abs(diff))}`
-                        }
-                    </div>
-                </div>
-            </div>
-        );
-    };
 
     return (
         <div className="p-4 pb-4 space-y-4 bg-bg-page h-full">
-            {/* Header */}
-            {/* Header Removed */}
+            {/* Render Filters via Portal */}
+            <FilterControls />
 
-            {/* 1. KPI Cards - Revenue Target REMOVED */}
+            {/* 1. KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                {/* Client Health Segmentation */}
+                {/* Client Health Segmentation (Global, not filtered by time usually) */}
                 <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center space-x-2 mb-3">
                         <div className="p-1.5 rounded-full bg-blue-100">
@@ -252,48 +310,47 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
                 </div>
 
-                {/* Total Opportunities - 4 Stage Breakdown */}
+                {/* Total Opportunities - Filtered */}
                 <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center space-x-2 mb-3">
                         <div className="p-1.5 rounded-full bg-purple-100">
                             <Briefcase size={16} className="text-purple-600" />
                         </div>
-                        {/* Ensure total count matches the filtered stats from backend */}
-                        <span className="text-base text-black font-bold">Opportunities (Total: {stats?.totalOpportunities || 0})</span>
+                        <span className="text-base text-black font-bold">Opportunities (Total: {filteredStats.totalOpportunities})</span>
                     </div>
                     <div className="grid grid-cols-4 gap-1 text-center">
                         <div
-                            onClick={() => openProgressModal('30%', allOpps.filter(o => o.progressPercentage < 50))}
+                            onClick={() => openProgressModal('30%', filteredOpps.filter(o => o.progressPercentage < 50))}
                             className="flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-3xl font-bold text-red-600">{stats?.progress30 || 0}</p>
+                            <p className="text-3xl font-bold text-red-600">{filteredStats.progress30}</p>
                             <p className="text-base text-black font-bold">30%</p>
                         </div>
                         <div
-                            onClick={() => openProgressModal('50%', allOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))}
+                            onClick={() => openProgressModal('50%', filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))}
                             className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-3xl font-bold text-yellow-500">{stats?.progress50 || 0}</p>
+                            <p className="text-3xl font-bold text-yellow-500">{filteredStats.progress50}</p>
                             <p className="text-base text-black font-bold">50%</p>
                         </div>
                         <div
-                            onClick={() => openProgressModal('80%', allOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))}
+                            onClick={() => openProgressModal('80%', filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))}
                             className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-3xl font-bold text-indigo-600">{stats?.progress80 || 0}</p>
+                            <p className="text-3xl font-bold text-indigo-600">{filteredStats.progress80}</p>
                             <p className="text-base text-black font-bold">80%</p>
                         </div>
                         <div
-                            onClick={() => openProgressModal('100%', allOpps.filter(o => o.progressPercentage === 100))}
+                            onClick={() => openProgressModal('100%', filteredOpps.filter(o => o.progressPercentage === 100))}
                             className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-3xl font-bold text-emerald-600">{stats?.progress100 || 0}</p>
+                            <p className="text-3xl font-bold text-emerald-600">{filteredStats.progress100}</p>
                             <p className="text-base text-black font-bold">100%</p>
                         </div>
                     </div>
                 </div>
 
-                {/* Document Status Summary Card */}
+                {/* Document Status - Filtered */}
                 <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center space-x-2">
@@ -315,19 +372,19 @@ const SalesExecutiveDashboard = ({ user }) => {
                     <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
                             <p className="text-3xl font-bold text-gray">
-                                {allOpps.length}
+                                {filteredOpps.length}
                             </p>
                             <p className="text-base text-black font-bold">Total</p>
                         </div>
                         <div className="border-l border-gray-100">
                             <p className="text-3xl font-bold text-blue-600">
-                                {allOpps.filter(opp => opp.poDocument).length}
+                                {filteredOpps.filter(opp => opp.poDocument).length}
                             </p>
                             <p className="text-base text-black font-bold">POs</p>
                         </div>
                         <div className="border-l border-gray-100">
                             <p className="text-3xl font-bold text-slate-600">
-                                {allOpps.filter(opp => opp.invoiceDocument).length}
+                                {filteredOpps.filter(opp => opp.invoiceDocument).length}
                             </p>
                             <p className="text-base text-black font-bold">Invoices</p>
                         </div>
@@ -335,9 +392,10 @@ const SalesExecutiveDashboard = ({ user }) => {
                 </div>
             </div>
 
-            {/* 2. Revenue & Analytics Row - NEW */}
+            {/* 2. Revenue & Analytics Row - Filtered */}
             <RevenueAnalyticsRow
-                allOpps={allOpps}
+                allOpps={filteredOpps}
+                filter={timeFilter}
                 yearlyTarget={performance?.target || 0}
                 currency={currency}
                 formatMoney={formatMoney}
@@ -347,12 +405,12 @@ const SalesExecutiveDashboard = ({ user }) => {
             {/* 3. Second Analytics Row */}
             <div className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
-                    {/* Left: otal Opportunities Ongoing / Completed (Count) */}
+                    {/* Left: Total Opportunities Ongoing / Completed (Count) - Filtered */}
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
                         <h3 className="text-base font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
                         <div className="flex-1 w-full min-h-[205px]">
                             <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={205}>
-                                <BarChart data={analyticsData.typeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
+                                <BarChart data={filteredTypeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} />
                                     <XAxis type="number" hide />
                                     <YAxis dataKey="type" type="category" width={112} tick={{ fontSize: 12, fill: '#000000', fontWeight: 'bold' }} />
@@ -363,14 +421,14 @@ const SalesExecutiveDashboard = ({ user }) => {
                         </div>
                     </div>
 
-                    {/* Right: Top 5 Clients by Revenue (using PO Amount) */}
+                    {/* Right: Top 5 Clients by Revenue - Filtered */}
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
                         <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Top 5 Clients by Revenue</h3>
                         <div className="flex-1 overflow-hidden">
                             {(() => {
-                                // Calculate top 5 clients using PO Amount (poValue)
+                                // Calculate top 5 clients using PO Amount (poValue) from FILTERED OPPS
                                 const clientMap = {};
-                                allOpps.forEach(opp => {
+                                filteredOpps.forEach(opp => {
                                     const cName = opp.clientName || 'Unknown';
                                     const revenue = opp.poValue || 0;
                                     clientMap[cName] = (clientMap[cName] || 0) + revenue;
@@ -450,7 +508,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {allOpps.map(opp => (
+                                        {filteredOpps.map(opp => (
                                             <tr key={opp._id} className="border-b border-gray-100 hover:bg-gray-50">
                                                 <td className="py-3 px-4 font-mono text-primary-blue">{opp.opportunityNumber}</td>
                                                 <td className="py-3 px-4 text-gray-800">{opp.clientName}</td>

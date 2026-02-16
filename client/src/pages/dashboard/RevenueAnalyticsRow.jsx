@@ -98,7 +98,7 @@ const CustomTooltip = ({ active, payload, formatMoney }) => {
 
 import { TECHNOLOGIES, LOGO_MAP } from '../../utils/TechnologyConstants';
 
-const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXCHANGE_RATE }) => {
+const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currency, formatMoney, EXCHANGE_RATE }) => {
     // Glass Style for Cards
     const glassCardStyle = {
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
@@ -113,21 +113,17 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         position: 'relative'
     };
 
-    const [selectedYear, setSelectedYear] = useState(null);
-    const [filter, setFilter] = useState('Yearly');
     const [filteredData, setFilteredData] = useState({
         achievedRevenue: 0,
         adjustedTarget: 0,
         techData: [],
         typeData: [],
-        emergingBreakdown: {} // New state for breakdown
+        emergingBreakdown: {}
     });
 
     // State for toggling breakdown view
-    const [selectedTechCategory, setSelectedTechCategory] = useState(null); // 'Emerging technologies' or 'Other technologies' or null
+    const [selectedTechCategory, setSelectedTechCategory] = useState(null);
 
-    // Color Palette
-    // Color Palette - Specific Mapping
     const TYPE_COLORS = {
         'Training': '#0f172a',
         'Lab Support': '#1e40af',
@@ -137,85 +133,24 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         'Content Development': '#93c5fd'
     };
 
-    // Fallback colors for unknown types
     const FALLBACK_COLORS = ['#cbd5e1', '#94a3b8', '#64748b'];
 
-    // Get available years from opportunities
-    const availableYears = [...new Set(allOpps.map(opp =>
-        opp.commonDetails?.year || new Date(opp.createdAt).getFullYear()
-    ))].filter(year => !isNaN(year) && year > 0).sort((a, b) => b - a);
-
-    const activeYear = selectedYear && availableYears.includes(selectedYear)
-        ? selectedYear
-        : (availableYears[0] || null);
-
-    // Helper to get month index from name or number
-    const getMonthIndex = (month) => {
-        if (!month) return -1;
-        if (typeof month === 'number') return month - 1;
-        const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-        const normalized = month.toString().toLowerCase().substring(0, 3);
-        return months.indexOf(normalized);
-    };
-
-    // Filter Logic
+    // Process data when allOpps (filtered from parent) or filter changes
     useEffect(() => {
-        if (!activeYear) return;
-
         let targetFactor = 1;
 
-        // Filter Opportunities by Year and Time Period
-        const filteredOpps = allOpps.filter(opp => {
-            // Get year from opportunity
-            const oppYear = opp.commonDetails?.year || new Date(opp.createdAt).getFullYear();
+        // Use filteredOpps directly from props
+        const filteredOpps = allOpps;
 
-            // Filter by selected year
-            if (oppYear !== activeYear) return false;
+        if (filter === 'H1') targetFactor = 0.5;
+        if (filter === 'H2') targetFactor = 0.5;
+        if (filter === 'Q1') targetFactor = 0.25;
+        if (filter === 'Q2') targetFactor = 0.25;
+        if (filter === 'Q3') targetFactor = 0.25;
+        if (filter === 'Q4') targetFactor = 0.25;
 
-            // If Yearly filter, include all from this year
-            if (filter === 'Yearly') {
-                return true;
-            }
-
-            // For H1/H2/Q1-Q4, also filter by month
-            let monthIdx = getMonthIndex(opp.commonDetails?.monthOfTraining);
-
-            if (monthIdx === -1) {
-                const createdDate = new Date(opp.createdAt);
-                monthIdx = createdDate.getMonth();
-            }
-
-            if (filter === 'H1') {
-                targetFactor = 0.5;
-                return monthIdx >= 0 && monthIdx <= 5;
-            }
-            if (filter === 'H2') {
-                targetFactor = 0.5;
-                return monthIdx >= 6 && monthIdx <= 11;
-            }
-            if (filter === 'Q1') {
-                targetFactor = 0.25;
-                return monthIdx >= 0 && monthIdx <= 2;
-            }
-            if (filter === 'Q2') {
-                targetFactor = 0.25;
-                return monthIdx >= 3 && monthIdx <= 5;
-            }
-            if (filter === 'Q3') {
-                targetFactor = 0.25;
-                return monthIdx >= 6 && monthIdx <= 8;
-            }
-            if (filter === 'Q4') {
-                targetFactor = 0.25;
-                return monthIdx >= 9 && monthIdx <= 11;
-            }
-            return false;
-        });
-
-
-        // Calculate Aggregates using ONLY PO Amount (poValue) - Strict PO-only
+        // --- 1. Achieved Revenue ---
         const achievedRev = filteredOpps.reduce((sum, opp) => sum + (opp.poValue || 0), 0);
-
 
         // Technology Distribution (List format with grouping)
         const techMap = {};
@@ -261,7 +196,6 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         }));
 
 
-
         // Opportunity Type Distribution (Pie Chart)
         const typeMap = {};
         filteredOpps.forEach(opp => {
@@ -275,6 +209,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                 typeMap[type].count += 1;
             }
         });
+
         // Defined sort order
         const ORDERED_TYPES = [
             'Training',
@@ -305,11 +240,8 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
                 return a.name.localeCompare(b.name);
             });
 
-
-
         // Update target factor
-        if (filter === 'H1' || filter === 'H2') targetFactor = 0.5;
-        if (filter === 'Q1' || filter === 'Q2' || filter === 'Q3' || filter === 'Q4') targetFactor = 0.25;
+        // NOTE: targetFactor was already set at top of effect
 
         setFilteredData({
             achievedRevenue: achievedRev,
@@ -321,7 +253,7 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             otherBreakdown
         });
 
-    }, [allOpps, activeYear, filter, yearlyTarget]);
+    }, [allOpps, filter, yearlyTarget]);
 
     const diff = filteredData.adjustedTarget - filteredData.achievedRevenue;
     const isPositive = diff <= 0;
@@ -335,33 +267,6 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-black">Revenue Summary</h3>
-                    <div className="flex gap-2">
-                        {/* Year Selector */}
-                        <select
-                            value={activeYear || ''}
-                            onChange={(e) => setSelectedYear(Number(e.target.value))}
-                            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500 text-black font-bold"
-                        >
-                            {availableYears.map(year => (
-                                <option key={year} value={year}>{year}</option>
-                            ))}
-                        </select>
-
-                        {/* Time Period Selector */}
-                        <select
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            className="text-xs border border-gray-200 rounded-md px-2 py-1 bg-gray-50 outline-none focus:border-blue-500 text-black font-bold"
-                        >
-                            <option value="Yearly">Yearly</option>
-                            <option value="H1">H1 (Jan-Jun)</option>
-                            <option value="H2">H2 (Jul-Dec)</option>
-                            <option value="Q1">Q1 (Jan-Mar)</option>
-                            <option value="Q2">Q2 (Apr-Jun)</option>
-                            <option value="Q3">Q3 (Jul-Sep)</option>
-                            <option value="Q4">Q4 (Oct-Dec)</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div className="flex-1 w-full min-h-[220px] border-b border-gray-100 pb-1 mb-1">

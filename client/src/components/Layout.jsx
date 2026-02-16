@@ -35,6 +35,9 @@ const Layout = ({ children }) => {
 
                     {/* User Actions */}
                     <div className="flex items-center space-x-2">
+                        {/* Portal Target for Page-Specific Filters */}
+                        <div id="header-filter-portal" className="mr-4 font-normal"></div>
+
                         {/* Global Currency Toggle */}
                         <div className="mr-4">
                             <RealisticToggle

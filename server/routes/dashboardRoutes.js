@@ -187,7 +187,8 @@ router.get('/all-opportunities', protect, async (req, res) => {
                 typeSpecificDetails: opp.typeSpecificDetails, // Needed for Revenue by Technology
                 revenue: opp.financeDetails?.clientReceivables?.invoiceAmount || 0,
                 poValue: opp.poValue || 0,
-                createdAt: opp.createdAt
+                createdAt: opp.createdAt,
+                commonDetails: opp.commonDetails // Ensure commonDetails (year, startDate) are sent
             };
         });
 
