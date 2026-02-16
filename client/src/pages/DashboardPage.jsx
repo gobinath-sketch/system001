@@ -32,7 +32,8 @@ const DashboardPage = ({ mockRole }) => {
     }
 
     // Redirect other roles to their specific dashboards
-    if (user?.role === 'Director') return <Navigate to="/dashboard/businesshead" replace />;
+    if (user?.role === 'Business Head') return <Navigate to="/dashboard/businesshead" replace />;
+    if (user?.role === 'Director') return <Navigate to="/dashboard/director" replace />;
     if (user?.role === 'Delivery Team') return <Navigate to="/dashboard/delivery" replace />;
     if (user?.role === 'Finance') return <Navigate to="/finance/dashboard" replace />;
 

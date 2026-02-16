@@ -12,19 +12,50 @@ const getAccessibleUserIds = async (user) => {
     } else if (user.role === 'Sales Manager') {
         const team = await User.find({ reportingManager: user._id });
         return [user._id, ...team.map(u => u._id)];
+    } else if (user.role === 'Business Head') {
+        // Get all Sales Managers reporting to Business Head
+        const managers = await User.find({ reportingManager: user._id, role: 'Sales Manager' });
+        const managerIds = managers.map(m => m._id);
+
+        // Get all Sales Executives reporting to those managers
+        const executives = await User.find({ reportingManager: { $in: managerIds }, role: 'Sales Executive' });
+        const executiveIds = executives.map(e => e._id);
+
+        return [user._id, ...managerIds, ...executiveIds];
     } else {
-        return []; // Head
+        return []; // Director, Super Admin - access all
     }
 };
 
 router.get('/stats', protect, async (req, res) => {
     try {
+        const { userId } = req.query;
         let query = {};
         let userIds = [];
 
-        if (req.user.role !== 'Business Head') {
-            userIds = await getAccessibleUserIds(req.user);
-            query.createdBy = { $in: userIds };
+        // If userId is provided, verify permissions and use it
+        if (userId) {
+            // Only Managers and Admins can view other users' data
+            if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
+                // For Manager: verify userId is in their team
+                if (req.user.role === 'Sales Manager') {
+                    const team = await User.find({ reportingManager: req.user._id });
+                    const teamIds = [req.user._id.toString(), ...team.map(u => u._id.toString())];
+                    if (!teamIds.includes(userId)) {
+                        return res.status(403).json({ message: 'Not authorized to view this user\'s data' });
+                    }
+                }
+                userIds = [userId];
+                query.createdBy = { $in: userIds };
+            } else {
+                return res.status(403).json({ message: 'Not authorized to view other users\' data' });
+            }
+        } else {
+            // Default behavior: use accessible user IDs
+            if (req.user.role !== 'Business Head') {
+                userIds = await getAccessibleUserIds(req.user);
+                query.createdBy = { $in: userIds };
+            }
         }
 
         // Exclude discontinued/cancelled from ALL stats
@@ -93,10 +124,27 @@ router.get('/stats', protect, async (req, res) => {
 // @desc    Get client health metrics (Active, Mid, Inactive)
 router.get('/client-health', protect, async (req, res) => {
     try {
+        const { userId } = req.query;
         let query = {};
-        if (req.user.role !== 'Business Head') {
-            const userIds = await getAccessibleUserIds(req.user);
-            query.createdBy = { $in: userIds };
+
+        if (userId) {
+            if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
+                if (req.user.role === 'Sales Manager') {
+                    const team = await User.find({ reportingManager: req.user._id });
+                    const teamIds = [req.user._id.toString(), ...team.map(u => u._id.toString())];
+                    if (!teamIds.includes(userId)) {
+                        return res.status(403).json({ message: 'Not authorized to view this user\'s data' });
+                    }
+                }
+                query.createdBy = userId;
+            } else {
+                return res.status(403).json({ message: 'Not authorized to view other users\' data' });
+            }
+        } else {
+            if (req.user.role !== 'Business Head') {
+                const userIds = await getAccessibleUserIds(req.user);
+                query.createdBy = { $in: userIds };
+            }
         }
 
         const clients = await Client.find(query);
@@ -140,10 +188,28 @@ router.get('/client-health', protect, async (req, res) => {
 // @access  Private
 router.get('/all-opportunities', protect, async (req, res) => {
     try {
+        const { userId } = req.query;
         let query = {};
-        if (req.user.role !== 'Business Head') {
-            const userIds = await getAccessibleUserIds(req.user);
-            query.createdBy = { $in: userIds };
+
+        // If userId is provided, verify permissions and use it
+        if (userId) {
+            if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
+                if (req.user.role === 'Sales Manager') {
+                    const team = await User.find({ reportingManager: req.user._id });
+                    const teamIds = [req.user._id.toString(), ...team.map(u => u._id.toString())];
+                    if (!teamIds.includes(userId)) {
+                        return res.status(403).json({ message: 'Not authorized to view this user\'s data' });
+                    }
+                }
+                query.createdBy = userId;
+            } else {
+                return res.status(403).json({ message: 'Not authorized to view other users\' data' });
+            }
+        } else {
+            if (req.user.role !== 'Business Head') {
+                const userIds = await getAccessibleUserIds(req.user);
+                query.createdBy = { $in: userIds };
+            }
         }
 
         const exclusionStatuses = ['Cancelled', 'Discontinued', 'Lost'];
@@ -814,10 +880,27 @@ router.put('/manager/set-target/:userId', protect, async (req, res) => {
 // @access  Private
 router.get('/analytics/type-distribution', protect, async (req, res) => {
     try {
+        const { userId } = req.query;
         let query = {};
-        if (req.user.role !== 'Business Head') {
-            const userIds = await getAccessibleUserIds(req.user);
-            query.createdBy = { $in: userIds };
+
+        if (userId) {
+            if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
+                if (req.user.role === 'Sales Manager') {
+                    const team = await User.find({ reportingManager: req.user._id });
+                    const teamIds = [req.user._id.toString(), ...team.map(u => u._id.toString())];
+                    if (!teamIds.includes(userId)) {
+                        return res.status(403).json({ message: 'Not authorized to view this user\'s data' });
+                    }
+                }
+                query.createdBy = userId;
+            } else {
+                return res.status(403).json({ message: 'Not authorized to view other users\' data' });
+            }
+        } else {
+            if (req.user.role !== 'Business Head') {
+                const userIds = await getAccessibleUserIds(req.user);
+                query.createdBy = { $in: userIds };
+            }
         }
 
         const stats = await Opportunity.aggregate([
@@ -849,10 +932,27 @@ router.get('/analytics/type-distribution', protect, async (req, res) => {
 // @access  Private
 router.get('/analytics/sector-distribution', protect, async (req, res) => {
     try {
+        const { userId } = req.query;
         let query = {};
-        if (req.user.role !== 'Business Head') {
-            const userIds = await getAccessibleUserIds(req.user);
-            query.createdBy = { $in: userIds };
+
+        if (userId) {
+            if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
+                if (req.user.role === 'Sales Manager') {
+                    const team = await User.find({ reportingManager: req.user._id });
+                    const teamIds = [req.user._id.toString(), ...team.map(u => u._id.toString())];
+                    if (!teamIds.includes(userId)) {
+                        return res.status(403).json({ message: 'Not authorized to view this user\'s data' });
+                    }
+                }
+                query.createdBy = userId;
+            } else {
+                return res.status(403).json({ message: 'Not authorized to view other users\' data' });
+            }
+        } else {
+            if (req.user.role !== 'Business Head') {
+                const userIds = await getAccessibleUserIds(req.user);
+                query.createdBy = { $in: userIds };
+            }
         }
 
         const stats = await Opportunity.aggregate([
@@ -884,10 +984,27 @@ router.get('/analytics/sector-distribution', protect, async (req, res) => {
 // @access  Private
 router.get('/analytics/yearly-trends', protect, async (req, res) => {
     try {
+        const { userId } = req.query;
         let query = {};
-        if (req.user.role !== 'Business Head') {
-            const userIds = await getAccessibleUserIds(req.user);
-            query.createdBy = { $in: userIds };
+
+        if (userId) {
+            if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
+                if (req.user.role === 'Sales Manager') {
+                    const team = await User.find({ reportingManager: req.user._id });
+                    const teamIds = [req.user._id.toString(), ...team.map(u => u._id.toString())];
+                    if (!teamIds.includes(userId)) {
+                        return res.status(403).json({ message: 'Not authorized to view this user\'s data' });
+                    }
+                }
+                query.createdBy = userId;
+            } else {
+                return res.status(403).json({ message: 'Not authorized to view other users\' data' });
+            }
+        } else {
+            if (req.user.role !== 'Business Head') {
+                const userIds = await getAccessibleUserIds(req.user);
+                query.createdBy = { $in: userIds };
+            }
         }
 
         const currentYear = new Date().getFullYear();
@@ -1085,6 +1202,38 @@ router.get('/delivery/revamp-stats', protect, async (req, res) => {
 
     } catch (err) {
         console.error('Error in /delivery/revamp-stats:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
+// Business Head: Get team structure (Sales Managers and Executives)
+router.get('/business-head/team-structure', protect, async (req, res) => {
+    try {
+        if (req.user.role !== 'Business Head') {
+            return res.status(403).json({ message: 'Access denied. Business Head only.' });
+        }
+
+        // Get all Sales Managers reporting to this Business Head
+        const salesManagers = await User.find({
+            reportingManager: req.user._id,
+            role: 'Sales Manager'
+        }).select('_id name email creatorCode');
+
+        const managerIds = salesManagers.map(m => m._id);
+
+        // Get all Sales Executives reporting to those managers
+        const salesExecutives = await User.find({
+            reportingManager: { $in: managerIds },
+            role: 'Sales Executive'
+        }).select('_id name email creatorCode reportingManager');
+
+        res.json({
+            salesManagers,
+            salesExecutives
+        });
+
+    } catch (err) {
+        console.error('Error in /business-head/team-structure:', err);
         res.status(500).json({ message: err.message });
     }
 });

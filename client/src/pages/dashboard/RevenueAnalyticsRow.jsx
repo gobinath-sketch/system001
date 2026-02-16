@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { MoreHorizontal, ChevronRight, ChevronLeft } from 'lucide-react';
+import { MoreHorizontal, ChevronRight, ChevronLeft, X, Check } from 'lucide-react';
+import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const shiftColor = (hex, amount) => {
@@ -98,7 +99,7 @@ const CustomTooltip = ({ active, payload, formatMoney }) => {
 
 import { TECHNOLOGIES, LOGO_MAP } from '../../utils/TechnologyConstants';
 
-const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currency, formatMoney, EXCHANGE_RATE }) => {
+const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currency, formatMoney, EXCHANGE_RATE, showSetTargetButton, teamMembers, onRefreshData }) => {
     // Glass Style for Cards
     const glassCardStyle = {
         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
@@ -123,6 +124,12 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
 
     // State for toggling breakdown view
     const [selectedTechCategory, setSelectedTechCategory] = useState(null);
+
+    // State for Set Team Target modal
+    const [showTargetModal, setShowTargetModal] = useState(false);
+    const [targetPeriod, setTargetPeriod] = useState('Yearly');
+    const [editingTargets, setEditingTargets] = useState({});
+    const [savingTarget, setSavingTarget] = useState(null);
 
     const TYPE_COLORS = {
         'Training': '#0f172a',
@@ -267,6 +274,14 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
             <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-black">Revenue Summary</h3>
+                    {showSetTargetButton && (
+                        <button
+                            onClick={() => setShowTargetModal(true)}
+                            className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium"
+                        >
+                            Set Team Target
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex-1 w-full min-h-[220px] border-b border-gray-100 pb-1 mb-1">
@@ -563,6 +578,145 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                     )}
                 </div>
             </div >
+
+            {/* Set Team Target Modal */}
+            {showTargetModal && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-3xl max-h-[80vh] flex flex-col">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                            <h2 className="text-xl font-bold text-gray-800">Set Team Targets</h2>
+                            <button
+                                onClick={() => setShowTargetModal(false)}
+                                className="text-gray-500 hover:text-gray-700"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            <div className="flex items-center gap-4">
+                                <label className="text-sm font-medium text-gray-700">Target Period:</label>
+                                <select
+                                    value={targetPeriod}
+                                    onChange={(e) => setTargetPeriod(e.target.value)}
+                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="Half-Yearly">Half-Yearly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                </select>
+                            </div>
+
+                            <div className="overflow-auto max-h-[400px]">
+                                <table className="w-full text-left border-collapse">
+                                    <thead className="bg-gray-50 sticky top-0">
+                                        <tr className="border-b border-gray-200">
+                                            <th className="py-3 px-4 font-semibold text-gray-700">Team Member</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700">Current Target</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700">New Target ({currency})</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700 text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {teamMembers?.map(member => {
+                                            const currentTarget = member.targets?.find(
+                                                t => t.year === new Date().getFullYear() && t.period === targetPeriod
+                                            )?.amount || 0;
+                                            const displayTarget = currency === 'INR' ? currentTarget : currentTarget / EXCHANGE_RATE;
+
+                                            return (
+                                                <tr key={member._id} className="border-b border-gray-100 hover:bg-gray-50">
+                                                    <td className="py-3 px-4 font-medium text-gray-800">{member.name}</td>
+                                                    <td className="py-3 px-4 text-gray-600">
+                                                        {formatMoney(currentTarget)}
+                                                    </td>
+                                                    <td className="py-3 px-4">
+                                                        <input
+                                                            type="number"
+                                                            value={editingTargets[member._id] ?? Math.round(displayTarget)}
+                                                            onChange={(e) => setEditingTargets({
+                                                                ...editingTargets,
+                                                                [member._id]: e.target.value
+                                                            })}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                            placeholder="Enter target"
+                                                        />
+                                                    </td>
+                                                    <td className="py-3 px-4 text-center">
+                                                        <button
+                                                            onClick={async () => {
+                                                                const targetValue = editingTargets[member._id];
+                                                                if (!targetValue || targetValue <= 0) {
+                                                                    alert('Please enter a valid target amount');
+                                                                    return;
+                                                                }
+
+                                                                setSavingTarget(member._id);
+                                                                try {
+                                                                    const token = localStorage.getItem('token');
+                                                                    const amountInInr = currency === 'INR'
+                                                                        ? parseFloat(targetValue)
+                                                                        : parseFloat(targetValue) * EXCHANGE_RATE;
+
+                                                                    await axios.put(
+                                                                        `http://localhost:5000/api/dashboard/manager/set-target/${member._id}`,
+                                                                        {
+                                                                            period: targetPeriod,
+                                                                            year: new Date().getFullYear(),
+                                                                            amount: amountInInr
+                                                                        },
+                                                                        { headers: { Authorization: `Bearer ${token}` } }
+                                                                    );
+
+                                                                    // Refresh data if callback provided
+                                                                    if (onRefreshData) {
+                                                                        await onRefreshData();
+                                                                    }
+
+                                                                    // Clear the editing state for this member
+                                                                    const newTargets = { ...editingTargets };
+                                                                    delete newTargets[member._id];
+                                                                    setEditingTargets(newTargets);
+
+                                                                    alert(`Target updated successfully for ${member.name}`);
+                                                                } catch (err) {
+                                                                    alert(err.response?.data?.message || 'Failed to update target');
+                                                                } finally {
+                                                                    setSavingTarget(null);
+                                                                }
+                                                            }}
+                                                            disabled={savingTarget === member._id}
+                                                            className="px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-sm font-medium inline-flex items-center gap-1"
+                                                        >
+                                                            {savingTarget === member._id ? (
+                                                                'Saving...'
+                                                            ) : (
+                                                                <>
+                                                                    <Check size={14} />
+                                                                    Save
+                                                                </>
+                                                            )}
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div className="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end">
+                            <button
+                                onClick={() => setShowTargetModal(false)}
+                                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors font-medium"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };

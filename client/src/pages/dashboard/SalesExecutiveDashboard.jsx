@@ -12,7 +12,7 @@ import RevenueAnalyticsRow from './RevenueAnalyticsRow';
 import { useCurrency } from '../../context/CurrencyContext';
 
 
-const SalesExecutiveDashboard = ({ user }) => {
+const SalesExecutiveDashboard = ({ user, customUserId, showViewFilter, viewMode, setViewMode, teamMembers, salesManagers, salesExecutives, isBusinessHead }) => {
     const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [clientHealth, setClientHealth] = useState({ active: 0, mid: 0, inactive: 0 });
@@ -49,55 +49,56 @@ const SalesExecutiveDashboard = ({ user }) => {
     const EXCHANGE_RATE = 85; // Fixed rate for now
     const OPPORTUNITY_TYPES = ['Training', 'Product Support', 'Resource Support', 'Vouchers', 'Content Development', 'Lab Support'];
 
+    const fetchDashboardData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { Authorization: `Bearer ${token} ` };
+            const params = customUserId ? { userId: customUserId } : {};
+
+            const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', { headers, params });
+            setStats(statsRes.data);
+
+            const perfRes = await axios.get(`http://localhost:5000/api/dashboard/performance/${customUserId || user.id}`, { headers });
+            setPerformance(perfRes.data);
+
+            const trendsRes = await axios.get('http://localhost:5000/api/dashboard/monthly-trends', { headers, params });
+            setMonthlyTrends(trendsRes.data);
+
+            // Fetch all opps for document status card and top 5 clients
+            const docsRes = await axios.get('http://localhost:5000/api/dashboard/all-opportunities', { headers, params });
+            setAllOpps(docsRes.data);
+
+            // Fetch client health metrics
+            const healthRes = await axios.get('http://localhost:5000/api/dashboard/client-health', { headers, params });
+            setClientHealth(healthRes.data);
+
+            // Fetch Analytics Data
+            const typeRes = await axios.get('http://localhost:5000/api/dashboard/analytics/type-distribution', { headers, params });
+            const sectorRes = await axios.get('http://localhost:5000/api/dashboard/analytics/sector-distribution', { headers, params });
+            const yearlyRes = await axios.get('http://localhost:5000/api/dashboard/analytics/yearly-trends', { headers, params });
+
+            // Zero-fill Opportunity Types
+            const filledTypeData = OPPORTUNITY_TYPES.map(type => {
+                const found = typeRes.data.find(item => item.type === type);
+                return found ? { type, count: found.count, revenue: found.revenue } : { type, count: 0, revenue: 0 };
+            });
+
+            setAnalyticsData({
+                typeDist: filledTypeData, // Use filled data
+                sectorDist: sectorRes.data,
+                yearlyTrends: yearlyRes.data
+            });
+
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching dashboard data:', err);
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const headers = { Authorization: `Bearer ${token} ` };
-
-                const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', { headers });
-                setStats(statsRes.data);
-
-                const perfRes = await axios.get(`http://localhost:5000/api/dashboard/performance/${user.id}`, { headers });
-                setPerformance(perfRes.data);
-
-                const trendsRes = await axios.get('http://localhost:5000/api/dashboard/monthly-trends', { headers });
-                setMonthlyTrends(trendsRes.data);
-
-                // Fetch all opps for document status card and top 5 clients
-                const docsRes = await axios.get('http://localhost:5000/api/dashboard/all-opportunities', { headers });
-                setAllOpps(docsRes.data);
-
-                // Fetch client health metrics
-                const healthRes = await axios.get('http://localhost:5000/api/dashboard/client-health', { headers });
-                setClientHealth(healthRes.data);
-
-                // Fetch Analytics Data
-                const typeRes = await axios.get('http://localhost:5000/api/dashboard/analytics/type-distribution', { headers });
-                const sectorRes = await axios.get('http://localhost:5000/api/dashboard/analytics/sector-distribution', { headers });
-                const yearlyRes = await axios.get('http://localhost:5000/api/dashboard/analytics/yearly-trends', { headers });
-
-                // Zero-fill Opportunity Types
-                const filledTypeData = OPPORTUNITY_TYPES.map(type => {
-                    const found = typeRes.data.find(item => item.type === type);
-                    return found ? { type, count: found.count, revenue: found.revenue } : { type, count: 0, revenue: 0 };
-                });
-
-                setAnalyticsData({
-                    typeDist: filledTypeData, // Use filled data
-                    sectorDist: sectorRes.data,
-                    yearlyTrends: yearlyRes.data
-                });
-
-                setLoading(false);
-            } catch (err) {
-                console.error('Error fetching dashboard data:', err);
-                setLoading(false);
-            }
-        };
-
         fetchDashboardData();
-    }, [user.id]);
+    }, [user.id, customUserId]);
 
     // Helper to format money based on selected currency
     const formatMoney = (amountInINR) => {
@@ -245,6 +246,48 @@ const SalesExecutiveDashboard = ({ user }) => {
 
         return createPortal(
             <div className="flex items-center space-x-2">
+                {/* View Filter - Only for Sales Managers */}
+                {showViewFilter && (
+                    <>
+                        <label className="text-sm font-medium text-gray-700">View:</label>
+                        <select
+                            value={viewMode}
+                            onChange={(e) => setViewMode(e.target.value)}
+                            className="h-8 pl-2 pr-6 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        >
+                            <option value="self">My Dashboard</option>
+                            {isBusinessHead ? (
+                                <>
+                                    {salesManagers && salesManagers.length > 0 && (
+                                        <optgroup label="Sales Managers">
+                                            {salesManagers.map(manager => (
+                                                <option key={manager._id} value={manager._id}>{manager.name}</option>
+                                            ))}
+                                        </optgroup>
+                                    )}
+                                    {salesExecutives && salesExecutives.length > 0 && (
+                                        <optgroup label="Sales Executives">
+                                            {salesExecutives.map(exec => (
+                                                <option key={exec._id} value={exec._id}>{exec.name}</option>
+                                            ))}
+                                        </optgroup>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <option value="team">Team Overview</option>
+                                    <optgroup label="Team Members">
+                                        {teamMembers?.map(member => (
+                                            <option key={member._id} value={member._id}>{member.name}</option>
+                                        ))}
+                                    </optgroup>
+                                </>
+                            )}
+                        </select>
+                    </>
+                )}
+
+                {/* Year Filter */}
                 <select
                     value={selectedYear || ''}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
@@ -255,6 +298,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                     ))}
                 </select>
 
+                {/* Period Filter */}
                 <select
                     value={timeFilter}
                     onChange={(e) => setTimeFilter(e.target.value)}
@@ -400,6 +444,9 @@ const SalesExecutiveDashboard = ({ user }) => {
                 currency={currency}
                 formatMoney={formatMoney}
                 EXCHANGE_RATE={EXCHANGE_RATE}
+                showSetTargetButton={showViewFilter && viewMode === 'team'}
+                teamMembers={teamMembers}
+                onRefreshData={fetchDashboardData}
             />
 
             {/* 3. Second Analytics Row */}

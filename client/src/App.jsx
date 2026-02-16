@@ -7,6 +7,7 @@ import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
 import DirectorDashboard from './pages/DirectorDashboard';
 import SalesManagerDashboard from './pages/dashboard/SalesManagerDashboard';
+import BusinessHeadDashboard from './pages/dashboard/BusinessHeadDashboard';
 import ClientPage from './pages/ClientPage';
 import OpportunityPage from './pages/OpportunityPage';
 import OpportunityDetailPage from './pages/OpportunityDetailPage';
@@ -41,7 +42,8 @@ function App() {
 
                 {/* Role-Based Dashboard Routes */}
                 <Route path="/" element={<ProtectedRoute><Layout><DashboardPage /></Layout></ProtectedRoute>} />
-                <Route path="/dashboard/businesshead" element={<ProtectedRoute><Layout><DirectorDashboard /></Layout></ProtectedRoute>} />
+                <Route path="/dashboard/director" element={<ProtectedRoute><Layout><DirectorDashboard /></Layout></ProtectedRoute>} />
+                <Route path="/dashboard/businesshead" element={<ProtectedRoute><Layout><BusinessHeadDashboard /></Layout></ProtectedRoute>} />
                 <Route path="/dashboard/manager" element={<ProtectedRoute><Layout><SalesManagerDashboard /></Layout></ProtectedRoute>} />
                 <Route path="/dashboard/executive" element={<ProtectedRoute><Layout><DashboardPage mockRole="Sales Executive" /></Layout></ProtectedRoute>} />
 
