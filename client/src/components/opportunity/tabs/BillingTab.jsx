@@ -400,21 +400,30 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
             const token = localStorage.getItem('token');
             const uploadFormData = new FormData();
 
-            // Use 'document' as field name matching backend
-            uploadFormData.append('document', file);
-            uploadFormData.append('category', expenseKey);
+            let endpoint = '';
+
+            // Differentiate between generic 'expense' docs and the 'proposal' doc
+            if (expenseKey === 'proposal') {
+                endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
+                uploadFormData.append('proposal', file); // Use 'proposal' as field name
+            } else {
+                endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`;
+                // Use 'document' as field name matching backend for expenses
+                uploadFormData.append('document', file);
+                uploadFormData.append('category', expenseKey);
+            }
 
             await axios.post(
-                `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`,
+                endpoint,
                 uploadFormData,
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
             );
 
-            addToast('Document uploaded successfully', 'success');
+            addToast(`${expenseKey === 'proposal' ? 'Proposal' : 'Document'} uploaded successfully`, 'success');
             refreshData();
         } catch (error) {
             console.error('Upload failed', error);
-            addToast('Failed to upload proposal', 'error');
+            addToast(`Failed to upload ${expenseKey}`, 'error');
         } finally {
             setUploading(null);
         }
@@ -545,8 +554,65 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                             <div className="bg-green-50 p-4 rounded-xl border border-green-200 mb-6">
                                 <div className="text-center">
                                     <label className="block text-xs font-bold text-green-700 uppercase tracking-wide mb-1">Proposal Value</label>
-                                    <div className="text-3xl font-extrabold text-green-700">
-                                        {CURRENCY_SYMBOL} {((formData.commonDetails?.tov || 0) / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                    <div className="flex items-center justify-center gap-3">
+                                        <div className="text-3xl font-extrabold text-green-700">
+                                            {CURRENCY_SYMBOL} {((formData.commonDetails?.tov || 0) / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                        </div>
+
+                                        {/* Proposal Document Action */}
+                                        <div className="flex items-center">
+                                            {opportunity.proposalDocument ? (
+                                                <div className="flex flex-col items-center group relative">
+                                                    <a
+                                                        href={`http://localhost:5000/${opportunity.proposalDocument.replace(/\\/g, '/')}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-green-600 hover:text-green-800 p-1.5 bg-white rounded-full shadow-sm border border-green-100 transition-all hover:scale-110"
+                                                        title="View Proposal"
+                                                    >
+                                                        <FileText size={18} />
+                                                    </a>
+                                                    {canEditExecution && (
+                                                        <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <input
+                                                                type="file"
+                                                                id="proposal-upload-mini"
+                                                                className="hidden"
+                                                                onChange={(e) => handleProposalUpload(e, 'proposal')}
+                                                                accept=".pdf,.doc,.docx,.ppt,.pptx"
+                                                                disabled={uploading}
+                                                            />
+                                                            <button
+                                                                onClick={() => document.getElementById('proposal-upload-mini').click()}
+                                                                className="text-[10px] bg-white border border-gray-200 px-2 py-0.5 rounded shadow-sm hover:bg-gray-50 text-gray-600 whitespace-nowrap"
+                                                            >
+                                                                Replace
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ) : (
+                                                canEditExecution && (
+                                                    <div>
+                                                        <input
+                                                            type="file"
+                                                            id="proposal-upload-mini"
+                                                            className="hidden"
+                                                            onChange={(e) => handleProposalUpload(e, 'proposal')}
+                                                            accept=".pdf,.doc,.docx,.ppt,.pptx"
+                                                            disabled={uploading}
+                                                        />
+                                                        <button
+                                                            onClick={() => document.getElementById('proposal-upload-mini').click()}
+                                                            className="text-green-600 hover:text-green-800 p-1.5 bg-white rounded-full shadow-sm border border-green-200 border-dashed hover:border-solid transition-all hover:scale-110"
+                                                            title="Upload Proposal"
+                                                        >
+                                                            <Upload size={18} />
+                                                        </button>
+                                                    </div>
+                                                )
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

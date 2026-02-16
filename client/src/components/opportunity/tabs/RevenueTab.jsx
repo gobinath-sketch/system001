@@ -131,9 +131,10 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
             const uploadFormData = new FormData();
             uploadFormData.append('file', file); // Generic field name, backend handles type via URL
 
-            const endpoint = type === 'po'
-                ? `http://localhost:5000/api/opportunities/${opportunity._id}/upload-po`
-                : `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`;
+            let endpoint = '';
+            if (type === 'po') endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-po`;
+            else if (type === 'invoice') endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`;
+            else if (type === 'proposal') endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
 
             // Adjust form data based on endpoint expectation if needed (assuming generic upload route or specific routes)
             // Re-using specific routes from previous logic
@@ -147,6 +148,8 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
 
                 specificTypFormData.append('poValue', poVal);
                 specificTypFormData.append('poDate', poDt);
+            } else if (type === 'proposal') {
+                specificTypFormData.append('proposal', file);
             } else {
                 specificTypFormData.append('invoice', file);
             }
@@ -157,11 +160,11 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                 { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
             );
 
-            addToast(`${type === 'po' ? 'PO' : 'Invoice'} uploaded successfully`, 'success');
+            addToast(`${type.toUpperCase()} uploaded successfully`, 'success');
             refreshData();
         } catch (error) {
             console.error('Upload failed', error);
-            addToast(`Failed to upload ${type === 'po' ? 'PO' : 'Invoice'}`, 'error');
+            addToast(`Failed to upload ${type}`, 'error');
         } finally {
             setUploading(false);
         }
@@ -210,6 +213,8 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
 
     return (
         <div className="space-y-8 animate-fadeIn">
+
+
             {/* PO and Invoice Details Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* PO Details */}

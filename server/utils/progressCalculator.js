@@ -36,22 +36,18 @@ function calculateOpportunityProgress(opportunity) {
         };
     }
 
-    // 2. Cumulative Milestone Logic
-    // We check strictly from highest to lowest to determine valid progress, 
-    // OR we can accumulate points. The user requirements implies milestones.
-    // "10% - Basic Opportunity Created" -> This is always true if record exists.
+    // --- 0-30%: Opportunity Created (Creation -> Requirements -> Scope) ---
+    // Base: 10%
     progress = 10;
-    stage = 'Created';
-    label = 'Created';
 
-    // 20% - Requirement Summary Captured
+    // 20% - Requirement Summary
     if (opportunity.requirementSummary && opportunity.requirementSummary.trim().length > 0) {
         progress = 20;
     }
 
-    // 30% & 40% - Scope & Sizing (Type Specific)
+    // 30% - Scope & Sizing (Type Specific)
     const typeDetails = opportunity.typeSpecificDetails || {};
-    const type = opportunity.type || 'Training'; // Default to Training if missing
+    const type = opportunity.type || 'Training';
     let hasScope = false;
     let hasSizing = false;
 
@@ -64,24 +60,15 @@ function calculateOpportunityProgress(opportunity) {
             );
             hasSizing = (opportunity.participants > 0);
             break;
-
         case 'Product Support':
-            // Scope: Project Scope
-            // Sizing: Team Size
             hasScope = !!typeDetails.projectScope;
             hasSizing = (typeDetails.teamSize > 0);
             break;
-
         case 'Resource Support':
-            // Scope: Resource Type
-            // Sizing: Resource Count
             hasScope = !!typeDetails.resourceType;
             hasSizing = (typeDetails.resourceCount > 0);
             break;
-
         case 'Vouchers':
-            // Scope: Technology, Exam Details, Exam Location
-            // Sizing: No of Vouchers
             hasScope = (
                 typeDetails.technology &&
                 typeDetails.examDetails &&
@@ -89,49 +76,33 @@ function calculateOpportunityProgress(opportunity) {
             );
             hasSizing = (typeDetails.noOfVouchers > 0);
             break;
-
         case 'Content Support':
-            // Scope: Content Type, Delivery Format
-            // Sizing: Not strictly defined by user, assume generic valid if scope is there? 
-            // User didn't give sizing for Content. Let's assume Sizing passes if Scope passes for now, or just default to true.
             hasScope = (
                 typeDetails.contentType &&
                 typeDetails.deliveryFormat
             );
             hasSizing = hasScope;
             break;
-
         case 'Lab Support':
-            // Scope: Technology, Requirement, Region
-            // Sizing: No of IDs, Duration
             hasScope = (
                 typeDetails.technology &&
                 typeDetails.labRequirement &&
                 typeDetails.region
             );
-            // Duration is string (e.g., "1 month"), parseInt handles it.
             hasSizing = ((typeDetails.numberOfIDs > 0) && (parseInt(typeDetails.duration) > 0));
             break;
-
         default:
-            // Fallback to basic Training-like check
             hasScope = (typeDetails.technology);
             hasSizing = (opportunity.participants > 0);
     }
 
-    if (progress >= 20 && hasScope) {
+    if (progress >= 20 && hasScope && hasSizing) {
         progress = 30;
         stage = 'Created';
         label = 'Created';
     }
 
-    if (progress >= 30 && hasSizing) {
-        progress = 40;
-        stage = 'In Progress';
-        label = 'In Progress';
-    }
-
-    // 50% - Costing/Expenses Started
+    // --- 30-50%: Expenses Getting Filled ---
     const exp = opportunity.expenses || {};
     const hasExpenses = (
         (exp.trainerCost > 0) ||
@@ -141,78 +112,45 @@ function calculateOpportunityProgress(opportunity) {
         (exp.venue > 0)
     );
 
-    if (progress >= 30 && hasExpenses) { // Allow jump from 30 to 50 if sizing missed? Better enforce strictly. 
-        // Strict linear flow: Must be 40 to go to 50? 
-        // User triggers are specific. Let's assume cumulative.
-        if (progress < 40 && hasSizing) progress = 40; // Auto-catchup if safe? 
-        // Let's stick to strict: If you have expenses, you are at least 50 provided previous milestones aren't blocking?
-        // Actually, let's just check the condition. If expenses are there, it's 50%.
-
+    if (progress >= 30 && hasExpenses) {
         progress = 50;
         stage = 'In Progress';
         label = 'In Progress';
     }
 
-    // 60% - Trainer/SME Identified
-    const hasSME = opportunity.selectedSME || opportunity.commonDetails?.trainerDetails?.name;
-
-    if (progress >= 50 && hasSME) {
-        progress = 60;
-        stage = 'Scheduled'; // Stage 3 starts > 50%
-        label = 'Scheduled';
-    }
-
-    // 70% - Proposal Uploaded
+    // --- 50-80%: Proposal Document Upload (Sales) ---
+    // Note: User requested "Proposal doc upload by sales".
+    // We check for proposalDocument.
     if (progress >= 50 && opportunity.proposalDocument) {
-        progress = (progress < 60) ? 70 : 70; // Proposal > SME in hierarchy?
-        // User list order implies 60 -> 70 -> 80.
-        // If Proposal is uploaded but SME not selected, strict logic might say stay at 50?
-        // BUT usually proposal implies SME/Costing is done.
-        // Let's allow Proposal to override.
-        if (progress < 70) progress = 70;
-        stage = 'Scheduled';
+        progress = 80;
+        stage = 'Scheduled'; // Transition to Scheduled? User KPI grouping suggests 80% is significant.
         label = 'Scheduled';
     }
 
-    // 80% - PO Uploaded
-    if (progress >= 50 && opportunity.poDocument) {
-        if (progress < 80) progress = 80;
-        stage = 'Scheduled'; // User says 80 is start of Stage 4? "Stage 4 — 80% → 100%"
-        // Re-reading: "Stage 3 — 50% → 80% → STATUS: Scheduled"
-        // "Stage 4 — 80% → 100% → STATUS: Completed"
-        // But 80% itself... "80% — PO Document Uploaded -> Status Label = Scheduled"
-        // Wait, under Stage 3 it lists "80% — PO Document Uploaded ... Status Label = Scheduled".
-        // BUT under Stage 4 header it says "80% → 100%".
-        // And under Stage 4 triggers it lists "90%" and "100%".
-        // So 80% exact is likely still "Scheduled" or transition. 
-        // User explicitly put "80% — PO Document Uploaded ... 👉 Status Label = Scheduled" under Stage 3.
-        stage = 'Scheduled';
-        label = 'Scheduled';
-    }
+    // --- 80-100%: PO/Invoice/Delivery Docs ---
+    // User: "PO amount, PO doc, Invoice amount, Invoice doc + Delivery documents should be uploaded."
 
-    // 90% - Invoice Uploaded
-    // Stage 4 triggers
-    if (progress >= 80 && opportunity.invoiceDocument) {
+    // Check PO (Doc + Value)
+    const hasPO = opportunity.poDocument && (opportunity.poValue > 0);
+
+    // Check Invoice (Doc + Value)
+    const hasInvoice = opportunity.invoiceDocument && (opportunity.invoiceValue > 0 || (opportunity.financeDetails?.clientReceivables?.invoiceAmount > 0));
+
+    if (progress >= 80 && hasPO && hasInvoice) {
         progress = 90;
         stage = 'Completed';
-        label = 'Completed';
+        label = 'Completed'; // Almost there
     }
 
-    // 100% - All Delivery Docs
+    // Check Delivery Docs (All 4)
     const docs = opportunity.deliveryDocuments || {};
-    const allDocs = docs.attendance && docs.feedback && docs.assessment && docs.performance;
+    const allDeliveryDocs = docs.attendance && docs.feedback && docs.assessment && docs.performance;
 
-    if (progress >= 90 && allDocs) {
+    if (progress >= 90 && allDeliveryDocs) {
         progress = 100;
         stage = 'Completed';
         label = 'Completed';
     }
-
-    // Explicit Status Override: User might manually set to "Completed", "In Progress" etc.
-    // The "MANDATORY STATUS LABELS" section lists labels.
-    // If status is "Completed", we might favor that, but the request says "Triggers" drive the status.
-    // However, if manual status is set to "Cancelled" or "Discontinued" we handled that.
-    // For others, we calculate.
 
     return {
         progressPercentage: progress,

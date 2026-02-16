@@ -30,15 +30,19 @@ router.get('/stats', protect, async (req, res) => {
         const totalClients = await Client.countDocuments(query);
         const totalOpportunities = await Opportunity.countDocuments(query);
 
-        const completedOpportunities = await Opportunity.countDocuments({
-            ...query,
-            progressPercentage: 100
-        });
+        // New KPI Buckets - Strict Ranges
+        // 30% Card: 0% - 49%
+        const progress30 = await Opportunity.countDocuments({ ...query, progressPercentage: { $lt: 50 } });
+        // 50% Card: 50% - 79%
+        const progress50 = await Opportunity.countDocuments({ ...query, progressPercentage: { $gte: 50, $lt: 80 } });
+        // 80% Card: 80% - 99%
+        const progress80 = await Opportunity.countDocuments({ ...query, progressPercentage: { $gte: 80, $lt: 100 } });
+        // 100% Card: Exactly 100%
+        const progress100 = await Opportunity.countDocuments({ ...query, progressPercentage: 100 });
 
-        const inProgressOpportunities = await Opportunity.countDocuments({
-            ...query,
-            progressPercentage: { $lt: 100 }
-        });
+        // Legacy compatibility (optional, can keep if used elsewhere)
+        const completedOpportunities = progress100;
+        const inProgressOpportunities = totalOpportunities - completedOpportunities;
 
         const poUploadedCount = await Opportunity.countDocuments({
             ...query,
@@ -62,6 +66,12 @@ router.get('/stats', protect, async (req, res) => {
             pendingOpportunities,
             completedOpportunities,
             inProgressOpportunities,
+            // New KPI fields
+            progress30,
+            progress50,
+            progress80,
+            progress100,
+
             poUploadedCount,
             invoiceUploadedCount,
             ...teamStats
@@ -119,7 +129,8 @@ router.get('/client-health', protect, async (req, res) => {
 });
 
 // @route   GET /api/dashboard/all-opportunities
-// @desc    Get all opportunities for document status and top 5 clients
+// @desc    Get all opportunities for document status and popup details
+// @access  Private
 router.get('/all-opportunities', protect, async (req, res) => {
     try {
         let query = {};
@@ -128,38 +139,43 @@ router.get('/all-opportunities', protect, async (req, res) => {
             query.createdBy = { $in: userIds };
         }
 
-        const opportunities = await Opportunity.find(query)
-            .sort({ createdAt: -1 })
-            .populate('client', 'companyName name')
-            .lean();
+        const opportunities = await Opportunity.find({
+            ...query,
+            status: { $nin: ['Cancelled', 'Discontinued'] }
+        })
+            .select('opportunityNumber client poDocument invoiceDocument progressPercentage statusLabel statusStage expenseDocuments deliveryDocuments poValue invoiceValue type commonDetails financeDetails typeSpecificDetails createdAt')
+            .populate('client', 'companyName');
 
-        console.log('🔍 Backend - Found opportunities:', opportunities.length);
-        if (opportunities.length > 0) {
-            console.log('🔍 Backend - First opp type:', opportunities[0].type);
-            console.log('🔍 Backend - First opp commonDetails:', opportunities[0].commonDetails);
-            console.log('🔍 Backend - First opp TOV:', opportunities[0].commonDetails?.tov);
-            console.log('🔍 Backend - First opp PO Value:', opportunities[0].poValue);
-        }
+        const formatted = opportunities.map(opp => {
+            const p = opp.progressPercentage || 0;
+            let nextAction = 'Complete Details';
 
-        const formatted = opportunities.map(opp => ({
-            _id: opp._id,
-            opportunityNumber: opp.opportunityNumber,
-            clientName: opp.client?.companyName || opp.client?.name || 'N/A',
-            poDocument: opp.poDocument,
-            invoiceDocument: opp.invoiceDocument,
-            status: opp.status || opp.statusStage,
-            revenue: opp.financeDetails?.clientReceivables?.invoiceAmount || 0,
-            // Include all fields needed for dashboard charts
-            type: opp.type,
-            commonDetails: opp.commonDetails,
-            typeSpecificDetails: opp.typeSpecificDetails,
-            financeDetails: opp.financeDetails,
-            createdAt: opp.createdAt,
-            // PO and Invoice amounts for revenue calculations
-            poValue: opp.poValue || 0,
-            poDate: opp.poDate,
-            invoiceValue: opp.invoiceValue || 0
-        }));
+            if (p < 30) nextAction = 'Define Scope & Sizing';
+            else if (p < 50) nextAction = 'Fill Expenses';
+            else if (p < 80) nextAction = 'Upload Proposal';
+            else if (p < 90) nextAction = 'Upload PO & Quote';
+            else if (p < 100) nextAction = 'Upload Invoice & Delivery Docs';
+            else nextAction = 'Completed';
+
+            return {
+                _id: opp._id,
+                opportunityNumber: opp.opportunityNumber,
+                clientName: opp.client?.companyName || 'N/A', // Corrected field name
+                poDocument: opp.poDocument,
+                invoiceDocument: opp.invoiceDocument,
+                status: opp.status || opp.statusStage,
+                progressPercentage: p,
+                statusLabel: opp.statusLabel,
+                nextAction,
+
+                // Fields for legacy charts if needed, or stripped down
+                type: opp.type,
+                typeSpecificDetails: opp.typeSpecificDetails, // Needed for Revenue by Technology
+                revenue: opp.financeDetails?.clientReceivables?.invoiceAmount || 0,
+                poValue: opp.poValue || 0,
+                createdAt: opp.createdAt
+            };
+        });
 
         res.json(formatted);
 

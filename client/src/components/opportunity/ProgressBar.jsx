@@ -38,8 +38,8 @@ const ProgressBar = ({ opportunityId }) => {
 
     const stages = [
         { name: 'Created', label: 'Created', range: [0, 30], icon: Circle },
-        { name: 'In Progress', label: 'In Progress', range: [30, 50], icon: Circle },
-        { name: 'Scheduled', label: 'Scheduled', range: [50, 80], icon: Circle },
+        { name: 'Expenses', label: 'Expenses', range: [30, 50], icon: Circle },
+        { name: 'Proposal', label: 'Proposal', range: [50, 80], icon: Circle },
         { name: 'Completed', label: 'Completed', range: [80, 100], icon: CheckCircle }
     ];
 

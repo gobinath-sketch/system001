@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, ChevronRight } from 'lucide-react';
+import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, ChevronRight, X } from 'lucide-react';
 import DocumentStatusCard from '../../components/dashboard/DocumentStatusCard';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -21,6 +21,21 @@ const SalesExecutiveDashboard = ({ user }) => {
     const [loading, setLoading] = useState(true);
     const { currency } = useCurrency();
     const [showDocModal, setShowDocModal] = useState(false);
+
+    // Progress Modal State
+    const [progressModal, setProgressModal] = useState({
+        isOpen: false,
+        stage: '',
+        data: []
+    });
+
+    const openProgressModal = (stage, data) => {
+        setProgressModal({
+            isOpen: true,
+            stage,
+            data
+        });
+    };
 
     // New State for Analytics
     const [activeFilter, setActiveFilter] = useState('overview'); // 'overview', 'opportunities', 'sectors', 'revenue'
@@ -237,22 +252,42 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
                 </div>
 
-                {/* Total Opportunities */}
+                {/* Total Opportunities - 4 Stage Breakdown */}
                 <div style={glassCardStyle} className="p-4 flex flex-col justify-center">
                     <div className="flex items-center space-x-2 mb-3">
                         <div className="p-1.5 rounded-full bg-purple-100">
                             <Briefcase size={16} className="text-purple-600" />
                         </div>
-                        <span className="text-sm text-black font-bold">Opportunities</span>
+                        <span className="text-sm text-black font-bold">Opportunities (Total: {stats?.totalOpportunities || 0})</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-2 text-center">
-                        <div>
-                            <p className="text-2xl font-bold text-yellow-600">{stats?.inProgressOpportunities || 0}</p>
-                            <p className="text-xs text-black font-bold">In Progress</p>
+                    <div className="grid grid-cols-4 gap-1 text-center">
+                        <div
+                            onClick={() => openProgressModal('30%', allOpps.filter(o => o.progressPercentage < 50))}
+                            className="flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors"
+                        >
+                            <p className="text-xl font-bold text-blue-500">{stats?.progress30 || 0}</p>
+                            <p className="text-[10px] text-black font-bold">30%</p>
                         </div>
-                        <div className="border-l border-gray-100">
-                            <p className="text-2xl font-bold text-green-600">{stats?.completedOpportunities || 0}</p>
-                            <p className="text-xs text-black font-bold">Completed</p>
+                        <div
+                            onClick={() => openProgressModal('50%', allOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))}
+                            className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
+                        >
+                            <p className="text-xl font-bold text-yellow-500">{stats?.progress50 || 0}</p>
+                            <p className="text-[10px] text-black font-bold">50%</p>
+                        </div>
+                        <div
+                            onClick={() => openProgressModal('80%', allOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))}
+                            className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
+                        >
+                            <p className="text-xl font-bold text-indigo-500">{stats?.progress80 || 0}</p>
+                            <p className="text-[10px] text-black font-bold">80%</p>
+                        </div>
+                        <div
+                            onClick={() => openProgressModal('100%', allOpps.filter(o => o.progressPercentage === 100))}
+                            className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
+                        >
+                            <p className="text-xl font-bold text-green-600">{stats?.progress100 || 0}</p>
+                            <p className="text-[10px] text-black font-bold">100%</p>
                         </div>
                     </div>
                 </div>
@@ -398,7 +433,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                             <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
                                 <h2 className="text-xl font-bold text-gray-800">Document Status Overview</h2>
                                 <button onClick={() => setShowDocModal(false)} className="text-gray-500 hover:text-gray-700">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    <X size={24} />
                                 </button>
                             </div>
 
@@ -457,6 +492,74 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
                 )
             }
+
+            {/* NEW: Progress Breakdown Modal */}
+            {progressModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                            <h2 className="text-xl font-bold text-gray-800">
+                                {progressModal.stage} Opportunities ({progressModal.data.length})
+                            </h2>
+                            <button onClick={() => setProgressModal({ ...progressModal, isOpen: false })} className="text-gray-500 hover:text-gray-700">
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <div className="overflow-auto p-6 flex-1">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="border-b border-gray-200">
+                                        <th className="py-3 px-4 font-semibold text-gray-600">Opportunity ID</th>
+                                        <th className="py-3 px-4 font-semibold text-gray-600 w-1/3">Progress</th>
+                                        <th className="py-3 px-4 font-semibold text-gray-600">Next Action Required</th>
+                                        <th className="py-3 px-4 font-semibold text-gray-600">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {progressModal.data.length > 0 ? (
+                                        progressModal.data.map(opp => (
+                                            <tr key={opp._id} className="border-b border-gray-100 hover:bg-gray-50">
+                                                <td className="py-3 px-4 font-mono text-primary-blue font-bold">
+                                                    {opp.opportunityNumber}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                            <div
+                                                                className="h-full bg-blue-600 rounded-full"
+                                                                style={{ width: `${opp.progressPercentage || 0}%` }}
+                                                            ></div>
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-700 w-8">{opp.progressPercentage || 0}%</span>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-4 text-sm font-medium text-amber-600">
+                                                    {opp.nextAction || 'Review Details'}
+                                                </td>
+                                                <td className="py-3 px-4">
+                                                    <button
+                                                        onClick={() => navigate(`/opportunities/${opp._id}`)}
+                                                        className="text-primary-blue hover:underline text-sm font-bold"
+                                                    >
+                                                        OPEN
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan="4" className="py-8 text-center text-gray-500 italic">
+                                                No opportunities found in this stage.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 };
