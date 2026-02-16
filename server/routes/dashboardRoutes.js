@@ -28,7 +28,11 @@ router.get('/stats', protect, async (req, res) => {
         }
 
         // Exclude discontinued/cancelled from ALL stats
-        query.status = { $nin: ['Cancelled', 'Discontinued', 'Lost'] };
+        const exclusionStatuses = ['Cancelled', 'Discontinued', 'Lost'];
+        query.$and = [
+            { status: { $nin: exclusionStatuses } },
+            { statusStage: { $nin: exclusionStatuses } }
+        ];
 
         const totalClients = await Client.countDocuments(query);
         const totalOpportunities = await Opportunity.countDocuments(query);
@@ -142,10 +146,17 @@ router.get('/all-opportunities', protect, async (req, res) => {
             query.createdBy = { $in: userIds };
         }
 
-        const opportunities = await Opportunity.find({
+        const exclusionStatuses = ['Cancelled', 'Discontinued', 'Lost'];
+        // Merge exclusion into query
+        const finalQuery = {
             ...query,
-            status: { $nin: ['Cancelled', 'Discontinued'] }
-        })
+            $and: [
+                { status: { $nin: exclusionStatuses } },
+                { statusStage: { $nin: exclusionStatuses } }
+            ]
+        };
+
+        const opportunities = await Opportunity.find(finalQuery)
             .select('opportunityNumber client poDocument invoiceDocument progressPercentage statusLabel statusStage expenseDocuments deliveryDocuments poValue invoiceValue type commonDetails financeDetails typeSpecificDetails createdAt')
             .populate('client', 'companyName');
 
@@ -153,11 +164,11 @@ router.get('/all-opportunities', protect, async (req, res) => {
             const p = opp.progressPercentage || 0;
             let nextAction = 'Complete Details';
 
-            if (p < 30) nextAction = 'Define Scope & Sizing';
+            if (p < 30) nextAction = 'Fill required details';
             else if (p < 50) nextAction = 'Fill Expenses';
-            else if (p < 80) nextAction = 'Upload Proposal';
-            else if (p < 90) nextAction = 'Upload PO & Quote';
-            else if (p < 100) nextAction = 'Upload Invoice & Delivery Docs';
+            else if (p < 80) nextAction = 'Upload Proposal Doc';
+            else if (p < 90) nextAction = 'Upload PO & Invoice details';
+            else if (p < 100) nextAction = 'Upload Delivery Docs';
             else nextAction = 'Completed';
 
             return {

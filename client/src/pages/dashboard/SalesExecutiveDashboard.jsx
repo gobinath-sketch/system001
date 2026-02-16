@@ -234,20 +234,20 @@ const SalesExecutiveDashboard = ({ user }) => {
                         <div className="p-1.5 rounded-full bg-blue-100">
                             <Users size={16} className="text-blue-600" />
                         </div>
-                        <span className="text-sm text-black font-bold">Clients (Total: {clientHealth.active + clientHealth.mid + clientHealth.inactive})</span>
+                        <span className="text-base text-black font-bold">Clients (Total: {clientHealth.active + clientHealth.mid + clientHealth.inactive})</span>
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                            <p className="text-2xl font-bold text-green-600">{clientHealth.active}</p>
-                            <p className="text-xs text-black font-bold">Active</p>
+                            <p className="text-3xl font-bold text-emerald-600">{clientHealth.active}</p>
+                            <p className="text-base text-black font-bold">Active</p>
                         </div>
                         <div className="border-l border-r border-gray-100">
-                            <p className="text-2xl font-bold text-yellow-600">{clientHealth.mid}</p>
-                            <p className="text-xs text-black font-bold">Mid</p>
+                            <p className="text-3xl font-bold text-yellow-500">{clientHealth.mid}</p>
+                            <p className="text-base text-black font-bold">Mild</p>
                         </div>
                         <div>
-                            <p className="text-2xl font-bold text-red-600">{clientHealth.inactive}</p>
-                            <p className="text-xs text-black font-bold">Inactive</p>
+                            <p className="text-3xl font-bold text-red-600">{clientHealth.inactive}</p>
+                            <p className="text-base text-black font-bold">Inactive</p>
                         </div>
                     </div>
                 </div>
@@ -258,36 +258,37 @@ const SalesExecutiveDashboard = ({ user }) => {
                         <div className="p-1.5 rounded-full bg-purple-100">
                             <Briefcase size={16} className="text-purple-600" />
                         </div>
-                        <span className="text-sm text-black font-bold">Opportunities (Total: {stats?.totalOpportunities || 0})</span>
+                        {/* Ensure total count matches the filtered stats from backend */}
+                        <span className="text-base text-black font-bold">Opportunities (Total: {stats?.totalOpportunities || 0})</span>
                     </div>
                     <div className="grid grid-cols-4 gap-1 text-center">
                         <div
                             onClick={() => openProgressModal('30%', allOpps.filter(o => o.progressPercentage < 50))}
                             className="flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-xl font-bold text-blue-500">{stats?.progress30 || 0}</p>
-                            <p className="text-[10px] text-black font-bold">30%</p>
+                            <p className="text-3xl font-bold text-red-600">{stats?.progress30 || 0}</p>
+                            <p className="text-base text-black font-bold">30%</p>
                         </div>
                         <div
                             onClick={() => openProgressModal('50%', allOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))}
                             className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-xl font-bold text-yellow-500">{stats?.progress50 || 0}</p>
-                            <p className="text-[10px] text-black font-bold">50%</p>
+                            <p className="text-3xl font-bold text-yellow-500">{stats?.progress50 || 0}</p>
+                            <p className="text-base text-black font-bold">50%</p>
                         </div>
                         <div
                             onClick={() => openProgressModal('80%', allOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))}
                             className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-xl font-bold text-indigo-500">{stats?.progress80 || 0}</p>
-                            <p className="text-[10px] text-black font-bold">80%</p>
+                            <p className="text-3xl font-bold text-indigo-600">{stats?.progress80 || 0}</p>
+                            <p className="text-base text-black font-bold">80%</p>
                         </div>
                         <div
                             onClick={() => openProgressModal('100%', allOpps.filter(o => o.progressPercentage === 100))}
                             className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
-                            <p className="text-xl font-bold text-green-600">{stats?.progress100 || 0}</p>
-                            <p className="text-[10px] text-black font-bold">100%</p>
+                            <p className="text-3xl font-bold text-emerald-600">{stats?.progress100 || 0}</p>
+                            <p className="text-base text-black font-bold">100%</p>
                         </div>
                     </div>
                 </div>
@@ -299,7 +300,7 @@ const SalesExecutiveDashboard = ({ user }) => {
                             <div className="p-1.5 rounded-full bg-indigo-100">
                                 <CheckCircle size={16} className="text-indigo-600" />
                             </div>
-                            <span className="text-sm text-black font-bold">Billing</span>
+                            <span className="text-base text-black font-bold">Billing</span>
                         </div>
                         <button
                             onClick={() => setShowDocModal(true)}
@@ -313,22 +314,22 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
-                            <p className="text-2xl font-bold text-black">
+                            <p className="text-3xl font-bold text-black">
                                 {allOpps.length}
                             </p>
-                            <p className="text-xs text-black font-bold">Total</p>
+                            <p className="text-base text-gray font-bold">Total</p>
                         </div>
                         <div className="border-l border-gray-100">
-                            <p className="text-2xl font-bold text-blue-600">
+                            <p className="text-3xl font-bold text-blue-600">
                                 {allOpps.filter(opp => opp.poDocument).length}
                             </p>
-                            <p className="text-xs text-black font-bold">POs</p>
+                            <p className="text-base text-black font-bold">POs</p>
                         </div>
                         <div className="border-l border-gray-100">
-                            <p className="text-2xl font-bold text-indigo-600">
+                            <p className="text-3xl font-bold text-slate-600">
                                 {allOpps.filter(opp => opp.invoiceDocument).length}
                             </p>
-                            <p className="text-xs text-black font-bold">Invoices</p>
+                            <p className="text-base text-black font-bold">Invoices</p>
                         </div>
                     </div>
                 </div>
