@@ -282,6 +282,17 @@ const SalesExecutiveDashboard = ({ user }) => {
         <div className="p-4 pb-4 space-y-4 bg-bg-page h-full">
             {/* Render Filters via Portal */}
             <FilterControls />
+            <style>
+                {`
+                    @keyframes techChevronFlow {
+                        0%, 100% { transform: translateX(0); opacity: 0.5; filter: drop-shadow(0 0 0 currentColor); }
+                        50% { transform: translateX(3px); opacity: 1; filter: drop-shadow(0 0 4px currentColor); }
+                    }
+                    .tech-chevron {
+                        animation: techChevronFlow 1.15s ease-in-out infinite;
+                    }
+                `}
+            </style>
 
             {/* 1. KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -321,31 +332,59 @@ const SalesExecutiveDashboard = ({ user }) => {
                     <div className="grid grid-cols-4 gap-1 text-center">
                         <div
                             onClick={() => openProgressModal('30%', filteredOpps.filter(o => o.progressPercentage < 50))}
-                            className="flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors"
+                            className="group flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
                             <p className="text-3xl font-bold text-red-600">{filteredStats.progress30}</p>
-                            <p className="text-base text-black font-bold">30%</p>
+                            <p className="inline-flex items-center gap-1 text-base text-black font-bold">
+                                30%
+                                <span className="inline-flex items-center leading-none text-red-700 transition-transform group-hover:translate-x-0.5">
+                                    <ChevronRight size={12} className="tech-chevron" />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.12s' }} />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.24s' }} />
+                                </span>
+                            </p>
                         </div>
                         <div
                             onClick={() => openProgressModal('50%', filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))}
-                            className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
+                            className="group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
                             <p className="text-3xl font-bold text-yellow-500">{filteredStats.progress50}</p>
-                            <p className="text-base text-black font-bold">50%</p>
+                            <p className="inline-flex items-center gap-1 text-base text-black font-bold">
+                                50%
+                                <span className="inline-flex items-center leading-none text-yellow-700 transition-transform group-hover:translate-x-0.5">
+                                    <ChevronRight size={12} className="tech-chevron" />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.12s' }} />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.24s' }} />
+                                </span>
+                            </p>
                         </div>
                         <div
                             onClick={() => openProgressModal('80%', filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))}
-                            className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
+                            className="group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
                             <p className="text-3xl font-bold text-indigo-600">{filteredStats.progress80}</p>
-                            <p className="text-base text-black font-bold">80%</p>
+                            <p className="inline-flex items-center gap-1 text-base text-black font-bold">
+                                80%
+                                <span className="inline-flex items-center leading-none text-indigo-700 transition-transform group-hover:translate-x-0.5">
+                                    <ChevronRight size={12} className="tech-chevron" />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.12s' }} />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.24s' }} />
+                                </span>
+                            </p>
                         </div>
                         <div
                             onClick={() => openProgressModal('100%', filteredOpps.filter(o => o.progressPercentage === 100))}
-                            className="flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
+                            className="group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors"
                         >
                             <p className="text-3xl font-bold text-emerald-600">{filteredStats.progress100}</p>
-                            <p className="text-base text-black font-bold">100%</p>
+                            <p className="inline-flex items-center gap-1 text-base text-black font-bold">
+                                100%
+                                <span className="inline-flex items-center leading-none text-emerald-700 transition-transform group-hover:translate-x-0.5">
+                                    <ChevronRight size={12} className="tech-chevron" />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.12s' }} />
+                                    <ChevronRight size={12} className="tech-chevron" style={{ animationDelay: '0.24s' }} />
+                                </span>
+                            </p>
                         </div>
                     </div>
                 </div>
