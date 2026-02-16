@@ -95,6 +95,16 @@ const getAccessibleUserIds = async (user) => {
     } else if (user.role === 'Sales Manager') {
         const team = await User.find({ reportingManager: user._id });
         return [user._id, ...team.map(u => u._id)];
+    } else if (user.role === 'Business Head') {
+        // Get all Sales Managers reporting to Business Head
+        const managers = await User.find({ reportingManager: user._id, role: 'Sales Manager' });
+        const managerIds = managers.map(m => m._id);
+
+        // Get all Sales Executives reporting to those managers
+        const executives = await User.find({ reportingManager: { $in: managerIds }, role: 'Sales Executive' });
+        const executiveIds = executives.map(e => e._id);
+
+        return [user._id, ...managerIds, ...executiveIds];
     } else {
         return []; // Director sees all
     }
@@ -503,7 +513,7 @@ router.put('/:id', protect, async (req, res) => {
                 (updates.typeSpecificDetails && Object.keys(updates.typeSpecificDetails).length > 0)) {
 
                 // If update is by Sales/Admin -> Notify Delivery Team
-                if (req.user.role === 'Sales Executive' || req.user.role === 'Sales Manager' || req.user.role === 'Super Admin') {
+                if (req.user.role === 'Sales Executive' || req.user.role === 'Sales Manager' || req.user.role === 'Business Head' || req.user.role === 'Super Admin') {
                     const deliveryUsers = await User.find({ role: 'Delivery Team' });
                     if (deliveryUsers.length > 0) {
                         const notifs = deliveryUsers.map(u => ({

@@ -11,6 +11,16 @@ const getAccessibleUserIds = async (user) => {
     } else if (user.role === 'Sales Manager') {
         const team = await User.find({ reportingManager: user._id });
         return [user._id, ...team.map(u => u._id)];
+    } else if (user.role === 'Business Head') {
+        // Get all Sales Managers reporting to Business Head
+        const managers = await User.find({ reportingManager: user._id, role: 'Sales Manager' });
+        const managerIds = managers.map(m => m._id);
+
+        // Get all Sales Executives reporting to those managers
+        const executives = await User.find({ reportingManager: { $in: managerIds }, role: 'Sales Executive' });
+        const executiveIds = executives.map(e => e._id);
+
+        return [user._id, ...managerIds, ...executiveIds];
     } else {
         return []; // Director sees all
     }
@@ -19,7 +29,7 @@ const getAccessibleUserIds = async (user) => {
 // @route   POST /api/clients
 // @desc    Create a new client
 // @access  Private (Sales Executive, Sales Manager)
-router.post('/', protect, authorize('Sales Executive', 'Sales Manager'), async (req, res) => {
+router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         console.log('📝 Creating client with data:', req.body);
         console.log('👤 User:', req.user?.name, req.user?.role);
@@ -104,7 +114,7 @@ router.get('/', protect, async (req, res) => {
 // @route   PUT /api/clients/:id
 // @desc    Update a client
 // @access  Private (Sales Executive, Sales Manager)
-router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager'), async (req, res) => {
+router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         console.log(`📝 Updating client ${req.params.id} with data:`, req.body);
 

@@ -828,9 +828,9 @@ router.get('/manager/documents', protect, async (req, res) => {
 // @desc    Set or update revenue target for a team member
 router.put('/manager/set-target/:userId', protect, async (req, res) => {
     try {
-        // Only Sales Managers can set targets
-        if (req.user.role !== 'Sales Manager') {
-            return res.status(403).json({ message: 'Access denied. Sales Manager only.' });
+        // Only Sales Managers and Business Heads can set targets
+        if (req.user.role !== 'Sales Manager' && req.user.role !== 'Business Head') {
+            return res.status(403).json({ message: 'Access denied. Sales Manager or Business Head only.' });
         }
 
         const { period, year, amount } = req.body;
@@ -846,8 +846,32 @@ router.put('/manager/set-target/:userId', protect, async (req, res) => {
             return res.status(404).json({ message: 'User not found' });
         }
 
-        // Verify the user is in this manager's team
-        if (targetUser.reportingManager.toString() !== req.user._id.toString()) {
+        // Verify the user is in the hierarchy
+        let isAuthorized = false;
+
+        if (req.user.role === 'Sales Manager') {
+            // Manager can set target for direct reports
+            if (targetUser.reportingManager && targetUser.reportingManager.toString() === req.user._id.toString()) {
+                isAuthorized = true;
+            }
+        } else if (req.user.role === 'Business Head') {
+            // Business Head can set target for:
+            // 1. Direct reports (Sales Managers)
+            // 2. Indirect reports (Sales Executives under those Managers)
+
+            if (targetUser.reportingManager && targetUser.reportingManager.toString() === req.user._id.toString()) {
+                // Direct report
+                isAuthorized = true;
+            } else if (targetUser.role === 'Sales Executive') {
+                // Check if their manager reports to this Business Head
+                const usersManager = await User.findById(targetUser.reportingManager);
+                if (usersManager && usersManager.reportingManager && usersManager.reportingManager.toString() === req.user._id.toString()) {
+                    isAuthorized = true;
+                }
+            }
+        }
+
+        if (!isAuthorized) {
             return res.status(403).json({ message: 'You can only set targets for your team members' });
         }
 
@@ -1217,15 +1241,15 @@ router.get('/business-head/team-structure', protect, async (req, res) => {
         const salesManagers = await User.find({
             reportingManager: req.user._id,
             role: 'Sales Manager'
-        }).select('_id name email creatorCode');
+        }).select('_id name email creatorCode role targets');
 
         const managerIds = salesManagers.map(m => m._id);
 
-        // Get all Sales Executives reporting to those managers
+        // Get all sales Executives reporting to those managers
         const salesExecutives = await User.find({
             reportingManager: { $in: managerIds },
             role: 'Sales Executive'
-        }).select('_id name email creatorCode reportingManager');
+        }).select('_id name email creatorCode reportingManager role targets');
 
         res.json({
             salesManagers,

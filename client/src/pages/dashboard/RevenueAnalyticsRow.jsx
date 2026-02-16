@@ -612,6 +612,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                                     <thead className="bg-gray-50 sticky top-0">
                                         <tr className="border-b border-gray-200">
                                             <th className="py-3 px-4 font-semibold text-gray-700">Team Member</th>
+                                            <th className="py-3 px-4 font-semibold text-gray-700">Role</th>
                                             <th className="py-3 px-4 font-semibold text-gray-700">Current Target</th>
                                             <th className="py-3 px-4 font-semibold text-gray-700">New Target ({currency})</th>
                                             <th className="py-3 px-4 font-semibold text-gray-700 text-center">Action</th>
@@ -627,6 +628,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                                             return (
                                                 <tr key={member._id} className="border-b border-gray-100 hover:bg-gray-50">
                                                     <td className="py-3 px-4 font-medium text-gray-800">{member.name}</td>
+                                                    <td className="py-3 px-4 text-gray-600 text-xs">{member.role}</td>
                                                     <td className="py-3 px-4 text-gray-600">
                                                         {formatMoney(currentTarget)}
                                                     </td>

@@ -53,7 +53,7 @@ const BusinessHeadDashboard = () => {
             showViewFilter={true}
             viewMode={viewMode}
             setViewMode={setViewMode}
-            teamMembers={[]}
+            teamMembers={[...salesManagers, ...salesExecutives]}
             salesManagers={salesManagers}
             salesExecutives={salesExecutives}
             isBusinessHead={true}

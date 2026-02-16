@@ -110,10 +110,21 @@ const Sidebar = () => {
             ];
         }
 
+        // Business Head: Dashboard, Client, Opportunities, Approvals
+        if (user.role === 'Business Head') {
+            return [
+                { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/businesshead' },
+                { label: 'Client', icon: Users, path: '/clients' },
+                { label: 'Opportunities', icon: Briefcase, path: '/opportunities' },
+                { label: 'Approvals', icon: FileText, path: '/approvals' },
+                { label: 'Settings', icon: Settings, path: '/settings' }
+            ];
+        }
+
         // Director: Dashboard, Client, Opportunities, Approvals
         if (user.role === 'Director') {
             return [
-                { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/businesshead' },
+                { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard/director' },
                 { label: 'Client', icon: Users, path: '/clients' },
                 { label: 'Opportunities', icon: Briefcase, path: '/opportunities' },
                 { label: 'Approvals', icon: FileText, path: '/approvals' },
