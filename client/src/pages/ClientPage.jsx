@@ -471,9 +471,13 @@ const ClientPage = () => {
                     </div>
                 </div>
                 {(() => {
-                    const canEdit = user.role === 'Super Admin' ||
-                        user.role === 'Sales Executive' ||
-                        (user.role === 'Sales Manager' && (selectedClient.createdBy?._id === user.id || selectedClient.createdBy === user.id));
+                    // Start with base check: Super Admin can always edit
+                    let canEdit = user.role === 'Super Admin';
+
+                    // For Sales roles (Exec, Manager, Business Head), only allow if they are the creator
+                    if (['Sales Executive', 'Sales Manager', 'Business Head'].includes(user.role)) {
+                        canEdit = (selectedClient.createdBy?._id === user.id || selectedClient.createdBy === user.id);
+                    }
 
                     if (!canEdit) return null;
 

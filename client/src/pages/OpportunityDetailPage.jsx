@@ -43,8 +43,11 @@ const OpportunityDetailPage = () => {
     const isOwner = opportunity && (opportunity.createdBy?._id === user.id || opportunity.createdBy === user.id);
 
     let canEditSales = user.role === 'Super Admin';
-    if (user.role === 'Sales Executive') canEditSales = true; // defaulting to true for exec
-    if (user.role === 'Sales Manager') canEditSales = isOwner;
+
+    // For all Sales roles (Exec, Manager, Business Head), edit permission is restricted to the owner
+    if (['Sales Executive', 'Sales Manager', 'Business Head'].includes(user.role)) {
+        canEditSales = isOwner;
+    }
 
     // Use state-based permission if opportunity is loading? No, if loading returns loading div.
     // However, canEditSales is currently defined at top level.
@@ -53,7 +56,7 @@ const OpportunityDetailPage = () => {
 
     // Tab Visibility
     const isDeliveryRole = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user.role);
-    const isSalesRole = ['Sales Executive', 'Sales Manager'].includes(user.role);
+    const isSalesRole = ['Sales Executive', 'Sales Manager', 'Business Head'].includes(user.role);
     const isAdminOrDirector = ['Super Admin', 'Director'].includes(user.role);
 
     const showOverviewTab = isAdminOrDirector; // Only Admin/Director can see Overview

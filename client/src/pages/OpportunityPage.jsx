@@ -357,7 +357,7 @@ const OpportunityPage = () => {
                                                             <div className="text-gray-500 italic">{opp.selectedContactPerson || 'N/A'}</div>
                                                         )}
                                                     </td>
-                                                    {user?.role === 'Sales Manager' && (
+                                                    {['Sales Manager', 'Business Head'].includes(user?.role) && (
                                                         <td className="px-6 py-2">
                                                             <div className="font-medium text-gray-900">{opp.createdBy?.name || 'N/A'}</div>
                                                         </td>

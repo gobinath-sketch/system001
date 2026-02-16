@@ -16,7 +16,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
     const [uploading, setUploading] = useState(false);
 
     // Check if user is Sales (Invoice fields should be read-only for Sales)
-    const isSales = user?.role === 'Sales Executive' || user?.role === 'Sales Manager';
+    const isSales = user?.role === 'Sales Executive' || user?.role === 'Sales Manager' || user?.role === 'Business Head';
 
     // Editable State
     const [formData, setFormData] = useState({
