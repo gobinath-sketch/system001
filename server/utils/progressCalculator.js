@@ -74,9 +74,9 @@ function calculateOpportunityProgress(opportunity) {
                 typeDetails.examDetails &&
                 typeDetails.examLocation
             );
-            hasSizing = (typeDetails.noOfVouchers > 0);
+            hasSizing = (typeDetails.numberOfVouchers > 0);
             break;
-        case 'Content Support':
+        case 'Content Development':
             hasScope = (
                 typeDetails.contentType &&
                 typeDetails.deliveryFormat

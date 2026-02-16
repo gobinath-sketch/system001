@@ -27,6 +27,9 @@ router.get('/stats', protect, async (req, res) => {
             query.createdBy = { $in: userIds };
         }
 
+        // Exclude discontinued/cancelled from ALL stats
+        query.status = { $nin: ['Cancelled', 'Discontinued', 'Lost'] };
+
         const totalClients = await Client.countDocuments(query);
         const totalOpportunities = await Opportunity.countDocuments(query);
 
