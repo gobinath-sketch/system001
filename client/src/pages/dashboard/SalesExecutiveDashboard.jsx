@@ -314,10 +314,10 @@ const SalesExecutiveDashboard = ({ user }) => {
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
-                            <p className="text-3xl font-bold text-black">
+                            <p className="text-3xl font-bold text-gray">
                                 {allOpps.length}
                             </p>
-                            <p className="text-base text-gray font-bold">Total</p>
+                            <p className="text-base text-black font-bold">Total</p>
                         </div>
                         <div className="border-l border-gray-100">
                             <p className="text-3xl font-bold text-blue-600">
