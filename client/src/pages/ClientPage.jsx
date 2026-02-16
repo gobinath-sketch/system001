@@ -739,7 +739,7 @@ const ClientPage = () => {
                                         {user?.role === 'Sales Manager' && (
                                             <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>
                                         )}
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Actions</th>
+                                        <th className="px-6 py-3 font-semibold text-gray-900">Add Opportunity</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-100">
@@ -783,7 +783,7 @@ const ClientPage = () => {
                                                                 e.stopPropagation();
                                                                 navigate('/opportunities', { state: { createOpportunity: true, clientId: client._id } });
                                                             }}
-                                                            className="text-green-600 hover:text-green-800 p-2 rounded-full hover:bg-green-50 transition-colors"
+                                                            className="text-white bg-indigo-600 p-2 rounded-md transition-colors"
                                                             title="Create Opportunity"
                                                         >
                                                             <Plus size={20} />
