@@ -592,7 +592,7 @@ router.get('/manager/team-members', protect, async (req, res) => {
         }
 
         const teamMembers = await User.find({ reportingManager: req.user._id })
-            .select('name email targets');
+            .select('name email targets role');
 
         res.json(teamMembers);
     } catch (err) {

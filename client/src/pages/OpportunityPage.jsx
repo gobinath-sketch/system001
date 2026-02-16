@@ -167,7 +167,23 @@ const OpportunityPage = () => {
                     </h2>
 
                     {/* Right: Search & Filters */}
-                    <div className="flex flex-1 items-center justify-end gap-4 w-full md:w-auto">
+                    <div className="flex flex-1 items-center justify-end gap-2 w-full md:w-auto flex-wrap">
+                        {/* Creator Filter - Sales Manager & Business Head */}
+                        {['Sales Manager', 'Business Head'].includes(user?.role) && (
+                            <div className="relative">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                                <select
+                                    value={filterCreator}
+                                    onChange={(e) => setFilterCreator(e.target.value)}
+                                    className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50 max-w-[150px]"
+                                >
+                                    <option value="">All Creators</option>
+                                    {uniqueCreators.map((creator, idx) => (
+                                        <option key={idx} value={creator}>{creator}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
                         <div className="relative max-w-md w-64">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
@@ -251,8 +267,10 @@ const OpportunityPage = () => {
                                 ) : (
                                     <>
                                         <th className="px-6 py-2 font-semibold text-gray-900">Contact Person</th>
-                                        {user?.role === 'Sales Manager' && (
-                                            <th className="px-6 py-2 font-semibold text-gray-900">Created By</th>
+                                        {['Sales Manager', 'Business Head'].includes(user?.role) && (
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                Created By
+                                            </th>
                                         )}
                                     </>
                                 )}

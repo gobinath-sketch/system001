@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, ChevronRight, X } from 'lucide-react';
+import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, ChevronRight, X, ChevronDown } from 'lucide-react';
 import DocumentStatusCard from '../../components/dashboard/DocumentStatusCard';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -12,7 +12,18 @@ import RevenueAnalyticsRow from './RevenueAnalyticsRow';
 import { useCurrency } from '../../context/CurrencyContext';
 
 
-const SalesExecutiveDashboard = ({ user, customUserId, showViewFilter, viewMode, setViewMode, teamMembers, salesManagers, salesExecutives, isBusinessHead }) => {
+const SalesExecutiveDashboard = ({
+    user,
+    customUserId,
+    viewMode = 'self',
+    setViewMode,
+    showViewFilter = false,
+    teamMembers = [],
+    salesManagers = [],
+    salesExecutives = [],
+    isBusinessHead = false,
+    onRefreshTeam
+}) => {
     const navigate = useNavigate();
     const [stats, setStats] = useState(null);
     const [clientHealth, setClientHealth] = useState({ active: 0, mid: 0, inactive: 0 });
@@ -88,6 +99,11 @@ const SalesExecutiveDashboard = ({ user, customUserId, showViewFilter, viewMode,
                 sectorDist: sectorRes.data,
                 yearlyTrends: yearlyRes.data
             });
+
+            // Trigger parent refresh if provided (for Business Head team structure)
+            if (onRefreshTeam) {
+                await onRefreshTeam();
+            }
 
             setLoading(false);
         } catch (err) {
@@ -239,7 +255,128 @@ const SalesExecutiveDashboard = ({ user, customUserId, showViewFilter, viewMode,
         </div>
     );
 
-    // --- Portal Rendering ---
+    const CustomViewDropdown = ({ viewMode, setViewMode, isBusinessHead, salesManagers, salesExecutives, teamMembers }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const dropdownRef = useRef(null);
+
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                    setIsOpen(false);
+                }
+            };
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, []);
+
+        const getName = (id) => {
+            if (id === 'self') return 'My Dashboard';
+            if (id === 'team') return 'Team Overview';
+
+            const allUsers = [...(salesManagers || []), ...(salesExecutives || []), ...(teamMembers || [])];
+            const found = allUsers.find(u => u._id === id);
+            return found ? found.name : 'Unknown';
+        };
+
+        const handleSelect = (value) => {
+            setViewMode(value);
+            setIsOpen(false);
+        };
+
+        return (
+            <div className="relative" ref={dropdownRef}>
+                <button
+                    onClick={() => setIsOpen(!isOpen)}
+                    className="h-8 pl-3 pr-8 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 flex items-center min-w-[160px] justify-between relative"
+                >
+                    <span className="truncate">{getName(viewMode)}</span>
+                    <ChevronDown size={14} className="absolute right-2 text-gray-500" />
+                </button>
+
+                {isOpen && (
+                    <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1 text-sm">
+                        {isBusinessHead ? (
+                            <>
+                                <div
+                                    className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === 'self' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                    onClick={() => handleSelect('self')}
+                                >
+                                    My Dashboard
+                                </div>
+
+                                <div className="border-t border-gray-100 my-1"></div>
+
+                                {/* Sales Managers Group */}
+                                {salesManagers?.length > 0 && (
+                                    <div className="relative group">
+                                        <div className="px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer flex justify-between items-center bg-gray-50/50">
+                                            <span>Sales Managers</span>
+                                            <ChevronRight size={14} className="text-gray-400" />
+                                        </div>
+                                        {/* Submenu */}
+                                        <div className="absolute left-full top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg hidden group-hover:block ml-1 py-1">
+                                            {salesManagers.map(manager => (
+                                                <div
+                                                    key={manager._id}
+                                                    className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === manager._id ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                                    onClick={() => handleSelect(manager._id)}
+                                                >
+                                                    {manager.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Sales Executives Group */}
+                                {salesExecutives?.length > 0 && (
+                                    <div className="relative group">
+                                        <div className="px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer flex justify-between items-center bg-gray-50/50">
+                                            <span>Sales Executives</span>
+                                            <ChevronRight size={14} className="text-gray-400" />
+                                        </div>
+                                        {/* Submenu */}
+                                        <div className="absolute left-full top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg hidden group-hover:block ml-1 py-1 max-h-[300px] overflow-y-auto">
+                                            {salesExecutives.map(exec => (
+                                                <div
+                                                    key={exec._id}
+                                                    className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === exec._id ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                                    onClick={() => handleSelect(exec._id)}
+                                                >
+                                                    {exec.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <>
+                                <div
+                                    className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === 'team' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                    onClick={() => handleSelect('team')}
+                                >
+                                    Team Overview
+                                </div>
+                                <div className="border-t border-gray-100 my-1"></div>
+                                <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Team Members</div>
+                                {teamMembers?.map(member => (
+                                    <div
+                                        key={member._id}
+                                        className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === member._id ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                        onClick={() => handleSelect(member._id)}
+                                    >
+                                        {member.name}
+                                    </div>
+                                ))}
+                            </>
+                        )}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     const FilterControls = () => {
         const portalRoot = document.getElementById('header-filter-portal');
         if (!portalRoot) return null;
@@ -248,43 +385,19 @@ const SalesExecutiveDashboard = ({ user, customUserId, showViewFilter, viewMode,
             <div className="flex items-center space-x-2">
                 {/* View Filter - Only for Sales Managers */}
                 {showViewFilter && (
-                    <>
-                        <label className="text-sm font-medium text-gray-700">View:</label>
-                        <select
-                            value={viewMode}
-                            onChange={(e) => setViewMode(e.target.value)}
-                            className="h-8 pl-2 pr-6 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        >
-                            <option value="self">My Dashboard</option>
-                            {isBusinessHead ? (
-                                <>
-                                    {salesManagers && salesManagers.length > 0 && (
-                                        <optgroup label="Sales Managers">
-                                            {salesManagers.map(manager => (
-                                                <option key={manager._id} value={manager._id}>{manager.name}</option>
-                                            ))}
-                                        </optgroup>
-                                    )}
-                                    {salesExecutives && salesExecutives.length > 0 && (
-                                        <optgroup label="Sales Executives">
-                                            {salesExecutives.map(exec => (
-                                                <option key={exec._id} value={exec._id}>{exec.name}</option>
-                                            ))}
-                                        </optgroup>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    <option value="team">Team Overview</option>
-                                    <optgroup label="Team Members">
-                                        {teamMembers?.map(member => (
-                                            <option key={member._id} value={member._id}>{member.name}</option>
-                                        ))}
-                                    </optgroup>
-                                </>
-                            )}
-                        </select>
-                    </>
+                    <div className="relative" style={{ zIndex: 100 }}>
+                        <div className="flex items-center space-x-2">
+                            <label className="text-sm font-medium text-gray-700">View:</label>
+                            <CustomViewDropdown
+                                viewMode={viewMode}
+                                setViewMode={setViewMode}
+                                isBusinessHead={isBusinessHead}
+                                salesManagers={salesManagers}
+                                salesExecutives={salesExecutives}
+                                teamMembers={teamMembers}
+                            />
+                        </div>
+                    </div>
                 )}
 
                 {/* Year Filter */}
@@ -477,13 +590,14 @@ const SalesExecutiveDashboard = ({ user, customUserId, showViewFilter, viewMode,
 
             {/* 2. Revenue & Analytics Row - Filtered */}
             <RevenueAnalyticsRow
+                loading={loading}
                 allOpps={filteredOpps}
                 filter={timeFilter}
                 yearlyTarget={performance?.target || 0}
                 currency={currency}
                 formatMoney={formatMoney}
                 EXCHANGE_RATE={EXCHANGE_RATE}
-                showSetTargetButton={isBusinessHead || (showViewFilter && viewMode === 'team')}
+                showSetTargetButton={isBusinessHead ? viewMode === 'self' : (showViewFilter && viewMode === 'team')}
                 teamMembers={teamMembers}
                 onRefreshData={fetchDashboardData}
             />

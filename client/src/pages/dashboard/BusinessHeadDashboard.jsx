@@ -10,23 +10,23 @@ const BusinessHeadDashboard = () => {
     const [salesExecutives, setSalesExecutives] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const fetchTeamStructure = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/dashboard/business-head/team-structure', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setSalesManagers(response.data.salesManagers);
+            setSalesExecutives(response.data.salesExecutives);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching team structure:', err);
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchTeamStructure = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await axios.get('http://localhost:5000/api/dashboard/business-head/team-structure', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                setSalesManagers(response.data.salesManagers);
-                setSalesExecutives(response.data.salesExecutives);
-                setLoading(false);
-            } catch (err) {
-                console.error('Error fetching team structure:', err);
-                setLoading(false);
-            }
-        };
-
         fetchTeamStructure();
     }, []);
 
@@ -57,6 +57,7 @@ const BusinessHeadDashboard = () => {
             salesManagers={salesManagers}
             salesExecutives={salesExecutives}
             isBusinessHead={true}
+            onRefreshTeam={fetchTeamStructure}
         />
     );
 };

@@ -708,7 +708,7 @@ const ClientPage = () => {
                                         className="w-full pl-10 pr-4 py-2 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue"
                                     />
                                 </div>
-                                {user?.role === 'Sales Manager' && (
+                                {['Sales Manager', 'Business Head'].includes(user?.role) && (
                                     <div className="relative w-48">
                                         <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                         <select
@@ -736,7 +736,7 @@ const ClientPage = () => {
                                         <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
                                         <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
                                         <th className="px-6 py-3 font-semibold text-gray-900">Contact Info</th>
-                                        {user?.role === 'Sales Manager' && (
+                                        {['Sales Manager', 'Business Head'].includes(user?.role) && (
                                             <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>
                                         )}
                                         <th className="px-6 py-3 font-semibold text-gray-900">Add Opportunity</th>
@@ -772,7 +772,7 @@ const ClientPage = () => {
                                                             <span className="text-gray-400 italic">No contact info</span>
                                                         )}
                                                     </td>
-                                                    {user?.role === 'Sales Manager' && (
+                                                    {['Sales Manager', 'Business Head'].includes(user?.role) && (
                                                         <td className="px-6 py-4 text-gray-500">
                                                             {client.createdBy?.name || 'N/A'}
                                                         </td>
