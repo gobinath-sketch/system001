@@ -119,9 +119,6 @@ const RevenueAnalyticsRow = ({ allOpps, yearlyTarget, currency, formatMoney, EXC
         achievedRevenue: 0,
         adjustedTarget: 0,
         techData: [],
-        achievedRevenue: 0,
-        adjustedTarget: 0,
-        techData: [],
         typeData: [],
         emergingBreakdown: {} // New state for breakdown
     });
