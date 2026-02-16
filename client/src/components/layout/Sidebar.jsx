@@ -255,7 +255,7 @@ const StyledWrapper = styled.div`
   .button {
     /* Use 100% width to fill sidebar container instead of fixed min-width */
     width: 100%;
-    min-height: 56px; /* Increased height for better icon visibility */
+    min-height: 42px;
     
     /* Layout */
     display: flex;
@@ -263,7 +263,7 @@ const StyledWrapper = styled.div`
     position: relative;
     cursor: pointer;
 
-    padding: 12px 17px;
+    padding: 6px 17px;
     border: 0;
     border-radius: 7px;
 
