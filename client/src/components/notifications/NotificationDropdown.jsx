@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Check, FileText, DollarSign, Briefcase, X, ArrowLeft, Search, Filter, Bell as BellIcon, CheckCheck } from 'lucide-react';
 import NotificationBellIcon from '../common/NotificationBellIcon';
-import searchIconVideo from '../../assets/search1.webm';
+import searchIcon from '../../assets/search-square-svgrepo-com.svg';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
@@ -400,14 +400,11 @@ const NotificationDropdown = () => {
 
                                     {/* Search Bar */}
                                     <div className="relative mb-4">
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center z-10 pointer-events-none">
-                                            <video
-                                                src={searchIconVideo}
-                                                autoPlay
-                                                loop
-                                                muted
-                                                playsInline
-                                                className="w-full h-full object-contain"
+                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center z-10 pointer-events-none">
+                                            <img
+                                                src={searchIcon}
+                                                alt="Search"
+                                                className="w-full h-full object-contain brightness-0 invert opacity-90"
                                             />
                                         </div>
                                         <input
