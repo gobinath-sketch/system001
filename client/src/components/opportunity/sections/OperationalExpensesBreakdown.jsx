@@ -211,13 +211,13 @@ const OperationalExpensesBreakdown = ({
         <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
             {/* Header Section */}
             <div className="flex justify-between items-center mb-5 pb-2 border-b border-slate-200/70">
-                <h3 className="text-[20px] leading-tight font-semibold tracking-tight text-slate-800">Operational Expenses Breakdown</h3>
+                <h3 className="text-lg leading-tight font-semibold tracking-tight text-blue-900">Operational Expenses Breakdown</h3>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-800">
-                        <span className="text-blue-400">Pax:</span>
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-900">
+                        <span className="text-blue-900">Pax:</span>
                         <span className="font-bold">{pax}</span>
                         <span className="w-px h-3 bg-blue-200 mx-1"></span>
-                        <span className="text-blue-400">Days:</span>
+                        <span className="text-blue-900">Days:</span>
                         <span className="font-bold">{days}</span>
                     </div>
                 </div>
