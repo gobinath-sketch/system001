@@ -253,9 +253,6 @@ const Sidebar = ({ isMobileOpen = false, onCloseMobile = () => { } }) => {
                                             </span>
                                         )}
 
-                                        {!isCollapsed && active && (
-                                            <ChevronRight size={16} className="ml-auto text-white/80 relative z-10" />
-                                        )}
                                     </div>
                                 </StyledWrapper>
                             </Link>
@@ -348,19 +345,6 @@ const StyledWrapper = styled.div`
     transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
   }
 
-  /* Frutiger-style moving sheen layer (keeps existing colors) */
-  .button::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(-65deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.45) 50%, rgba(255, 255, 255, 0) 70%);
-    background-size: 200% 100%;
-    background-repeat: no-repeat;
-    animation: sidebarShine 3s ease infinite;
-    z-index: 1;
-  }
-
   /* Inner pressed depth on click */
   .button .inner-press {
     position: absolute;
@@ -374,17 +358,6 @@ const StyledWrapper = styled.div`
 
   .button:active .inner-press {
     box-shadow: inset 0 2px 8px -2px rgba(0, 0, 0, 0.65);
-  }
-
-  @keyframes sidebarShine {
-    0% {
-      background-position: 130%;
-      opacity: 1;
-    }
-    100% {
-      background-position: -166%;
-      opacity: 0;
-    }
   }
 
   .button:hover {
