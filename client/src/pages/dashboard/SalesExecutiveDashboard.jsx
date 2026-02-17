@@ -598,8 +598,8 @@ const SalesExecutiveDashboard = ({
                                         ...item,
                                         fill: chartColors[index % chartColors.length],
                                         share: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0,
-                                        // Use sqrt scaling so smaller categories remain visible while preserving rank.
-                                        radarValue: item.count > 0 ? Math.sqrt(item.count) : 0.35
+                                        // Keep zero categories unplotted on radar (no fake tiny segment).
+                                        radarValue: item.count > 0 ? Math.sqrt(item.count) : null
                                     }));
                                     const maxRadarValue = Math.max(...radarData.map((d) => d.radarValue), 1);
                                     const typeColorMap = Object.fromEntries(radarData.map((d) => [d.type, d.fill]));
@@ -657,7 +657,7 @@ const SalesExecutiveDashboard = ({
                                                             <div className="mt-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
                                                                 <div
                                                                     className="h-full rounded-full"
-                                                                    style={{ width: `${Math.max(6, item.share)}%`, backgroundColor: item.fill }}
+                                                                    style={{ width: item.share > 0 ? `${Math.max(6, item.share)}%` : '0%', backgroundColor: item.fill }}
                                                                 />
                                                             </div>
                                                         </div>
