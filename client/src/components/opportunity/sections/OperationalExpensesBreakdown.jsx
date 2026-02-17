@@ -375,8 +375,8 @@ const EditRow = ({ config, data, onUpdate, onUpload, uploading, opportunity, cur
                     className={`
                           flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-24
                           ${opportunity.expenseDocuments?.[category]?.length > 0
-                            ? 'bg-white text-slate-600 border border-slate-200 hover:border-blue-500 hover:text-blue-600'
-                            : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-400 hover:text-blue-600'}
+                            ? 'bg-white text-slate-600 border border-slate-200 hover:border-blue-900 hover:text-blue-900'
+                            : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-900 hover:text-blue-900'}
                      `}
                 >
                     {opportunity.expenseDocuments?.[category]?.length > 0 ? (
