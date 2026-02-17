@@ -212,10 +212,11 @@ const Sidebar = () => {
                             >
                                 <StyledWrapper>
                                     <div className={`button ${active ? 'active' : ''} ${isCollapsed ? 'justify-center px-2 py-3' : ''}`}>
+                                        <div className="inner-press" />
                                         <Icon
                                             size={isCollapsed ? 20 : 20}
                                             strokeWidth={isCollapsed ? 2.2 : 2}
-                                            className={`relative z-10 shrink-0 transition-colors duration-300 ${active ? 'text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.85)]' : 'text-white/95'}`}
+                                            className={`relative z-10 shrink-0 transition-colors duration-300 ${active ? 'text-white' : 'text-white/95'}`}
                                         />
 
                                         {!isCollapsed && (
@@ -279,6 +280,7 @@ const StyledWrapper = styled.div`
     color: rgb(255, 255, 255, 0.75); /* Slightly brighter text for better contrast */
 
     transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+    overflow: hidden;
   }
 
   /* Active State Styling */
@@ -316,6 +318,45 @@ const StyledWrapper = styled.div`
     opacity: 0.2;
 
     transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+  }
+
+  /* Frutiger-style moving sheen layer (keeps existing colors) */
+  .button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(-65deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.45) 50%, rgba(255, 255, 255, 0) 70%);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: sidebarShine 3s ease infinite;
+    z-index: 1;
+  }
+
+  /* Inner pressed depth on click */
+  .button .inner-press {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 2px 8px -2px rgba(0, 0, 0, 0);
+    transition: all 0.3s ease;
+    z-index: 1;
+  }
+
+  .button:active .inner-press {
+    box-shadow: inset 0 2px 8px -2px rgba(0, 0, 0, 0.65);
+  }
+
+  @keyframes sidebarShine {
+    0% {
+      background-position: 130%;
+      opacity: 1;
+    }
+    100% {
+      background-position: -166%;
+      opacity: 0;
+    }
   }
 
   .button:hover {
