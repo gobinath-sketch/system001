@@ -273,7 +273,11 @@ const OpportunityDetailPage = () => {
             {/* Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center min-w-0 w-full">
-                    <button onClick={handleBack} className="mr-4 text-gray-600 hover:text-gray-900">
+                    <button
+                        onClick={handleBack}
+                        className="mr-4 h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0"
+                        aria-label="Back"
+                    >
                         <ArrowLeft size={24} />
                     </button>
                     <div className="flex items-center gap-4 sm:gap-6 flex-1 ml-1 sm:ml-4 overflow-x-auto pb-1">

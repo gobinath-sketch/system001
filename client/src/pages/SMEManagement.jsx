@@ -95,7 +95,8 @@ const SMEManagement = () => {
                 <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                     <button
                         onClick={() => navigate('/dashboard/delivery')}
-                        className="text-gray-600 hover:text-gray-900 transition-colors"
+                        className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0"
+                        aria-label="Back"
                     >
                         <ArrowLeft size={24} />
                     </button>
