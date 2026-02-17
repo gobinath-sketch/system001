@@ -8,3 +8,5 @@ coverage/
 
 server/uploads/
 uploads/
+
+test-results/
