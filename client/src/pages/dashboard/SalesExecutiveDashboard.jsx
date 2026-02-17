@@ -615,7 +615,7 @@ const SalesExecutiveDashboard = ({
                                                         outerRadius="60%"
                                                         margin={{ top: 12, right: 12, left: 30, bottom: 12 }}
                                                     >
-                                                        <PolarGrid stroke="#9ca3af" strokeOpacity={0.9} />
+                                                        <PolarGrid stroke="#000000" strokeOpacity={0.75} />
                                                         <PolarAngleAxis
                                                             dataKey="type"
                                                             tick={({ payload, x, y, textAnchor }) => (
@@ -635,10 +635,10 @@ const SalesExecutiveDashboard = ({
                                                         <Radar
                                                             name="Opportunities"
                                                             dataKey="radarValue"
-                                                            stroke="#0F3D75"
+                                                            stroke="#003D7A"
                                                             fill="#1D6FD1"
                                                             fillOpacity={0.35}
-                                                            strokeWidth={2}
+                                                            strokeWidth={2.4}
                                                             dot={false}
                                                             activeDot={false}
                                                         />
