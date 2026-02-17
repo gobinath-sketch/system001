@@ -787,7 +787,7 @@ const ClientPage = () => {
                                                                 e.stopPropagation();
                                                                 navigate('/opportunities', { state: { createOpportunity: true, clientId: client._id } });
                                                             }}
-                                                            className="text-white bg-indigo-600 p-2 rounded-md transition-colors"
+                                                            className="text-white bg-blue-900 p-2 rounded-md transition-colors"
                                                             title="Create Opportunity"
                                                         >
                                                             <Plus size={20} />
