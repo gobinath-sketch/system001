@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { MoreHorizontal, ChevronRight, ChevronLeft, X, Check } from 'lucide-react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useToast } from '../../context/ToastContext';
+import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
 
 
 const shiftColor = (hex, amount) => {
@@ -266,12 +267,6 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
 
     }, [allOpps, filter, yearlyTarget]);
 
-    const diff = filteredData.adjustedTarget - filteredData.achievedRevenue;
-    const isPositive = diff <= 0;
-    const percentage = filteredData.adjustedTarget > 0
-        ? Math.min((filteredData.achievedRevenue / filteredData.adjustedTarget) * 100, 100)
-        : 0;
-
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* 1. Revenue Summary Box */}
@@ -289,7 +284,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                 </div>
 
                 <div className="flex-1 w-full min-h-[220px] border-b border-gray-100 pb-1 mb-1">
-                    <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={220}>
+                    <SafeResponsiveContainer minHeight={220}>
                         <BarChart
                             data={[
                                 {
@@ -368,7 +363,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                                 }
                             </Bar>
                         </BarChart>
-                    </ResponsiveContainer>
+                    </SafeResponsiveContainer>
                 </div>
 
                 {/* Numeric Summary Footer */}
@@ -505,7 +500,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                             <p>Loading revenue data...</p>
                         </div>
                     ) : filteredData.typeData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={240}>
+                        <SafeResponsiveContainer minHeight={240}>
                             <PieChart>
                                 <defs>
                                     <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="180%">
@@ -575,7 +570,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                                     }}
                                 />
                             </PieChart>
-                        </ResponsiveContainer>
+                        </SafeResponsiveContainer>
                     ) : (
                         <div className="h-full flex flex-col items-center justify-center text-black font-bold">
                             <p>No revenue data available</p>

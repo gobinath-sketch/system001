@@ -1,16 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
 import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, ChevronRight, X, ChevronDown } from 'lucide-react';
 import DocumentStatusCard from '../../components/dashboard/DocumentStatusCard';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-    ComposedChart, Line, ResponsiveContainer, PieChart, Pie, Cell
+    ComposedChart, Line, PieChart, Pie, Cell
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import RevenueAnalyticsRow from './RevenueAnalyticsRow';
 import { useCurrency } from '../../context/CurrencyContext';
+import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
 
+const OPPORTUNITY_TYPES = ['Training', 'Product Support', 'Resource Support', 'Vouchers', 'Content Development', 'Lab Support'];
 
 const SalesExecutiveDashboard = ({
     user,
@@ -25,10 +27,8 @@ const SalesExecutiveDashboard = ({
     onRefreshTeam
 }) => {
     const navigate = useNavigate();
-    const [stats, setStats] = useState(null);
     const [clientHealth, setClientHealth] = useState({ active: 0, mid: 0, inactive: 0 });
     const [performance, setPerformance] = useState(null);
-    const [monthlyTrends, setMonthlyTrends] = useState([]);
     const [allOpps, setAllOpps] = useState([]); // For Document Status Modal
     const [loading, setLoading] = useState(true);
     const { currency } = useCurrency();
@@ -49,31 +49,16 @@ const SalesExecutiveDashboard = ({
         });
     };
 
-    // New State for Analytics
-    const [activeFilter, setActiveFilter] = useState('overview'); // 'overview', 'opportunities', 'sectors', 'revenue'
-    const [analyticsData, setAnalyticsData] = useState({
-        typeDist: [],
-        sectorDist: [],
-        yearlyTrends: []
-    });
-
     const EXCHANGE_RATE = 85; // Fixed rate for now
-    const OPPORTUNITY_TYPES = ['Training', 'Product Support', 'Resource Support', 'Vouchers', 'Content Development', 'Lab Support'];
 
-    const fetchDashboardData = async () => {
+    const fetchDashboardData = useCallback(async () => {
         try {
             const token = localStorage.getItem('token');
             const headers = { Authorization: `Bearer ${token} ` };
             const params = customUserId ? { userId: customUserId } : {};
 
-            const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', { headers, params });
-            setStats(statsRes.data);
-
             const perfRes = await axios.get(`http://localhost:5000/api/dashboard/performance/${customUserId || user.id}`, { headers });
             setPerformance(perfRes.data);
-
-            const trendsRes = await axios.get('http://localhost:5000/api/dashboard/monthly-trends', { headers, params });
-            setMonthlyTrends(trendsRes.data);
 
             // Fetch all opps for document status card and top 5 clients
             const docsRes = await axios.get('http://localhost:5000/api/dashboard/all-opportunities', { headers, params });
@@ -82,23 +67,6 @@ const SalesExecutiveDashboard = ({
             // Fetch client health metrics
             const healthRes = await axios.get('http://localhost:5000/api/dashboard/client-health', { headers, params });
             setClientHealth(healthRes.data);
-
-            // Fetch Analytics Data
-            const typeRes = await axios.get('http://localhost:5000/api/dashboard/analytics/type-distribution', { headers, params });
-            const sectorRes = await axios.get('http://localhost:5000/api/dashboard/analytics/sector-distribution', { headers, params });
-            const yearlyRes = await axios.get('http://localhost:5000/api/dashboard/analytics/yearly-trends', { headers, params });
-
-            // Zero-fill Opportunity Types
-            const filledTypeData = OPPORTUNITY_TYPES.map(type => {
-                const found = typeRes.data.find(item => item.type === type);
-                return found ? { type, count: found.count, revenue: found.revenue } : { type, count: 0, revenue: 0 };
-            });
-
-            setAnalyticsData({
-                typeDist: filledTypeData, // Use filled data
-                sectorDist: sectorRes.data,
-                yearlyTrends: yearlyRes.data
-            });
 
             // Trigger parent refresh if provided (for Business Head team structure)
             if (onRefreshTeam) {
@@ -110,11 +78,11 @@ const SalesExecutiveDashboard = ({
             console.error('Error fetching dashboard data:', err);
             setLoading(false);
         }
-    };
+    }, [customUserId, onRefreshTeam, user.id]);
 
     useEffect(() => {
         fetchDashboardData();
-    }, [user.id, customUserId]);
+    }, [fetchDashboardData]);
 
     // Helper to format money based on selected currency
     const formatMoney = (amountInINR) => {
@@ -609,7 +577,7 @@ const SalesExecutiveDashboard = ({
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
                         <h3 className="text-base font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
                         <div className="flex-1 w-full min-h-[205px]">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={205}>
+                            <SafeResponsiveContainer minHeight={205}>
                                 <BarChart data={filteredTypeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
                                     <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} />
                                     <XAxis type="number" hide />
@@ -617,7 +585,7 @@ const SalesExecutiveDashboard = ({
                                     <Tooltip cursor={false} />
                                     <Bar dataKey="count" name="Opportunities" fill={brandBlue} barSize={15} radius={[0, 4, 4, 0]} label={{ position: 'right', fill: brandBlue, fontSize: 10 }} />
                                 </BarChart>
-                            </ResponsiveContainer>
+                            </SafeResponsiveContainer>
                         </div>
                     </div>
 

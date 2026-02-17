@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { Check, FileText, DollarSign, Briefcase, X, ArrowLeft, Search, Filter, Bell as BellIcon, CheckCheck } from 'lucide-react';
+import { Check, FileText, DollarSign, Briefcase, X, ArrowLeft, Search, Bell as BellIcon, CheckCheck } from 'lucide-react';
 import NotificationBellIcon from '../common/NotificationBellIcon';
 import searchIcon from '../../assets/search-square-svgrepo-com.svg';
 import { useNavigate } from 'react-router-dom';
@@ -9,7 +9,6 @@ import { useSocket } from '../../context/SocketContext';
 
 const NotificationDropdown = () => {
     const [notifications, setNotifications] = useState([]);
-    const [filteredNotifications, setFilteredNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
     const [selectedNotification, setSelectedNotification] = useState(null);
@@ -122,24 +121,31 @@ const NotificationDropdown = () => {
 
     const { socket } = useSocket();
 
-    // Fetch initial notifications
-    const fetchNotifications = async () => {
-        try {
-            const token = localStorage.getItem('token');
-            if (!token) return;
-
-            const res = await axios.get('http://localhost:5000/api/notifications', {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setNotifications(res.data.notifications);
-            setUnreadCount(res.data.unreadCount);
-        } catch (err) {
-            console.error('Error fetching notifications:', err);
-        }
-    };
-
     useEffect(() => {
-        fetchNotifications();
+        let isMounted = true;
+
+        const loadNotifications = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) return;
+
+                const res = await axios.get('http://localhost:5000/api/notifications', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                if (!isMounted) return;
+                setNotifications(res.data.notifications);
+                setUnreadCount(res.data.unreadCount);
+            } catch (err) {
+                console.error('Error fetching notifications:', err);
+            }
+        };
+
+        loadNotifications();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     // Real-time listener: Listen for NEW notifications from Socket.io
@@ -161,8 +167,7 @@ const NotificationDropdown = () => {
         };
     }, [socket]);
 
-    // Filter notifications based on search and active filter
-    useEffect(() => {
+    const filteredNotifications = useMemo(() => {
         let filtered = notifications;
 
         // Apply type filter
@@ -175,11 +180,11 @@ const NotificationDropdown = () => {
         // Apply search filter
         if (searchQuery.trim()) {
             filtered = filtered.filter(n =>
-                n.message.toLowerCase().includes(searchQuery.toLowerCase())
+                (n?.message || '').toLowerCase().includes(searchQuery.toLowerCase())
             );
         }
 
-        setFilteredNotifications(filtered);
+        return filtered;
     }, [notifications, activeFilter, searchQuery]);
 
     const handleMarkAsRead = async (id, e) => {
@@ -332,7 +337,7 @@ const NotificationDropdown = () => {
                                                         <div key={key} className={`p-4 grid grid-cols-1 sm:grid-cols-[1fr_2fr] gap-3 ${index !== 0 ? 'border-t border-slate-200' : ''} hover:bg-white/50 transition-colors`}>
                                                             <span className="text-sm font-bold text-slate-700">{formatFieldName(key)}</span>
                                                             <span className="text-sm text-slate-900 font-medium break-words bg-white px-3 py-2 rounded-lg border border-slate-200 shadow-sm">
-                                                                {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                                                                {typeof value === 'object' ? safeStringify(value) : String(value)}
                                                             </span>
                                                         </div>
                                                     ))}
@@ -483,15 +488,6 @@ const NotificationDropdown = () => {
 
 // Sub-component for individual notification item
 const NotificationItem = ({ notification, onRead, onNavigate }) => {
-    // Helper function for field naming
-    const formatFieldName = (field) => {
-        return field
-            .replace(/([A-Z])/g, ' $1')
-            .replace(/^./, str => str.toUpperCase())
-            .replace('Common Details.', '')
-            .replace('Type Specific Details.', '');
-    };
-
     // Premium Color Logic based on type
     const getStyleConfig = (type) => {
         switch (type) {
@@ -557,7 +553,7 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
             className={`
                 group relative p-4 rounded-2xl cursor-pointer transition-all duration-300 ease-out
                 bg-white border-l-4 ${style.borderColor} border border-gray-100
-                hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1 hover:border-${style.hoverBorder}
+                hover:shadow-xl hover:scale-[1.02] hover:-translate-y-1
                 flex items-center gap-4
             `}
         >
@@ -609,3 +605,10 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
 };
 
 export default NotificationDropdown;
+    const safeStringify = (value) => {
+        try {
+            return typeof value === 'string' ? value : JSON.stringify(value);
+        } catch {
+            return '[Unserializable data]';
+        }
+    };
