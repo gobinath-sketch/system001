@@ -5,7 +5,7 @@ import { Users, Briefcase, CheckCircle, CircleDollarSign, IndianRupee, Target, C
 import DocumentStatusCard from '../../components/dashboard/DocumentStatusCard';
 import {
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
-    ComposedChart, Line, PieChart, Pie, Cell
+    ComposedChart, Line, PieChart, Pie, Cell, RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import RevenueAnalyticsRow from './RevenueAnalyticsRow';
@@ -184,6 +184,12 @@ const SalesExecutiveDashboard = ({
         });
         return dist;
     }, [filteredOpps]);
+
+    const opportunityChartData = React.useMemo(() => {
+        return [...filteredTypeDist]
+            .sort((a, b) => b.count - a.count)
+            .map((item) => ({ ...item }));
+    }, [filteredTypeDist]);
 
 
     const glassCardStyle = {
@@ -405,7 +411,7 @@ const SalesExecutiveDashboard = ({
     if (loading) return <div className="p-8 text-center text-black font-bold">Loading Dashboard...</div>;
 
     // Chart Theme Colors - Brand Colors
-    const brandBlue = '#003D7A';
+    const chartColors = ['#0F3D75', '#1556A8', '#1D6FD1', '#2F86DE', '#55A2E8', '#80BBEE'];
 
     return (
         <div className="p-3 sm:p-4 pb-4 space-y-4 bg-bg-page h-full">
@@ -581,15 +587,88 @@ const SalesExecutiveDashboard = ({
                     <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col min-h-[280px] md:min-h-[300px]">
                         <h3 className="text-base font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
                         <div className="flex-1 w-full min-h-[205px]">
-                            <SafeResponsiveContainer minHeight={205}>
-                                <BarChart data={filteredTypeDist} layout="vertical" margin={{ top: 4, right: 20, left: 2, bottom: 10 }}>
-                                    <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={true} />
-                                    <XAxis type="number" hide />
-                                    <YAxis dataKey="type" type="category" width={112} tick={{ fontSize: 12, fill: '#000000', fontWeight: 'bold' }} />
-                                    <Tooltip cursor={false} />
-                                    <Bar dataKey="count" name="Opportunities" fill={brandBlue} barSize={15} radius={[0, 4, 4, 0]} label={{ position: 'right', fill: brandBlue, fontSize: 10 }} />
-                                </BarChart>
-                            </SafeResponsiveContainer>
+                            {opportunityChartData.length === 0 ? (
+                                <div className="h-full flex items-center justify-center text-sm font-bold text-black">
+                                    No opportunity data available
+                                </div>
+                            ) : (
+                                (() => {
+                                    const totalCount = opportunityChartData.reduce((sum, d) => sum + d.count, 0);
+                                    const radarData = opportunityChartData.map((item, index) => ({
+                                        ...item,
+                                        fill: chartColors[index % chartColors.length],
+                                        share: totalCount > 0 ? Math.round((item.count / totalCount) * 100) : 0,
+                                        // Use sqrt scaling so smaller categories remain visible while preserving rank.
+                                        radarValue: item.count > 0 ? Math.sqrt(item.count) : 0.35
+                                    }));
+                                    const maxRadarValue = Math.max(...radarData.map((d) => d.radarValue), 1);
+                                    const typeColorMap = Object.fromEntries(radarData.map((d) => [d.type, d.fill]));
+                                    return (
+                                        <div className="h-full grid grid-cols-1 md:grid-cols-[47%_53%] gap-2 md:gap-3 items-center">
+                                            <div className="h-full min-h-[195px] pr-1">
+                                                <SafeResponsiveContainer minHeight={195}>
+                                                    <RadarChart
+                                                        accessibilityLayer={false}
+                                                        data={radarData}
+                                                        cx="57%"
+                                                        cy="50%"
+                                                        outerRadius="60%"
+                                                        margin={{ top: 12, right: 12, left: 30, bottom: 12 }}
+                                                    >
+                                                        <PolarGrid stroke="#9ca3af" strokeOpacity={0.9} />
+                                                        <PolarAngleAxis
+                                                            dataKey="type"
+                                                            tick={({ payload, x, y, textAnchor }) => (
+                                                                <text
+                                                                    x={x}
+                                                                    y={y}
+                                                                    textAnchor={textAnchor}
+                                                                    fill={typeColorMap[payload?.value] || '#374151'}
+                                                                    fontSize={10}
+                                                                    fontWeight={700}
+                                                                >
+                                                                    {payload?.value}
+                                                                </text>
+                                                            )}
+                                                        />
+                                                        <PolarRadiusAxis domain={[0, maxRadarValue]} tick={false} axisLine={false} />
+                                                        <Radar
+                                                            name="Opportunities"
+                                                            dataKey="radarValue"
+                                                            stroke="#0F3D75"
+                                                            fill="#1D6FD1"
+                                                            fillOpacity={0.35}
+                                                            strokeWidth={2}
+                                                            dot={false}
+                                                            activeDot={false}
+                                                        />
+                                                    </RadarChart>
+                                                </SafeResponsiveContainer>
+                                            </div>
+                                            <div className="h-full flex flex-col justify-center gap-2">
+                                                {radarData.map((item) => (
+                                                    <div key={item.type} className="grid grid-cols-[10px_minmax(0,1fr)_40px] items-center gap-2">
+                                                        <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.fill }} />
+                                                        <div className="min-w-0">
+                                                            <div className="flex items-center justify-between gap-2">
+                                                                <span className="text-[12px] md:text-[13px] font-semibold text-gray-800 truncate" title={item.type}>{item.type}</span>
+                                                                <span className="text-[11px] md:text-[12px] font-medium text-gray-500">{item.share}%</span>
+                                                            </div>
+                                                            <div className="mt-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                                                                <div
+                                                                    className="h-full rounded-full"
+                                                                    style={{ width: `${Math.max(6, item.share)}%`, backgroundColor: item.fill }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                        <span className="text-right text-[12px] md:text-[13px] font-bold text-primary-blue">{item.count}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })()
+                            )}
                         </div>
                     </div>
 

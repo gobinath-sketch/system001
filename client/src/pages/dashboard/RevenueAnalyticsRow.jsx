@@ -286,6 +286,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                 <div className="flex-1 w-full min-h-[220px] border-b border-gray-100 pb-1 mb-1">
                     <SafeResponsiveContainer minHeight={220}>
                         <BarChart
+                            accessibilityLayer={false}
                             data={[
                                 {
                                     name: 'Target',
@@ -501,7 +502,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                         </div>
                     ) : filteredData.typeData.length > 0 ? (
                         <SafeResponsiveContainer minHeight={240}>
-                            <PieChart>
+                            <PieChart accessibilityLayer={false}>
                                 <defs>
                                     <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="180%">
                                         <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.2" />
