@@ -34,24 +34,40 @@ const OperationalExpensesBreakdown = ({
     // Helper to access breakdown (with fallback)
     const getBreakdown = () => activeData.expenses?.breakdown || {};
 
-    // Helper accessors for days and pax from activeData (for immediate reactivity) or opportunity
+    // Helper accessors for days and pax from activeData or opportunity
     const days = activeData.days || activeData.commonDetails?.duration || activeData.commonDetails?.trainingDays || opportunity.days || opportunity.commonDetails?.duration || opportunity.commonDetails?.trainingDays || 0;
     const pax = activeData.participants || activeData.commonDetails?.attendanceParticipants || activeData.commonDetails?.totalParticipants || opportunity.participants || opportunity.commonDetails?.attendanceParticipants || opportunity.commonDetails?.totalParticipants || 0;
 
     const [localBreakdown, setLocalBreakdown] = useState({});
-    const initializedTypes = useRef(new Set());
-    const expenseIcons = {
-        trainerCost: GraduationCap,
-        material: Package,
-        labs: FlaskConical,
-        gkRoyalty: BadgePercent,
-        accommodation: Hotel,
-        perDiem: UtensilsCrossed,
-        venue: Building2,
-        travel: Plane,
-        vouchersCost: Ticket,
-        localConveyance: Car
-    };
+
+    // Configuration for expenses order and options
+    const expenseConfig = [
+        {
+            key: 'trainerCost', label: 'Trainer Cost', icon: GraduationCap,
+            options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Training Cost' }]
+        },
+        {
+            key: 'material', label: 'Material Cost', icon: Package,
+            options: [{ value: 'costPerPax', label: 'Cost / Pax' }, { value: 'overallCost', label: 'Overall Cost' }]
+        },
+        {
+            key: 'labs', label: 'Lab Cost', icon: FlaskConical,
+            options: [{ value: 'costPerPaxDay', label: 'Cost / Pax / Day' }, { value: 'costPerPaxAllDays', label: 'Cost / Pax (All Days)' }, { value: 'totalCost', label: 'Total Cost' }]
+        },
+        { key: 'gkRoyalty', label: 'GK Royalty', icon: BadgePercent, fixedLabel: 'Fixed: Cost / Pax / Day' },
+        { key: 'accommodation', label: 'Accommodation', icon: Hotel, fixedLabel: 'Fixed: Cost / Day' },
+        { key: 'perDiem', label: 'Per Diem', icon: UtensilsCrossed, fixedLabel: 'Fixed: Cost / Day' },
+        {
+            key: 'venue', label: 'Venue Cost', icon: Building2,
+            options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }]
+        },
+        {
+            key: 'travel', label: 'Travel Cost', icon: Plane,
+            options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }]
+        },
+        { key: 'vouchersCost', label: 'Vouchers', icon: Ticket, fixedLabel: 'Total amount' },
+        { key: 'localConveyance', label: 'Local Conveyance', icon: Car, fixedLabel: 'Total amount' }
+    ];
 
     // Sync local state on prop change
     useEffect(() => {
@@ -60,39 +76,29 @@ const OperationalExpensesBreakdown = ({
         }
     }, [activeData.expenses]);
 
-
-
     // Auto-recalculate totals when Global dependencies (days, pax) change
     useEffect(() => {
         if (!localBreakdown || Object.keys(localBreakdown).length === 0) return;
         if (!canEdit) return;
 
-        console.log('DEBUG: Recalculating expenses due to days/pax change. Days:', days, 'Pax:', pax);
-
-        const expCategories = [
-            'trainerCost', 'material', 'labs', 'gkRoyalty', 'accommodation', 'perDiem',
-            'venue', 'travel'
-        ];
+        const expCategories = expenseConfig.map(e => e.key);
 
         expCategories.forEach(category => {
             const data = localBreakdown[category];
-            if (data && data.type) {
-                // Determine if this category relies on days or pax
-                // This mimics calculateTotal logic but we just run it safely for all relevant ones
+            // Check if we should recalculate. 
+            if (data) {
                 const newTotal = calculateTotal(category, data);
-                // Only update if value implies a change (check against activeData to avoid loops? No, handleChange is safe)
                 if (newTotal !== null && activeData.expenses?.[category] !== newTotal * CONVERSION_RATE) {
                     handleChange('expenses', category, newTotal * CONVERSION_RATE);
                 }
             }
         });
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [days, pax]); // Only run when global factors change
+    }, [days, pax]);
 
     const updateBreakdown = (category, fieldOrUpdates, value) => {
         if (!canEdit) return;
 
-        // Normalize updates to an object -> BATCH UPDATE SUPPORT
         let updates = {};
         if (typeof fieldOrUpdates === 'string') {
             updates = { [fieldOrUpdates]: value };
@@ -106,19 +112,19 @@ const OperationalExpensesBreakdown = ({
         const newBreakdown = { ...localBreakdown, [category]: updatedCategory };
         setLocalBreakdown(newBreakdown);
 
-        // Update parent with new breakdown AND calculated total (Converted to Base Currency)
         const newTotal = calculateTotal(category, updatedCategory);
-        handleChange('expenses', 'breakdown', newBreakdown); // Save breakdown
+        handleChange('expenses', 'breakdown', newBreakdown);
         if (newTotal !== null) {
-            handleChange('expenses', category, newTotal * CONVERSION_RATE); // Save calculated total in Base Currency -> CURRENCY FIX
+            handleChange('expenses', category, newTotal * CONVERSION_RATE);
         }
     };
 
     const calculateTotal = (category, data) => {
+        if (!data) return 0;
         const type = data.type;
         const rate = parseFloat(data.rate) || 0;
         const hours = parseFloat(data.hours) || 0;
-        const subPax = parseFloat(data.pax) || pax;
+        const subPax = parseFloat(data.pax) || pax; // Default to global pax if row-level pax not set
 
         switch (category) {
             case 'trainerCost':
@@ -146,218 +152,55 @@ const OperationalExpensesBreakdown = ({
                 if (type === 'totalCost') return rate;
                 return rate;
             default:
-                // For other categories, default to direct rate/amount if logic undefined
                 return rate;
         }
     };
 
-    const renderInputGroup = (category, label, typeOptions = null, fixedTypeLabel = null) => {
+    // --- VIEW MODE RENDERER (CARD STYLE) ---
+    const renderViewCard = (config) => {
+        const { key: category, label, options, fixedLabel } = config;
         const data = localBreakdown[category] || {};
-        const selectedType = data.type || (typeOptions ? typeOptions[0].value : '');
+        const Icon = config.icon || Wallet;
         const currentTotal = activeData.expenses?.[category] || 0;
-        const Icon = expenseIcons[category] || Wallet;
 
-        const typeLabel = typeOptions
-            ? (typeOptions.find(o => o.value === data.type)?.label || data.type)
-            : (fixedTypeLabel ? fixedTypeLabel.replace('Fixed: ', '') : 'Fixed');
-
-        // Initialize type if missing (only once per category)
-        if (!data.type && typeOptions && canEdit && !initializedTypes.current.has(category)) {
-            initializedTypes.current.add(category);
-            // We don't need the timeout hack anymore as handleUpdate will catch it, 
-            // but keeping it doesn't hurt. 
-        }
-
-        // Helper to ensure type is saved when value changes
-        const handleUpdate = (field, val) => {
-            // explicitly include selectedType (which defaults to first option) to ensure calculation works
-            updateBreakdown(category, { [field]: val, type: selectedType });
-        };
+        const typeLabel = options
+            ? (options.find(o => o.value === data.type)?.label || data.type)
+            : (fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed');
 
         return (
-            <div className={`bg-white/80 border border-slate-200 rounded-xl ${!canEdit ? 'p-3 flex flex-col justify-center' : 'p-3'} h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]`}>
-                <div className={`flex justify-between items-center ${!canEdit ? 'mb-2' : 'mb-2'}`}>
-                    <span className={`inline-flex items-center gap-2 font-semibold text-slate-700 ${!canEdit ? 'text-sm' : 'text-sm'}`}>
+            <div key={category} className="bg-white/80 border border-slate-200 rounded-xl p-3 flex flex-col justify-center h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+                <div className="flex justify-between items-center mb-2">
+                    <span className="inline-flex items-center gap-2 font-semibold text-slate-700 text-sm">
                         <Icon size={15} className="text-slate-500" />
                         {label}
                     </span>
-                    <span className={`font-bold text-slate-800 ${!canEdit ? 'text-sm' : 'text-sm'}`}>
+                    <span className="font-bold text-slate-800 text-sm">
                         {CURRENCY_SYMBOL} {(currentTotal / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                 </div>
 
-                {canEdit && (
-                    <div className="mb-2">
-                        {typeOptions ? (
-                            <select
-                                value={selectedType}
-                                onChange={(e) => updateBreakdown(category, 'type', e.target.value)}
-                                className="w-full text-xs p-1.5 border border-slate-300 rounded-lg bg-white text-slate-700 focus:outline-none focus:border-sky-500"
-                            >
-                                {typeOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-                            </select>
-                        ) : (
-                            <div className="text-xs text-slate-500 italic border-b border-slate-200 pb-1 mb-1">{fixedTypeLabel}</div>
-                        )}
-                    </div>
-                )}
-
-                {canEdit ? (
-                    <div className="grid grid-cols-2 gap-2">
-                        {category === 'trainerCost' && (
-                            <>
-                                {selectedType === 'costPerDay' && (
-                                    <div className="col-span-2"><Input label="Rate / Day" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>
-                                )}
-                                {selectedType === 'costPerHour' && <><Input label="Hours" value={data.hours} onChange={v => handleUpdate('hours', v)} /><Input label="Rate/Hour" value={data.rate} onChange={v => handleUpdate('rate', v)} /></>}
-                                {selectedType === 'totalCost' && (
-                                    <div className="col-span-2"><Input label="Total Cost" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>
-                                )}
-                            </>
-                        )}
-                        {category === 'material' && (
-                            <>
-                                {selectedType === 'costPerPax' && <><Input label="Pax" value={data.pax || pax} onChange={v => handleUpdate('pax', v)} /><Input label="Rate / Pax" value={data.rate} onChange={v => handleUpdate('rate', v)} /></>}
-                                {selectedType === 'overallCost' && (
-                                    <div className="col-span-2"><Input label="Total Cost" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>
-                                )}
-                            </>
-                        )}
-                        {category === 'labs' && (
-                            <>
-                                {(selectedType === 'costPerPaxDay' || selectedType === 'costPerPaxAllDays') && <><Input label="Pax" value={data.pax || pax} onChange={v => handleUpdate('pax', v)} /><Input label={`Rate / Pax${selectedType === 'costPerPaxDay' ? ' / Day' : ''}`} value={data.rate} onChange={v => handleUpdate('rate', v)} /></>}
-                                {selectedType === 'totalCost' && (
-                                    <div className="col-span-2"><Input label="Total Cost" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>
-                                )}
-                            </>
-                        )}
-                        {(category === 'gkRoyalty' || category === 'accommodation' || category === 'perDiem') && (
-                            <>
-                                {category === 'gkRoyalty' && <div className="col-span-2 text-xs text-gray-400 mb-1">Pax: {pax}, Days: {days}</div>}
-                                {(category === 'accommodation' || category === 'perDiem') && <div className="col-span-2 text-xs text-gray-400 mb-1">Days: {days}</div>}
-                                <div className="col-span-2"><Input label={category === 'gkRoyalty' ? 'Rate / Pax / Day' : 'Rate / Day'} value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>
-                            </>
-                        )}
-                        {(category === 'venue' || category === 'travel') && (
-                            <>
-                                {selectedType === 'costPerDay' && <div className="col-span-2"><Input label="Cost / Day" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>}
-                                {selectedType === 'totalCost' && <div className="col-span-2"><Input label="Total Cost" value={data.rate} onChange={v => handleUpdate('rate', v)} /></div>}
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <div className="flex justify-between items-center text-sm text-slate-600 leading-relaxed">
-                        <span className="text-slate-500">{typeLabel}</span>
-                        <span className="font-semibold text-slate-800">
-                            {CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}
-                        </span>
-                    </div>
-                )}
-
-                {(canEdit || opportunity.expenseDocuments?.[category]?.length > 0) && (
-                    <div className={`flex justify-end ${!canEdit ? 'mt-1 pt-1' : 'mt-1 pt-1'} border-t border-slate-100`}>
-                        <div className="flex items-center space-x-2">
-                            {opportunity.expenseDocuments?.[category]?.length > 0 && (
-                                <a
-                                    href={`http://localhost:5000/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-slate-400 hover:text-sky-700"
-                                    title="View Document"
-                                >
-                                    <Eye size={14} />
-                                </a>
-                            )}
-                            {isEditing && canEdit && (
-                                <>
-                                    <input
-                                        type="file"
-                                        id={`upload-${category}`}
-                                        className="hidden"
-                                        onChange={(e) => handleProposalUpload(e, category)}
-                                        disabled={uploading === category}
-                                    />
-                                    <button
-                                        onClick={() => document.getElementById(`upload-${category}`).click()}
-                                        disabled={uploading === category}
-                                        className="transition-colors text-slate-400 hover:text-sky-700"
-                                        title="Upload Document"
-                                    >
-                                        <Upload size={14} />
-                                    </button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    };
-
-    // Helper to render "Other Expenses" (Venue, Travel, etc.)
-    const renderOtherExpense = (key) => {
-        const Icon = expenseIcons[key] || Wallet;
-        return (
-            <div key={key} className={`bg-white/80 border border-slate-200 rounded-xl ${!canEdit ? 'p-3 flex flex-col justify-center' : 'p-3'} h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]`}>
-                <div className={`flex justify-between items-center ${!canEdit ? 'mb-2' : 'mb-2'}`}>
-                    <span className={`inline-flex items-center gap-2 font-semibold text-slate-700 ${!canEdit ? 'text-sm' : 'text-sm'} capitalize`}>
-                        <Icon size={15} className="text-slate-500" />
-                        {key.replace('Cost', '').replace(/([A-Z])/g, ' $1').trim()}
-                    </span>
-                    <span className={`font-bold text-slate-800 ${!canEdit ? 'text-sm' : 'text-sm'}`}>
-                        {CURRENCY_SYMBOL} {((activeData.expenses?.[key] || 0) / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                <div className="flex justify-between items-center text-sm text-slate-600 leading-relaxed">
+                    <span className="text-slate-500">{typeLabel}</span>
+                    <span className="font-semibold text-slate-800">
+                        {CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}
                     </span>
                 </div>
 
-                {/* Edit Input (Delivery Only) */}
-                {canEdit && (
-                    <Input
-                        label="Amount"
-                        value={localBreakdown[key]?.rate !== undefined ? localBreakdown[key].rate : ((activeData.expenses?.[key] || 0) / CONVERSION_RATE)}
-                        onChange={v => {
-                            // Use batch update to prevent state clobbering and ensure correct updates
-                            updateBreakdown(key, { rate: v, type: 'manual' });
-                        }}
-                    />
+                {data.hours > 0 && data.type === 'costPerHour' && (
+                    <div className="text-xs text-slate-400 mt-1">Hours: {data.hours}</div>
                 )}
 
-
-
-                {/* Document Upload / View */}
-                {(canEdit || opportunity.expenseDocuments?.[key]?.length > 0) && (
-                    <div className={`flex justify-end ${!canEdit ? 'mt-1 pt-1' : 'mt-2 pt-2'} border-t border-slate-100`}>
-                        <div className="flex items-center space-x-2">
-                            {opportunity.expenseDocuments?.[key]?.length > 0 && (
-                                <a
-                                    href={`http://localhost:5000/${opportunity.expenseDocuments[key][0].replace(/\\/g, '/')}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-slate-400 hover:text-sky-700"
-                                    title="View Document"
-                                >
-                                    <Eye size={14} />
-                                </a>
-                            )}
-                            {isEditing && canEdit && (
-                                <>
-                                    <input
-                                        type="file"
-                                        id={`upload-${key}`}
-                                        className="hidden"
-                                        onChange={(e) => handleProposalUpload(e, key)}
-                                        disabled={uploading === key}
-                                    />
-                                    <button
-                                        onClick={() => document.getElementById(`upload-${key}`).click()}
-                                        disabled={uploading === key}
-                                        className="transition-colors text-slate-400 hover:text-sky-700"
-                                        title="Upload Document"
-                                    >
-                                        <Upload size={14} />
-                                    </button>
-                                </>
-                            )}
-                        </div>
+                {(opportunity.expenseDocuments?.[category]?.length > 0) && (
+                    <div className="flex justify-end mt-1 pt-1 border-t border-slate-100">
+                        <a
+                            href={`http://localhost:5000/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-slate-400 hover:text-sky-700"
+                            title="View Document"
+                        >
+                            <Eye size={14} />
+                        </a>
                     </div>
                 )}
             </div>
@@ -366,48 +209,64 @@ const OperationalExpensesBreakdown = ({
 
     return (
         <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-            <div className="flex justify-between items-center mb-4 pb-2 border-b border-slate-200/70">
+            {/* Header Section */}
+            <div className="flex justify-between items-center mb-5 pb-2 border-b border-slate-200/70">
                 <h3 className="text-[20px] leading-tight font-semibold tracking-tight text-slate-800">Operational Expenses Breakdown</h3>
-                <div className="text-xs text-slate-500 font-medium bg-slate-100 px-2 py-1 rounded">
-                    Pax: <span className="text-slate-800 font-bold">{pax}</span> • Days: <span className="text-slate-800 font-bold">{days}</span>
+                <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-800">
+                        <span className="text-blue-400">Pax:</span>
+                        <span className="font-bold">{pax}</span>
+                        <span className="w-px h-3 bg-blue-200 mx-1"></span>
+                        <span className="text-blue-400">Days:</span>
+                        <span className="font-bold">{days}</span>
+                    </div>
                 </div>
             </div>
 
+            {/* Content Section */}
             <div className="flex-grow overflow-y-auto pr-1">
                 {!canEdit ? (
+                    // VIEW MODE: Grid Cards
                     <div className="grid h-full gap-4 grid-flow-col grid-rows-5 auto-cols-fr">
-                        {renderInputGroup('trainerCost', 'Trainer Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Training Cost' }])}
-                        {renderInputGroup('material', 'Material Cost', [{ value: 'costPerPax', label: 'Cost / Pax' }, { value: 'overallCost', label: 'Overall Cost' }])}
-                        {renderInputGroup('labs', 'Lab Cost', [{ value: 'costPerPaxDay', label: 'Cost / Pax / Day' }, { value: 'costPerPaxAllDays', label: 'Cost / Pax (All Days)' }, { value: 'totalCost', label: 'Total Cost' }])}
-                        {renderInputGroup('gkRoyalty', 'GK Royalty', null, 'Fixed: Cost / Pax / Day')}
-                        {renderInputGroup('accommodation', 'Accommodation', null, 'Fixed: Cost / Day')}
-                        {renderInputGroup('perDiem', 'Per Diem', null, 'Fixed: Cost / Day')}
-                        {renderInputGroup('venue', 'Venue Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
-                        {renderInputGroup('travel', 'Travel Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
-                        {['vouchersCost', 'localConveyance'].map(key => renderOtherExpense(key))}
+                        {expenseConfig.map(config => renderViewCard(config))}
                     </div>
                 ) : (
-                    <>
-                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                            {renderInputGroup('trainerCost', 'Trainer Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Training Cost' }])}
-                            {renderInputGroup('material', 'Material Cost', [{ value: 'costPerPax', label: 'Cost / Pax' }, { value: 'overallCost', label: 'Overall Cost' }])}
-                            {renderInputGroup('labs', 'Lab Cost', [{ value: 'costPerPaxDay', label: 'Cost / Pax / Day' }, { value: 'costPerPaxAllDays', label: 'Cost / Pax (All Days)' }, { value: 'totalCost', label: 'Total Cost' }])}
-                            {renderInputGroup('gkRoyalty', 'GK Royalty', null, 'Fixed: Cost / Pax / Day')}
-                            {renderInputGroup('accommodation', 'Accommodation', null, 'Fixed: Cost / Day')}
-                            {renderInputGroup('perDiem', 'Per Diem', null, 'Fixed: Cost / Day')}
-                            {renderInputGroup('venue', 'Venue Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
-                            {renderInputGroup('travel', 'Travel Cost', [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }])}
+                    // EDIT MODE: Table Layout
+                    <div className="w-full border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_0.8fr] gap-4 py-3 px-4 bg-blue-900 text-white text-xs font-semibold uppercase tracking-wider">
+                            <div>Expenses</div>
+                            <div>Type</div>
+                            <div>Rate</div>
+                            <div className="text-center">Upload</div>
+                            <div className="text-right">Total Amount</div>
                         </div>
-                        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4 mt-4">
-                            {['vouchersCost', 'localConveyance'].map(key => renderOtherExpense(key))}
+
+                        {/* Table Rows */}
+                        <div className="bg-white divide-y divide-slate-100">
+                            {expenseConfig.map(config => (
+                                <EditRow
+                                    key={config.key}
+                                    config={config}
+                                    data={localBreakdown[config.key] || {}}
+                                    onUpdate={(field, val) => updateBreakdown(config.key, field, val)}
+                                    onUpload={(e) => handleProposalUpload(e, config.key)}
+                                    uploading={uploading}
+                                    opportunity={opportunity}
+                                    currentAmount={activeData.expenses?.[config.key] || 0}
+                                    CURRENCY_SYMBOL={CURRENCY_SYMBOL}
+                                    CONVERSION_RATE={CONVERSION_RATE}
+                                />
+                            ))}
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
 
-            <div className="mt-4 pt-3 border-t border-slate-200/70 flex justify-between items-center bg-gradient-to-r from-slate-100 to-slate-50 p-3 rounded-xl border border-slate-200">
-                <span className="text-sm font-semibold text-slate-700">Total Expenses</span>
-                <span className="text-2xl font-bold text-slate-800">
+            {/* Footer / Total Section */}
+            <div className="mt-4 pt-3 border-t border-slate-200/70 flex justify-between items-center bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <span className="text-sm font-bold text-blue-900">Total Expenses </span>
+                <span className="text-2xl font-bold text-blue-900">
                     {CURRENCY_SYMBOL} {((Object.keys(activeData.expenses || {}).reduce((sum, key) => {
                         if (key === 'breakdown' || key === 'marketingPercent' || key === 'contingencyPercent' || key === 'targetGpPercent' || key === 'marketing' || key === 'contingency') return sum;
                         return sum + (parseFloat(activeData.expenses[key]) || 0);
@@ -418,27 +277,139 @@ const OperationalExpensesBreakdown = ({
     );
 };
 
-const Input = ({ label, value, onChange }) => {
-    const { currency } = useCurrency();
-    const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '₹';
-    const isNonCurrencyField = (label.toLowerCase() === 'pax' || label.toLowerCase() === 'hours' || label.toLowerCase() === 'hours/day');
+// Extracted Edit Row Component to solve React Hook Violation
+const EditRow = ({ config, data, onUpdate, onUpload, uploading, opportunity, currentAmount, CURRENCY_SYMBOL, CONVERSION_RATE }) => {
+    const { key: category, label, options, fixedLabel, icon: Icon } = config;
+
+    // Initialize default type if missing
+    useEffect(() => {
+        if (!data.type && options) {
+            // Default to first option
+            onUpdate('type', options[0].value);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const selectedType = data.type || (options ? options[0].value : '');
+
+    // Helper to pass updates correctly
+    const handleUpdate = (field, val) => {
+        onUpdate(field, val);
+    };
+
+    const handleTypeChange = (e) => {
+        onUpdate('type', e.target.value);
+    }
+
+    // --- Rate Input Logic ---
+    let rateInput = null;
+
+    if (category === 'trainerCost') {
+        if (selectedType === 'costPerHour') {
+            rateInput = (
+                <div className="grid grid-cols-2 gap-2">
+                    <TableInput value={data.hours} onChange={v => handleUpdate('hours', v)} placeholder="Hrs" className="w-full" />
+                    <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} placeholder="Rate" className="w-full" />
+                </div>
+            );
+        } else {
+            // costPerDay or totalCost
+            rateInput = <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} />;
+        }
+    }
+    else {
+        // For all others (Material, Labs, etc.), per USER REQUEST, DO NOT SHOW PAX INPUT.
+        // Just show the rate input. Calculation will use global Pax if needed.
+        rateInput = <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} />;
+    }
 
     return (
-        <div>
-            {label && <label className="block text-[10px] uppercase font-bold text-gray-500 mb-0.5">{label}</label>}
-            <div className="relative">
-                {!isNonCurrencyField && <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-600 text-xs font-semibold">{CURRENCY_SYMBOL}</span>}
+        <div key={category} className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_0.8fr] gap-4 items-center py-2 px-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
+            {/* Expense Name */}
+            <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-50 text-blue-900 rounded-lg">
+                    <Icon size={16} />
+                </div>
+                <span className="font-semibold text-slate-700 text-sm">{label}</span>
+            </div>
+
+            {/* Type Dropdown */}
+            <div className="pr-2">
+                {options ? (
+                    <div className="relative">
+                        <select
+                            value={selectedType}
+                            onChange={handleTypeChange}
+                            className="w-full appearance-none bg-slate-50 border border-slate-200 text-black text-xs font-medium rounded-lg py-2 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer"
+                        >
+                            {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+                        </div>
+                    </div>
+                ) : (
+                    <span className="text-xs text-black-400 font-medium px-2 py-2 bg-slate-50 rounded border border-slate-100 block w-full text-left truncate" title={fixedLabel}>
+                        {fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed'}
+                    </span>
+                )}
+            </div>
+
+            {/* Rate Input */}
+            <div>
+                {rateInput}
+            </div>
+
+            {/* Upload Action */}
+            <div className="flex justify-center">
                 <input
-                    type="number"
-                    value={value || ''}
-                    onChange={e => onChange(e.target.value)}
-                    onWheel={(e) => e.target.blur()}
-                    className={`w-full text-right ${!isNonCurrencyField ? 'pl-6' : 'pl-2'} pr-2 py-1.5 bg-white border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 text-slate-900 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                    placeholder="0"
+                    type="file"
+                    id={`upload-${category}`}
+                    className="hidden"
+                    onChange={(e) => onUpload(e)}
+                    disabled={uploading === category}
                 />
+                <button
+                    onClick={() => document.getElementById(`upload-${category}`).click()}
+                    disabled={uploading === category}
+                    className={`
+                          flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all w-24
+                          ${opportunity.expenseDocuments?.[category]?.length > 0
+                            ? 'bg-white text-slate-600 border border-slate-200 hover:border-blue-500 hover:text-blue-600'
+                            : 'bg-white text-slate-500 border border-slate-200 hover:border-blue-400 hover:text-blue-600'}
+                     `}
+                >
+                    {opportunity.expenseDocuments?.[category]?.length > 0 ? (
+                        <><Upload size={12} /> Upload</>
+                    ) : (
+                        <><Upload size={12} /> Upload</>
+                    )}
+                </button>
+            </div>
+
+            {/* Total Amount */}
+            <div className="text-right font-bold text-slate-700 text-sm">
+                {CURRENCY_SYMBOL} {(currentAmount / CONVERSION_RATE).toLocaleString()}
             </div>
         </div>
     );
 };
+
+// Simplified Input for Table
+const TableInput = ({ value, onChange, placeholder, prefix, className = '' }) => {
+    return (
+        <div className={`relative flex items-center ${className}`}>
+            {prefix && <span className="absolute left-3 text-slate-400 text-xs font-medium pointer-events-none">{prefix}</span>}
+            <input
+                type="number"
+                value={value || ''}
+                onChange={e => onChange(e.target.value)}
+                onWheel={e => e.target.blur()}
+                placeholder={placeholder || '0'}
+                className={`w-full bg-slate-50 border border-slate-200 rounded-lg py-2 ${prefix ? 'pl-7' : 'pl-3'} pr-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-right`}
+            />
+        </div>
+    )
+}
 
 export default OperationalExpensesBreakdown;
