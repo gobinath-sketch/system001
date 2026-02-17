@@ -532,7 +532,7 @@ OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
     ];
 
     let allowed = false;
-    if (userRole === 'Sales Executive' || userRole === 'Sales Manager') {
+    if (userRole === 'Sales Executive' || userRole === 'Sales Manager' || userRole === 'Business Head') {
         allowed = salesEditableFields.some(field => fieldPath.startsWith(field));
     } else if (userRole === 'Delivery Team') {
         // Delivery can edit expenses BUT NOT marketing/contingency which are Sales decisions
