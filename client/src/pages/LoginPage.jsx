@@ -152,7 +152,7 @@ const LoginPage = () => {
                             type="submit"
                             className="w-2/3 mx-auto block bg-gradient-to-b from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 rounded-full transition-all duration-300 transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] shadow-lg active:scale-95"
                         >
-                            Signup
+                            Login
                         </button >
                     </form >
                 </div >
