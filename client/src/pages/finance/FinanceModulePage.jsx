@@ -35,8 +35,8 @@ const FinanceModulePage = () => {
     );
 
     return (
-        <div className="p-6">
-            <h1 className="text-3xl font-bold text-primary-blue mb-8">Finance Management</h1>
+        <div className="p-3 sm:p-6">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue mb-6 sm:mb-8">Finance Management</h1>
 
             {/* Metrics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -62,15 +62,15 @@ const FinanceModulePage = () => {
 
             {/* List */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <div className="p-4 border-b border-gray-100 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-gray-50">
                     <h2 className="font-semibold text-gray-700">Opportunities List</h2>
-                    <div className="relative">
+                    <div className="relative w-full sm:w-auto">
                         <input
                             type="text"
                             placeholder="Search Opportunities..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:border-brand-blue"
+                            className="pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:border-brand-blue w-full sm:w-auto"
                         />
                         <Search size={16} className="absolute left-3 top-2.5 text-gray-400" />
                     </div>

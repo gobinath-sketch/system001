@@ -90,20 +90,20 @@ const SMEManagement = () => {
     };
 
     return (
-        <div className="p-5">
-            <div className="flex justify-between items-center mb-6">
-                <div className="flex items-center space-x-4">
+        <div className="p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-3">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                     <button
                         onClick={() => navigate('/dashboard/delivery')}
                         className="text-gray-600 hover:text-gray-900 transition-colors"
                     >
                         <ArrowLeft size={24} />
                     </button>
-                    <h1 className="text-3xl font-bold text-primary-blue">SME Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue truncate">SME Management</h1>
                 </div>
                 <button
                     onClick={handleAddClick}
-                    className="bg-brand-blue text-white px-6 py-2 rounded-lg flex items-center gap-2 hover:bg-opacity-90 shadow-md transition-colors"
+                    className="bg-brand-blue text-white px-6 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-opacity-90 shadow-md transition-colors w-full sm:w-auto"
                 >
                     <Plus size={18} /> Add SME
                 </button>
@@ -113,12 +113,12 @@ const SMEManagement = () => {
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Table Header with Search & Filters */}
                 <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
-                    <div className="text-gray-600 font-semibold whitespace-nowrap">
+                    <div className="text-gray-600 font-semibold">
                         All SMEs <span className="bg-gray-100 px-2 py-0.5 rounded-full text-xs text-brand-blue ml-1">{smes.length}</span>
                     </div>
 
-                    <div className="flex flex-1 items-center justify-end gap-4 w-full md:w-auto">
-                        <div className="relative max-w-md w-64">
+                    <div className="flex flex-1 items-center justify-end gap-3 w-full md:w-auto flex-wrap">
+                        <div className="relative w-full sm:w-64 md:max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 name="search"
@@ -128,7 +128,7 @@ const SMEManagement = () => {
                                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm"
                             />
                         </div>
-                        <div className="relative w-48">
+                        <div className="relative w-full sm:w-48">
                             <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                             <select
                                 name="type"

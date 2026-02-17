@@ -270,7 +270,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* 1. Revenue Summary Box */}
-            <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
+            <div style={glassCardStyle} className="p-4 flex flex-col min-h-[350px]">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-black">Revenue Summary</h3>
                     {showSetTargetButton && (
@@ -367,7 +367,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                 </div>
 
                 {/* Numeric Summary Footer */}
-                <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Target</p>
                         <p className="font-bold text-blue-600 truncate text-lg" title={formatMoney(filteredData.adjustedTarget)}>
@@ -395,7 +395,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
             </div>
 
             {/* 2. Revenue by Technology (LIST FORMAT) */}
-            <div style={glassCardStyle} className="p-4 flex flex-col h-[350px]">
+            <div style={glassCardStyle} className="p-4 flex flex-col min-h-[350px]">
                 <h3 className="text-sm font-bold text-black mb-3">Revenue by Technology</h3>
 
                 {selectedTechCategory ? (
@@ -491,7 +491,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
             </div>
 
             {/* 3. Revenue by Opportunity Closure (PIE CHART) */}
-            < div style={glassCardStyle} className="p-4 flex flex-col h-[350px]" >
+            <div style={glassCardStyle} className="p-4 flex flex-col min-h-[350px]">
                 <h3 className="text-sm font-bold text-black mb-2">Revenue by Opportunity Closure</h3>
                 <div className="flex-1 min-h-[240px]">
                     {loading ? (
@@ -577,7 +577,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                         </div>
                     )}
                 </div>
-            </div >
+            </div>
 
             {/* Set Team Target Modal */}
             {isTargetModalOpen && (
@@ -593,8 +593,8 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                             </button>
                         </div>
 
-                        <div className="p-6 space-y-4">
-                            <div className="flex items-center gap-4">
+                        <div className="p-4 sm:p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                                 <label className="text-sm font-medium text-gray-700">Target Period:</label>
                                 <select
                                     value={targetPeriod}

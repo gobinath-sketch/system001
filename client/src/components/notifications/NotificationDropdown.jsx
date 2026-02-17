@@ -265,7 +265,7 @@ const NotificationDropdown = () => {
 
             {/* Modal Overlay */}
             {isOpen && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-2 sm:p-4">
                     {/* Backdrop with Enhanced Glassmorphism Blur */}
                     <div
                         className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/30 to-black/40 backdrop-blur-xl transition-all duration-300"
@@ -273,13 +273,13 @@ const NotificationDropdown = () => {
                     />
 
                     {/* Modal Content - Professional Design with Fixed Height */}
-                    <div className="relative bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl w-full max-w-2xl h-[80vh] overflow-hidden border border-white/50 transform transition-all scale-100 animate-in fade-in zoom-in duration-300 flex flex-col">
+                    <div className="relative bg-white/95 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-2xl w-full max-w-2xl h-[85vh] sm:h-[80vh] overflow-hidden border border-white/50 transform transition-all scale-100 animate-in fade-in zoom-in duration-300 flex flex-col">
 
                         {selectedNotification ? (
                             // PREVIEW MODE
                             <div className="flex flex-col h-full">
                                 {/* Preview Header */}
-                                <div className="flex items-center gap-3 px-6 py-5 bg-gradient-to-r from-primary-blue to-blue-600 text-white shadow-lg relative z-10">
+                                <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-6 py-4 sm:py-5 bg-gradient-to-r from-primary-blue to-blue-600 text-white shadow-lg relative z-10">
                                     <button
                                         onClick={() => setSelectedNotification(null)}
                                         className="p-2 -ml-2 rounded-full hover:bg-white/20 transition-all group"
@@ -298,8 +298,8 @@ const NotificationDropdown = () => {
                                 </div>
 
                                 {/* Preview Content */}
-                                <div className="flex-1 overflow-y-auto custom-scrollbar p-6 bg-gradient-to-br from-gray-50 to-blue-50/30">
-                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-6 mb-6 hover:shadow-xl transition-shadow">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 sm:p-6 bg-gradient-to-br from-gray-50 to-blue-50/30">
+                                    <div className="bg-white rounded-2xl border border-gray-100 shadow-lg p-4 sm:p-6 mb-6 hover:shadow-xl transition-shadow">
                                         <div className="flex items-start gap-4 mb-4">
                                             <div className={`p-4 rounded-2xl flex-shrink-0 shadow-lg ${getStyleConfig(selectedNotification.type).iconBg}`}>
                                                 {getStyleConfig(selectedNotification.type).icon === 'notification' ? (
@@ -312,7 +312,7 @@ const NotificationDropdown = () => {
                                                     })
                                                 )}
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <p className="text-base font-bold text-slate-900 leading-snug mb-2">
                                                     {selectedNotification.message}
                                                 </p>
@@ -352,7 +352,7 @@ const NotificationDropdown = () => {
                                 </div>
 
                                 {/* Preview Footer Actions */}
-                                <div className="flex-shrink-0 p-5 bg-white border-t border-gray-200 flex justify-end gap-3 z-10 shadow-lg">
+                                <div className="flex-shrink-0 p-3 sm:p-5 bg-white border-t border-gray-200 flex justify-end gap-2 sm:gap-3 z-10 shadow-lg">
                                     <button
                                         onClick={() => setSelectedNotification(null)}
                                         className="px-6 py-3 rounded-xl text-sm font-bold text-slate-600 hover:bg-slate-100 transition-all hover:scale-105"
@@ -372,8 +372,8 @@ const NotificationDropdown = () => {
                             // LIST MODE
                             <>
                                 {/* Header with Gradient - Fixed Height */}
-                                <div className="flex-shrink-0 px-8 py-6 bg-gradient-to-r from-primary-blue to-blue-600 text-white shadow-lg z-20 relative">
-                                    <div className="flex justify-between items-start mb-4">
+                                <div className="flex-shrink-0 px-4 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-primary-blue to-blue-600 text-white shadow-lg z-20 relative">
+                                    <div className="flex flex-col sm:flex-row justify-between sm:items-start mb-4 gap-3">
                                         <div>
                                             <div className="flex items-center gap-3">
                                                 <h3 className="text-2xl font-bold tracking-tight">Notifications</h3>
@@ -384,7 +384,7 @@ const NotificationDropdown = () => {
                                                 )}
                                             </div>
                                         </div>
-                                        <div className="flex items-center gap-3">
+                                        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                                             {unreadCount > 0 && (
                                                 <button
                                                     onClick={handleMarkAllRead}
@@ -444,7 +444,7 @@ const NotificationDropdown = () => {
                                 </div>
 
                                 {/* Notification List - Scrollable Area */}
-                                <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-6 bg-gradient-to-br from-gray-50 to-blue-50/30">
+                                <div className="flex-1 overflow-y-auto custom-scrollbar px-3 sm:px-6 py-4 sm:py-6 bg-gradient-to-br from-gray-50 to-blue-50/30">
                                     {filteredNotifications.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-full text-center">
                                             <div className="bg-gradient-to-br from-blue-100 to-indigo-100 p-8 rounded-full shadow-lg mb-6 ring-4 ring-blue-50 animate-pulse">
@@ -577,11 +577,11 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
 
             {/* Main Content */}
             <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <div className="flex justify-between items-start gap-4">
+                <div className="flex justify-between items-start gap-3">
                     <p className={`text-sm leading-snug ${!notification.isRead ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
                         {notification.message}
                     </p>
-                    <span className="text-xs font-semibold text-slate-400 whitespace-nowrap flex items-center gap-1">
+                    <span className="text-xs font-semibold text-slate-400 shrink-0 flex items-center gap-1">
                         <span className="w-1.5 h-1.5 bg-slate-300 rounded-full"></span>
                         {formatTime(notification.createdAt)}
                     </span>

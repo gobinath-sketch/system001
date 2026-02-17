@@ -38,6 +38,14 @@
   /* Increased from 12px */
 }
 
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--color-bg-page);
   color: var(--color-text-primary);
@@ -54,6 +62,13 @@ body {
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
 }
 
 /* Lean Scrollbar Styling */

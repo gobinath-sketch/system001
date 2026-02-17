@@ -17,7 +17,7 @@ import {
 
 import LogoutButton from '../common/LogoutButton';
 
-const Sidebar = () => {
+const Sidebar = ({ isMobileOpen = false, onCloseMobile = () => { } }) => {
     const { user, logout } = useAuth();
     // Use useNavigate to redirect after logout if needed, though useAuth usually handles state clearing. 
     // Sidebar didn't have navigate before, so we might need it? 
@@ -149,13 +149,31 @@ const Sidebar = () => {
 
 
 
+    useEffect(() => {
+        onCloseMobile();
+        // Close mobile drawer on route change
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.pathname]);
+
     return (
         <>
+            {/* Mobile Backdrop */}
+            {isMobileOpen && (
+                <button
+                    type="button"
+                    className="fixed inset-0 bg-black/40 z-40 lg:hidden"
+                    onClick={onCloseMobile}
+                    aria-label="Close menu"
+                />
+            )}
+
             {/* Sidebar */}
             <div
                 className={`
           fixed top-0 left-0 h-screen bg-gradient-to-b from-primary-blue/90 to-black/90 backdrop-blur-xl border-r border-white/20
-          transition-all duration-300 z-40 flex flex-col shadow-2xl overflow-hidden
+          transition-all duration-300 z-50 lg:z-40 flex flex-col shadow-2xl overflow-hidden
+          ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:translate-x-0
           ${isCollapsed ? 'w-20' : 'w-72'}
         `}
             >
@@ -187,12 +205,22 @@ const Sidebar = () => {
                             </div>
                         </>
                     )}
-                    <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0"
-                    >
-                        {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={onCloseMobile}
+                            className="lg:hidden p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0"
+                            aria-label="Close menu"
+                        >
+                            <ChevronLeft size={18} />
+                        </button>
+                        <button
+                            onClick={() => setIsCollapsed(!isCollapsed)}
+                            className="hidden lg:flex p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0"
+                            aria-label="Toggle collapse"
+                        >
+                            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                        </button>
+                    </div>
                 </div>
 
 
@@ -244,7 +272,7 @@ const Sidebar = () => {
             </div>
 
             {/* Spacer for content */}
-            <div className={`${isCollapsed ? 'w-20' : 'w-72'} transition-all duration-300 flex-shrink-0`}></div>
+            <div className={`${isCollapsed ? 'lg:w-20' : 'lg:w-72'} transition-all duration-300 flex-shrink-0 hidden lg:block`}></div>
         </>
     );
 };

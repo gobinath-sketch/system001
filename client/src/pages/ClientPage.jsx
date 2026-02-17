@@ -301,16 +301,16 @@ const ClientPage = () => {
     // --- Render Views ---
 
     const renderForm = (title) => (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
                     <h2 className="text-xl font-semibold text-brand-blue">{title}</h2>
                     <button onClick={() => setShowFormModal(false)} className="text-gray-500 hover:text-gray-700">
                         <X size={24} />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto">
+                <div className="p-3 sm:p-6 overflow-y-auto">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
                             <div>
@@ -535,11 +535,11 @@ const ClientPage = () => {
     );
 
     return (
-        <div className="p-5 relative">
+        <div className="p-3 sm:p-5 relative">
             {/* Contact Detail Modal */}
             {selectedContact && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelectedContact(null)}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 p-6" onClick={(e) => e.stopPropagation()}>
+                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={(e) => e.stopPropagation()}>
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">{selectedContact.name}</h2>
@@ -551,7 +551,7 @@ const ClientPage = () => {
                         </div>
 
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <p className="text-sm font-semibold text-gray-500">Department</p>
                                     <p className="text-gray-900">{selectedContact.department || 'N/A'}</p>
@@ -613,7 +613,7 @@ const ClientPage = () => {
 
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                     <button
                         onClick={() => {
                             if (viewMode === 'details') {
@@ -634,14 +634,14 @@ const ClientPage = () => {
                     </button>
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-3xl font-bold text-primary-blue">Clients</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue">Clients</h1>
                         </div>
                     </div>
                 </div>
                 {viewMode === 'list' && user?.role !== 'Director' && (
                     <button
                         onClick={startCreate}
-                        className="bg-primary-blue text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-primary-blue-dark shadow-md font-semibold transition-colors"
+                        className="bg-primary-blue text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-primary-blue-dark shadow-md font-semibold transition-colors w-full sm:w-auto"
                     >
                         <Plus size={18} />
                         <span>Add Client</span>
@@ -698,11 +698,11 @@ const ClientPage = () => {
             {viewMode === 'list' && (
                 <>
                     {/* Client List Container */}
-                    <div className="bg-white p-6 rounded-lg shadow-sm">
-                        <div className="flex justify-between items-center mb-6">
+                    <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
+                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-3">
                             <h2 className="text-lg font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
-                            <div className="flex space-x-4">
-                                <div className="relative w-80">
+                            <div className="flex flex-wrap gap-3 w-full md:w-auto">
+                                <div className="relative w-full md:w-80">
                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                     <input
                                         type="text"
@@ -713,7 +713,7 @@ const ClientPage = () => {
                                     />
                                 </div>
                                 {['Sales Manager', 'Business Head'].includes(user?.role) && (
-                                    <div className="relative w-48">
+                                    <div className="relative w-full sm:w-48">
                                         <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                                         <select
                                             value={filterCreator}

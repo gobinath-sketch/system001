@@ -238,11 +238,11 @@ const SalesManagerTeamView = () => {
     if (loading) return <div className="p-8 text-center text-gray-500">Loading Dashboard...</div>;
 
     return (
-        <div className="p-6 space-y-8 bg-bg-page h-full">
+        <div className="p-3 sm:p-6 space-y-6 sm:space-y-8 bg-bg-page h-full">
             {/* Header */}
-            <div className="flex justify-between items-center mb-8">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 sm:mb-8 gap-3">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Sales Manager Dashboard</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Sales Manager Dashboard</h1>
                     <p className="text-gray-600">Welcome back, {user?.name}</p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -259,7 +259,7 @@ const SalesManagerTeamView = () => {
                         </div>
                         <span className="text-sm text-gray-500 font-medium">Team Overview</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="text-center border-r border-gray-200">
                             <p className="text-2xl font-bold text-blue-600">{stats?.totalClients || 0}</p>
                             <p className="text-xs text-gray-400 mt-1">Total Clients</p>
@@ -279,7 +279,7 @@ const SalesManagerTeamView = () => {
                         </div>
                         <span className="text-sm text-gray-500 font-medium">Total Opportunities</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div className="text-center border-r border-gray-200">
                             <p className="text-2xl font-bold text-yellow-600">{stats?.inProgressOpportunities || 0}</p>
                             <p className="text-xs text-gray-400 mt-1">In Progress</p>
@@ -307,7 +307,7 @@ const SalesManagerTeamView = () => {
                             <ExternalLink size={16} />
                         </button>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="text-center border-r border-gray-200">
                             <p className="text-2xl font-bold text-blue-600">{documentStats.poCount}</p>
                             <p className="text-xs text-gray-400 mt-1">POs Uploaded</p>
@@ -323,7 +323,7 @@ const SalesManagerTeamView = () => {
             {/* --- Row 2: Analytics & Targets (3 Columns) --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* 1. Revenue by Type */}
-                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col min-h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Revenue by Opportunity closure </h3>
                         <div className="flex items-center gap-2">
@@ -383,7 +383,7 @@ const SalesManagerTeamView = () => {
                 </div>
 
                 {/* 2. Top 5 Clients */}
-                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col min-h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Top 5 Clients by Revenue</h3>
                         <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-2 py-0.5 rounded">
@@ -410,7 +410,7 @@ const SalesManagerTeamView = () => {
                 </div>
 
                 {/* 3. Set Team Targets */}
-                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col min-h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Set Team Targets</h3>
                         <select
@@ -488,7 +488,7 @@ const SalesManagerTeamView = () => {
             {/* --- Row 3: Trends (2 Columns) --- */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* 1. Team Opportunity Trends */}
-                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col min-h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Team Opportunity Trends</h3>
                         <div className="flex items-center gap-2">
@@ -521,7 +521,7 @@ const SalesManagerTeamView = () => {
                 </div>
 
                 {/* 2. Team Revenue Trends */}
-                <div style={glassCardStyle} className="p-4 flex flex-col h-[300px]">
+                <div style={glassCardStyle} className="p-4 flex flex-col min-h-[300px]">
                     <div className="flex justify-between items-center mb-3">
                         <h3 className="text-sm font-bold text-gray-800">Team Revenue Trends</h3>
                         <div className="flex items-center gap-2">
@@ -576,13 +576,13 @@ const SalesManagerTeamView = () => {
                 showDocumentModal && (
                     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                         <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
-                            <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+                            <div className="p-4 sm:p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
                                 <h2 className="text-xl font-bold text-gray-800">Document Status Overview</h2>
                                 <button onClick={() => setShowDocumentModal(false)} className="text-gray-500 hover:text-gray-700">
                                     <X size={24} />
                                 </button>
                             </div>
-                            <div className="overflow-auto p-6 flex-1">
+                            <div className="overflow-auto p-3 sm:p-6 flex-1">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-gray-200">

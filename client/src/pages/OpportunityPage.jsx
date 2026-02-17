@@ -114,9 +114,9 @@ const OpportunityPage = () => {
     const uniqueCreators = [...new Set(opportunities.map(o => o.createdBy?.name).filter(Boolean))];
 
     return (
-        <div className="p-5 relative">
-            <div className="flex justify-between items-center mb-8">
-                <div className="flex items-center space-x-4">
+        <div className="p-3 sm:p-5 relative">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 sm:mb-8 gap-3">
+                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                     <button
                         onClick={() => {
                             if (user?.role === 'Sales Executive') navigate('/dashboard/executive');
@@ -129,12 +129,12 @@ const OpportunityPage = () => {
                     >
                         <ArrowLeft size={24} />
                     </button>
-                    <h1 className="text-3xl font-bold text-primary-blue">Opportunity Management</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue truncate">Opportunity Management</h1>
                 </div>
                 {!isDeliveryRole && (
                     <button
                         onClick={() => setShowForm(true)}
-                        className="bg-primary-blue text-white px-6 py-3 rounded-lg flex items-center space-x-2 hover:bg-opacity-90 shadow-md"
+                        className="bg-primary-blue text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-opacity-90 shadow-md w-full sm:w-auto"
                     >
                         <Plus size={18} />
                         <span className="font-bold">Create Opportunity</span>
@@ -158,7 +158,7 @@ const OpportunityPage = () => {
             />
 
             {/* Opportunity List Container */}
-            <div className="bg-white p-6 rounded-lg shadow-sm">
+            <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
                 {/* Table Header with Search & Count */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {/* Left: Count */}
@@ -184,7 +184,7 @@ const OpportunityPage = () => {
                                 </select>
                             </div>
                         )}
-                        <div className="relative max-w-md w-64">
+                        <div className="relative w-full sm:w-64 md:max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input
                                 type="text"
@@ -194,7 +194,7 @@ const OpportunityPage = () => {
                                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm"
                             />
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                             <div className="relative">
                                 <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
                                 <select

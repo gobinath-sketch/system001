@@ -33,10 +33,10 @@ const ProgramExecutionList = () => {
     if (loading) return <div className="p-5">Loading...</div>;
 
     return (
-        <div className="p-5">
-            <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold text-primary-blue">Opportunities</h1>
-                <div className="relative w-64">
+        <div className="p-3 sm:p-5">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 sm:mb-8 gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue">Opportunities</h1>
+                <div className="relative w-full sm:w-64">
                     <input
                         type="text"
                         placeholder="Search by Opp ID..."

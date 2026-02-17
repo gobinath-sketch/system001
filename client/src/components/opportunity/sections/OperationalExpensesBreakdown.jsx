@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Upload,
     Eye,
@@ -15,24 +15,18 @@ import {
     Wallet
 } from 'lucide-react';
 import { useCurrency } from '../../../context/CurrencyContext';
-import { useAuth } from '../../../context/AuthContext';
 
 const OperationalExpensesBreakdown = ({
     activeData,
     handleChange,
     handleProposalUpload,
     uploading,
-    isEditing,
     canEdit,
     opportunity
 }) => {
     const { currency } = useCurrency();
-    const { user } = useAuth();
     const CONVERSION_RATE = currency === 'USD' ? 84 : 1;
     const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '₹';
-
-    // Helper to access breakdown (with fallback)
-    const getBreakdown = () => activeData.expenses?.breakdown || {};
 
     // Helper accessors for days and pax from activeData or opportunity
     const days = activeData.days || activeData.commonDetails?.duration || activeData.commonDetails?.trainingDays || opportunity.days || opportunity.commonDetails?.duration || opportunity.commonDetails?.trainingDays || 0;
@@ -208,10 +202,10 @@ const OperationalExpensesBreakdown = ({
     };
 
     return (
-        <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+        <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-3 sm:p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
             {/* Header Section */}
-            <div className="flex justify-between items-center mb-5 pb-2 border-b border-slate-200/70">
-                <h3 className="text-lg leading-tight font-semibold tracking-tight text-blue-900">Operational Expenses Breakdown</h3>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-5 pb-2 border-b border-slate-200/70">
+                <h3 className="text-base sm:text-lg leading-tight font-semibold tracking-tight text-blue-900">Operational Expenses Breakdown</h3>
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-900">
                         <span className="text-blue-900">Pax:</span>
@@ -227,14 +221,14 @@ const OperationalExpensesBreakdown = ({
             <div className="flex-grow overflow-y-auto pr-1">
                 {!canEdit ? (
                     // VIEW MODE: Grid Cards
-                    <div className="grid h-full gap-4 grid-flow-col grid-rows-5 auto-cols-fr">
+                    <div className="grid h-full gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
                         {expenseConfig.map(config => renderViewCard(config))}
                     </div>
                 ) : (
                     // EDIT MODE: Table Layout
-                    <div className="w-full border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                    <div className="w-full border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
                         {/* Table Header */}
-                        <div className="grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_0.8fr] gap-4 py-3 px-4 bg-blue-900 text-white text-xs font-semibold uppercase tracking-wider">
+                        <div className="min-w-[860px] grid grid-cols-[1.5fr_1.5fr_1fr_0.8fr_0.8fr] gap-4 py-3 px-4 bg-blue-900 text-white text-xs font-semibold uppercase tracking-wider">
                             <div>Expenses</div>
                             <div>Type</div>
                             <div>Rate</div>
@@ -243,7 +237,7 @@ const OperationalExpensesBreakdown = ({
                         </div>
 
                         {/* Table Rows */}
-                        <div className="bg-white divide-y divide-slate-100">
+                        <div className="min-w-[860px] bg-white divide-y divide-slate-100">
                             {expenseConfig.map(config => (
                                 <EditRow
                                     key={config.key}
@@ -264,9 +258,9 @@ const OperationalExpensesBreakdown = ({
             </div>
 
             {/* Footer / Total Section */}
-            <div className="mt-4 pt-3 border-t border-slate-200/70 flex justify-between items-center bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                <span className="text-sm font-bold text-blue-900">Total Expenses </span>
-                <span className="text-2xl font-bold text-blue-900">
+            <div className="mt-4 pt-3 border-t border-slate-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
+                <span className="text-sm font-bold text-blue-900">Total Expenses</span>
+                <span className="text-xl sm:text-2xl font-bold text-blue-900">
                     {CURRENCY_SYMBOL} {((Object.keys(activeData.expenses || {}).reduce((sum, key) => {
                         if (key === 'breakdown' || key === 'marketingPercent' || key === 'contingencyPercent' || key === 'targetGpPercent' || key === 'marketing' || key === 'contingency') return sum;
                         return sum + (parseFloat(activeData.expenses[key]) || 0);

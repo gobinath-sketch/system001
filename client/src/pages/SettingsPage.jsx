@@ -201,11 +201,11 @@ const SettingsPage = () => {
     };
 
     return (
-        <div className="p-6 bg-bg-page h-full">
+        <div className="p-3 sm:p-6 bg-bg-page h-full">
             <div className="max-w-7xl mx-auto">
                 <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
                     <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] min-h-[74vh]">
-                        <aside className="border-r border-gray-200 bg-gray-50/70 p-4">
+                        <aside className="border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50/70 p-4">
                             <h1 className="text-xl font-bold text-gray-900 mb-4">Settings</h1>
                             {sectionGroups.map((group) => (
                                 <div key={group.title} className="mb-5">
@@ -233,8 +233,8 @@ const SettingsPage = () => {
                             ))}
                         </aside>
 
-                        <main className="p-6 lg:p-8">
-                            <div className="mb-5 flex items-center justify-between">
+                        <main className="p-4 sm:p-6 lg:p-8">
+                            <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                 <div>
                                     <h2 className="text-2xl font-bold text-gray-900">
                                         {sectionGroups.flatMap((g) => g.items).find((i) => i.id === activeSection)?.label || 'Settings'}
@@ -263,7 +263,7 @@ const SettingsPage = () => {
                                                     className="w-full h-full object-cover"
                                                 />
                                             </div>
-                                            <div className="flex-1 min-w-[220px]">
+                                            <div className="flex-1 min-w-0">
                                                 <div className="mt-2 flex flex-wrap items-center gap-3">
                                                     <button
                                                         onClick={() => fileInputRef.current?.click()}

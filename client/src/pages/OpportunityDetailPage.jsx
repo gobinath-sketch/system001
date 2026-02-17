@@ -269,14 +269,14 @@ const OpportunityDetailPage = () => {
     };
 
     return (
-        <div className="p-6 bg-gray-50 h-full font-inter">
+        <div className="p-3 sm:p-6 bg-gray-50 h-full font-inter">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <div className="flex items-center min-w-0 w-full">
                     <button onClick={handleBack} className="mr-4 text-gray-600 hover:text-gray-900">
                         <ArrowLeft size={24} />
                     </button>
-                    <div className="flex items-center gap-6 flex-1 ml-4 overflow-x-auto">
+                    <div className="flex items-center gap-4 sm:gap-6 flex-1 ml-1 sm:ml-4 overflow-x-auto pb-1">
                         {/* Block 1: Opp ID */}
                         <div className="flex items-center gap-3 min-w-max">
                             <div className="p-2 bg-[#003D7A]/10 rounded-lg text-[#003D7A]">
@@ -314,7 +314,7 @@ const OpportunityDetailPage = () => {
                             </div>
                             <div>
                                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Client</p>
-                                <p className="font-bold text-gray-900 truncate max-w-[200px]" title={opportunity.client?.companyName || opportunity.clientName}>
+                                <p className="font-bold text-gray-900 truncate max-w-[160px] sm:max-w-[200px]" title={opportunity.client?.companyName || opportunity.clientName}>
                                     {opportunity.client?.companyName || opportunity.clientName || 'Unknown'}
                                 </p>
                             </div>
@@ -371,11 +371,11 @@ const OpportunityDetailPage = () => {
 
             {/* Tabs */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-                <div className="flex border-b border-gray-200 justify-between items-center bg-white px-2">
-                    <div className="flex space-x-1">
+                <div className="flex border-b border-gray-200 justify-between items-start sm:items-center bg-white px-2 gap-2">
+                    <div className="flex space-x-1 overflow-x-auto min-w-0">
                         {showOverviewTab && (
                             <button
-                                className={`px-6 py-4 text-sm font-medium focus:outline-none transition-all ${activeTab === 'overview' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
+                                className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'overview' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
                                 onClick={() => handleTabChange('overview')}
                             >
                                 Overview
@@ -383,7 +383,7 @@ const OpportunityDetailPage = () => {
                         )}
                         {showSalesTab && (
                             <button
-                                className={`px-6 py-4 text-sm font-medium focus:outline-none transition-all ${activeTab === 'sales' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
+                                className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'sales' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
                                 onClick={() => handleTabChange('sales')}
                             >
                                 Requirements
@@ -391,21 +391,21 @@ const OpportunityDetailPage = () => {
                         )}
                         {showDeliveryTab && (
                             <button
-                                className={`px-6 py-4 text-sm font-medium focus:outline-none transition-all ${activeTab === 'delivery' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
+                                className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'delivery' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
                                 onClick={() => handleTabChange('delivery')}
                             >
                                 Requirements
                             </button>
                         )}
                         <button
-                            className={`px-6 py-4 text-sm font-medium focus:outline-none transition-all ${activeTab === 'billing' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
+                            className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'billing' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
                             onClick={() => handleTabChange('billing')}
                         >
                             {isDeliveryRole ? 'Billing' : 'Proposal Calculations'}
                         </button>
                         {showVendorPayablesTab && (
                             <button
-                                className={`px-6 py-4 text-sm font-medium focus:outline-none transition-all ${activeTab === 'vendor' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
+                                className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'vendor' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
                                 onClick={() => handleTabChange('vendor')}
                             >
                                 Vendor Payables
@@ -413,7 +413,7 @@ const OpportunityDetailPage = () => {
                         )}
                         {showSalesTab && (
                             <button
-                                className={`px-6 py-4 text-sm font-medium focus:outline-none transition-all ${activeTab === 'revenue' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
+                                className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'revenue' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`}
                                 onClick={() => handleTabChange('revenue')}
                             >
                                 PO/Invoice
@@ -423,7 +423,7 @@ const OpportunityDetailPage = () => {
 
                     {/* Global Edit/Save Actions */}
                     {isCurrentTabEditable() && activeTab !== 'overview' && (
-                        <div className="flex items-center gap-2 pr-4">
+                        <div className="flex items-center gap-2 pr-2 sm:pr-4 flex-wrap justify-end">
                             {/* Currency Toggle moved to global header */}
 
                             {!isEditing ? (
@@ -459,7 +459,7 @@ const OpportunityDetailPage = () => {
                 </div>
 
                 {/* Tab Content */}
-                <div className="p-6">
+                <div className="p-3 sm:p-6">
                     {renderTabContent()}
                 </div>
             </div>

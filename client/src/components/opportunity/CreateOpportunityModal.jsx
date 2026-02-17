@@ -211,16 +211,16 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)' }}>
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
-                <div className="flex justify-between items-center p-6 border-b sticky top-0 bg-white z-10">
+                <div className="flex justify-between items-center p-4 sm:p-6 border-b sticky top-0 bg-white z-10">
                     <h2 className="text-xl font-bold text-gray-800">Create New Opportunity</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
                         <X size={24} />
                     </button>
                 </div>
 
-                <div className="p-6">
+                <div className="p-3 sm:p-6">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="border-b pb-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -488,15 +488,15 @@ const CreateOpportunityModal = ({ isOpen, onClose, onSuccess, preselectedClientI
                             <p className="text-xs text-gray-500 mt-1">Upload relevant requirement documents (PDF, DOCX, TXT).</p>
                         </div>
 
-                        <div className="flex justify-end space-x-4">
+                        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-4">
                             <button
                                 type="button"
                                 onClick={onClose}
-                                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+                                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 w-full sm:w-auto"
                             >
                                 Cancel
                             </button>
-                            <button type="submit" className="bg-brand-blue text-white px-6 py-2 rounded-lg hover:bg-opacity-90 font-bold">
+                            <button type="submit" className="bg-brand-blue text-white px-6 py-2 rounded-lg hover:bg-opacity-90 font-bold w-full sm:w-auto">
                                 Create Opportunity
                             </button>
                         </div>

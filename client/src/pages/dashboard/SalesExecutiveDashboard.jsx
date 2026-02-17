@@ -255,7 +255,7 @@ const SalesExecutiveDashboard = ({
             <div className="relative" ref={dropdownRef}>
                 <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="h-8 pl-3 pr-8 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 flex items-center min-w-[160px] justify-between relative"
+                    className="h-8 pl-3 pr-8 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 flex items-center w-full sm:min-w-[160px] justify-between relative"
                 >
                     <span className="truncate">{getName(viewMode)}</span>
                     <ChevronDown size={14} className="absolute right-2 text-gray-500" />
@@ -404,7 +404,7 @@ const SalesExecutiveDashboard = ({
     const brandBlue = '#003D7A';
 
     return (
-        <div className="p-4 pb-4 space-y-4 bg-bg-page h-full">
+        <div className="p-3 sm:p-4 pb-4 space-y-4 bg-bg-page h-full">
             {/* Render Filters via Portal */}
             <FilterControls />
             <style>
@@ -574,7 +574,7 @@ const SalesExecutiveDashboard = ({
             <div className="space-y-4">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-stretch">
                     {/* Left: Total Opportunities Ongoing / Completed (Count) - Filtered */}
-                    <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
+                    <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col min-h-[280px] md:min-h-[300px]">
                         <h3 className="text-base font-bold text-black mb-3 md:mb-4">Total Opportunities Ongoing / Completed</h3>
                         <div className="flex-1 w-full min-h-[205px]">
                             <SafeResponsiveContainer minHeight={205}>
@@ -590,7 +590,7 @@ const SalesExecutiveDashboard = ({
                     </div>
 
                     {/* Right: Top 5 Clients by Revenue - Filtered */}
-                    <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col h-[280px] md:h-[300px]">
+                    <div style={glassCardStyle} className="p-4 md:p-5 flex flex-col min-h-[280px] md:min-h-[300px]">
                         <h3 className="text-sm font-bold text-black mb-3 md:mb-4">Top 5 Clients by Revenue</h3>
                         <div className="flex-1 overflow-hidden">
                             {(() => {
@@ -664,7 +664,7 @@ const SalesExecutiveDashboard = ({
                                 </button>
                             </div>
 
-                            <div className="overflow-auto p-6 flex-1">
+                            <div className="overflow-auto p-3 sm:p-6 flex-1">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="border-b border-gray-200">
@@ -733,7 +733,7 @@ const SalesExecutiveDashboard = ({
                             </button>
                         </div>
 
-                        <div className="overflow-auto p-6 flex-1">
+                        <div className="overflow-auto p-3 sm:p-6 flex-1">
                             <table className="w-full text-left border-collapse">
                                 <thead>
                                     <tr className="border-b border-gray-200">

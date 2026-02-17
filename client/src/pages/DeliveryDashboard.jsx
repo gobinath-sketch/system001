@@ -88,7 +88,7 @@ const DeliveryDashboard = () => {
     }));
 
     return (
-        <div className="p-6 bg-bg-page h-full space-y-8">
+        <div className="p-3 sm:p-6 bg-bg-page h-full space-y-6 sm:space-y-8">
             {/* Header Removed */}
 
             {/* KPI Grid */}
@@ -108,7 +108,7 @@ const DeliveryDashboard = () => {
             </div>
 
             {/* Charts Row 1 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 h-96">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 min-h-[24rem]">
 
                 {/* Sales Executive Wise Count */}
                 <div style={glassCardStyle} className="p-6 rounded-xl flex flex-col">
@@ -151,7 +151,7 @@ const DeliveryDashboard = () => {
             </div>
 
             {/* Charts Row 2: Monthly GP% Trend */}
-            <div style={glassCardStyle} className="h-80 p-6 rounded-xl">
+            <div style={glassCardStyle} className="min-h-[20rem] p-4 sm:p-6 rounded-xl">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Average GP % (Monthly)</h3>
                 <div className="w-full h-full pb-6">
                     <ResponsiveContainer width="100%" height="100%">

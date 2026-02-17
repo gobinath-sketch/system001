@@ -48,7 +48,7 @@ const LoginPage = () => {
                     }
                 `}
             </style>
-            <div className="min-h-screen flex items-center justify-end pr-8 relative overflow-hidden" style={{ backgroundColor: '#e3e3e3' }}>
+            <div className="min-h-screen flex items-center justify-center lg:justify-end px-3 sm:px-6 lg:pr-8 relative overflow-hidden" style={{ backgroundColor: '#e3e3e3' }}>
                 {/* Background Video */}
                 <video
                     autoPlay
@@ -66,7 +66,7 @@ const LoginPage = () => {
 
                 {/* Login Card - Glassmorphism Container */}
                 <div
-                    className="p-8 pb-24 w-full max-w-md relative z-20 backdrop-blur-xl border border-white/40"
+                    className="p-6 sm:p-8 pb-16 sm:pb-24 w-full max-w-md relative z-20 backdrop-blur-xl border border-white/40"
                     style={{
                         borderRadius: '30px',
                         background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0))',
@@ -96,7 +96,7 @@ const LoginPage = () => {
                     <div className="text-center mb-8">
                         <div className="flex flex-col items-center justify-center mb-4">
                             <img src="/login-logo.png" alt="Global Knowledge" className="h-20 w-auto object-contain mb-4" />
-                            <h2 className="text-2xl font-bold text-gray-800 tracking-wide whitespace-nowrap">Global Knowledge Technologies</h2>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide text-center">Global Knowledge Technologies</h2>
                         </div>
                     </div>
 
@@ -150,7 +150,7 @@ const LoginPage = () => {
 
                         <button
                             type="submit"
-                            className="w-2/3 mx-auto block bg-gradient-to-b from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 rounded-full transition-all duration-300 transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] shadow-lg active:scale-95"
+                            className="w-full sm:w-2/3 mx-auto block bg-gradient-to-b from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 rounded-full transition-all duration-300 transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] shadow-lg active:scale-95"
                         >
                             Login
                         </button >

@@ -137,16 +137,16 @@ const AddClientModal = ({ isOpen, onClose, onSuccess }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
             <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]">
-                <div className="flex items-center justify-between p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
+                <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
                     <h2 className="text-xl font-semibold text-brand-blue">Add New Client</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
                         <X size={24} />
                     </button>
                 </div>
 
-                <div className="p-6 overflow-y-auto">
+                <div className="p-3 sm:p-6 overflow-y-auto">
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
                             <div>
@@ -274,7 +274,7 @@ const AddClientModal = ({ isOpen, onClose, onSuccess }) => {
                             ))}
                         </div>
 
-                        <div className="flex space-x-4 pt-4 border-t sticky bottom-0 bg-white">
+                        <div className="flex flex-col sm:flex-row gap-3 sm:space-x-4 pt-4 border-t sticky bottom-0 bg-white">
                             <button type="submit" disabled={loading} className="bg-brand-blue text-white px-6 py-2 rounded-lg hover:bg-opacity-90 flex-1 md:flex-none disabled:bg-gray-400">
                                 {loading ? 'Creating...' : 'Create Client'}
                             </button>
