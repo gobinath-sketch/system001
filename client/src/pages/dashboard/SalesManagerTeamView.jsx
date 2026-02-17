@@ -446,6 +446,7 @@ const SalesManagerTeamView = () => {
                                                         onChange={(e) => setTargetValue(e.target.value)}
                                                         className="w-full text-right border border-gray-300 rounded px-1 py-0.5 text-xs focus:ring-1 focus:ring-blue-500"
                                                         autoFocus
+                                                        onFocus={(e) => (targetValue == 0 || targetValue == '0') && setTargetValue('')}
                                                     />
                                                 ) : (
                                                     <span className="font-medium text-xs">{formatCompactCurrency(currentTarget)}</span>

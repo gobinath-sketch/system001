@@ -107,6 +107,12 @@ const SalesExecutiveDashboard = ({
                 if (!isNaN(dateYear) && dateYear > 1900) return dateYear;
             }
 
+            // Priority 3: Created At
+            if (opp.createdAt) {
+                const createdYear = new Date(opp.createdAt).getFullYear();
+                if (!isNaN(createdYear) && createdYear > 1900) return createdYear;
+            }
+
             return null;
         });
         return [...new Set([...years, new Date().getFullYear()])]
@@ -136,6 +142,9 @@ const SalesExecutiveDashboard = ({
             if (!oppYear || isNaN(oppYear) || oppYear <= 0) {
                 if (opp.commonDetails?.startDate) {
                     oppYear = new Date(opp.commonDetails.startDate).getFullYear();
+                } else if (opp.createdAt) {
+                    // Fallback to Created At if no explicit year or start date
+                    oppYear = new Date(opp.createdAt).getFullYear();
                 }
             }
 
@@ -329,6 +338,14 @@ const SalesExecutiveDashboard = ({
                             </>
                         ) : (
                             <>
+                                <button
+                                    type="button"
+                                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 ${viewMode === 'self' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                    onClick={() => handleSelect('self')}
+                                >
+                                    My Dashboard
+                                </button>
+                                <div className="border-t border-gray-100 my-1"></div>
                                 <button
                                     type="button"
                                     className={`w-full px-4 py-2 text-left hover:bg-gray-50 ${viewMode === 'team' ? 'font-bold text-blue-600' : 'text-gray-700'}`}

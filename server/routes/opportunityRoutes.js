@@ -174,7 +174,10 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
             typeSpecificDetails: typeSpecificDetails || {},
             commonDetails: {
                 trainingSector: client.sector, // Auto-fetch from client
-                sales: req.user._id // Auto-fill
+                sales: req.user._id, // Auto-fill
+                year: new Date().getFullYear(), // Default to current year for immediate dashboard visibility
+                monthOfTraining: new Date().toLocaleString('default', { month: 'short' }), // Default to current month
+                status: 'Active'
             },
             createdBy: req.user._id,
             activityLog: [{
