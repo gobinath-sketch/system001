@@ -5,6 +5,7 @@ import { ChevronDown } from 'lucide-react';
 const SearchableSelect = ({ options, value, onChange, placeholder, disabled, className, required, name }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+    const [isArrowOpen, setIsArrowOpen] = useState(false);
     const wrapperRef = useRef(null);
     const inputRef = useRef(null);
 
@@ -51,6 +52,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
             // Simplified: If we click outside wrapper, we close.
             // But if we click dropdown item, what happens?
             // Dropdown item click handler calls setIsOpen(false). Stop propagation?
+            // Dropdown item click handler calls setIsOpen(false). Stop propagation?
         };
 
         // We can't use simple handleClickOutside with Portal easily without a ref to Portal content.
@@ -79,6 +81,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
 
     const handleInputChange = (e) => {
         if (!isOpen) setIsOpen(true);
+        setIsArrowOpen(false); // Reset arrow open state on typing
         if (onChange) {
             onChange(e);
         }
@@ -94,7 +97,7 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
         }
     };
 
-    const filteredOptions = options.filter(option => {
+    const filteredOptions = isArrowOpen ? options : options.filter(option => {
         const label = typeof option === 'string' ? option : option.label;
         return (label || '').toLowerCase().includes((value || '').toLowerCase());
     });
@@ -122,7 +125,20 @@ const SearchableSelect = ({ options, value, onChange, placeholder, disabled, cla
                     autoComplete="off"
                     required={required}
                 />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none text-gray-500">
+                <div
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        // If closed, open and show all. If open, close.
+                        if (!isOpen) {
+                            setIsOpen(true);
+                            setIsArrowOpen(true);
+                            inputRef.current?.focus();
+                        } else {
+                            setIsOpen(false);
+                        }
+                    }}
+                >
                     <ChevronDown size={18} />
                 </div>
             </div>
