@@ -23,8 +23,7 @@ const SalesExecutiveDashboard = ({
     teamMembers = [],
     salesManagers = [],
     salesExecutives = [],
-    isBusinessHead = false,
-    onRefreshTeam
+    isBusinessHead = false
 }) => {
     const navigate = useNavigate();
     const [clientHealth, setClientHealth] = useState({ active: 0, mid: 0, inactive: 0 });
@@ -68,17 +67,12 @@ const SalesExecutiveDashboard = ({
             const healthRes = await axios.get('http://localhost:5000/api/dashboard/client-health', { headers, params });
             setClientHealth(healthRes.data);
 
-            // Trigger parent refresh if provided (for Business Head team structure)
-            if (onRefreshTeam) {
-                await onRefreshTeam();
-            }
-
             setLoading(false);
         } catch (err) {
             console.error('Error fetching dashboard data:', err);
             setLoading(false);
         }
-    }, [customUserId, onRefreshTeam, user.id]);
+    }, [customUserId, user.id]);
 
     useEffect(() => {
         fetchDashboardData();
@@ -237,11 +231,18 @@ const SalesExecutiveDashboard = ({
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }, []);
 
+        const managerOptions = (salesManagers && salesManagers.length > 0)
+            ? salesManagers
+            : (teamMembers || []).filter((m) => m?.role === 'Sales Manager');
+
+        const executiveOptions = (salesExecutives && salesExecutives.length > 0)
+            ? salesExecutives
+            : (teamMembers || []).filter((m) => m?.role === 'Sales Executive');
+
         const getName = (id) => {
             if (id === 'self') return 'My Dashboard';
             if (id === 'team') return 'Team Overview';
-
-            const allUsers = [...(salesManagers || []), ...(salesExecutives || []), ...(teamMembers || [])];
+            const allUsers = [...managerOptions, ...executiveOptions, ...(teamMembers || [])];
             const found = allUsers.find(u => u._id === id);
             return found ? found.name : 'Unknown';
         };
@@ -254,7 +255,8 @@ const SalesExecutiveDashboard = ({
         return (
             <div className="relative" ref={dropdownRef}>
                 <button
-                    onClick={() => setIsOpen(!isOpen)}
+                    type="button"
+                    onClick={() => setIsOpen((prev) => !prev)}
                     className="h-8 pl-3 pr-8 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 flex items-center w-full sm:min-w-[160px] justify-between relative"
                 >
                     <span className="truncate">{getName(viewMode)}</span>
@@ -262,28 +264,27 @@ const SalesExecutiveDashboard = ({
                 </button>
 
                 {isOpen && (
-                    <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1 text-sm">
+                    <div className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-md shadow-lg z-[300] py-1 text-sm">
                         {isBusinessHead ? (
                             <>
-                                <div
-                                    className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === 'self' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                <button
+                                    type="button"
+                                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 ${viewMode === 'self' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
                                     onClick={() => handleSelect('self')}
                                 >
                                     My Dashboard
-                                </div>
+                                </button>
 
                                 <div className="border-t border-gray-100 my-1"></div>
 
-                                {/* Sales Managers Group */}
-                                {salesManagers?.length > 0 && (
+                                {managerOptions?.length > 0 && (
                                     <div className="relative group">
                                         <div className="px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer flex justify-between items-center bg-gray-50/50">
                                             <span>Sales Managers</span>
                                             <ChevronRight size={14} className="text-gray-400" />
                                         </div>
-                                        {/* Submenu */}
                                         <div className="absolute left-full top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg hidden group-hover:block ml-1 py-1">
-                                            {salesManagers.map(manager => (
+                                            {managerOptions.map(manager => (
                                                 <div
                                                     key={manager._id}
                                                     className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === manager._id ? 'font-bold text-blue-600' : 'text-gray-700'}`}
@@ -296,16 +297,14 @@ const SalesExecutiveDashboard = ({
                                     </div>
                                 )}
 
-                                {/* Sales Executives Group */}
-                                {salesExecutives?.length > 0 && (
+                                {executiveOptions?.length > 0 && (
                                     <div className="relative group">
                                         <div className="px-4 py-2 text-gray-700 hover:bg-gray-50 cursor-pointer flex justify-between items-center bg-gray-50/50">
                                             <span>Sales Executives</span>
                                             <ChevronRight size={14} className="text-gray-400" />
                                         </div>
-                                        {/* Submenu */}
                                         <div className="absolute left-full top-0 w-48 bg-white border border-gray-200 rounded-md shadow-lg hidden group-hover:block ml-1 py-1 max-h-[300px] overflow-y-auto">
-                                            {salesExecutives.map(exec => (
+                                            {executiveOptions.map(exec => (
                                                 <div
                                                     key={exec._id}
                                                     className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === exec._id ? 'font-bold text-blue-600' : 'text-gray-700'}`}
@@ -317,18 +316,23 @@ const SalesExecutiveDashboard = ({
                                         </div>
                                     </div>
                                 )}
+
+                                {managerOptions.length === 0 && executiveOptions.length === 0 && (
+                                    <div className="px-3 py-2 text-sm text-gray-500">No team members found</div>
+                                )}
                             </>
                         ) : (
                             <>
-                                <div
-                                    className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === 'team' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
+                                <button
+                                    type="button"
+                                    className={`w-full px-4 py-2 text-left hover:bg-gray-50 ${viewMode === 'team' ? 'font-bold text-blue-600' : 'text-gray-700'}`}
                                     onClick={() => handleSelect('team')}
                                 >
                                     Team Overview
-                                </div>
+                                </button>
                                 <div className="border-t border-gray-100 my-1"></div>
                                 <div className="px-3 py-1 text-xs font-semibold text-gray-500 uppercase">Team Members</div>
-                                {teamMembers?.map(member => (
+                                {(teamMembers || []).map((member) => (
                                     <div
                                         key={member._id}
                                         className={`px-4 py-2 hover:bg-gray-50 cursor-pointer ${viewMode === member._id ? 'font-bold text-blue-600' : 'text-gray-700'}`}

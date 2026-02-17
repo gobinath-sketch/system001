@@ -9,15 +9,15 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 // @route   GET /api/approvals
 // @desc    Get approvals based on user role
 // @access  Private (Director, Sales Manager)
-router.get('/', protect, authorize('Director', 'Sales Manager'), async (req, res) => {
+router.get('/', protect, authorize('Director', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         let filter = { status: 'Pending' };
 
         if (req.user.role === 'Director') {
             // Director sees only GP < 10% approvals
             filter.approvalLevel = 'Director';
-        } else if (req.user.role === 'Sales Manager') {
-            // Manager sees only GP 10-15% approvals assigned to them
+        } else if (req.user.role === 'Sales Manager' || req.user.role === 'Business Head') {
+            // Manager/Head sees only GP 10-15% approvals assigned to them
             filter.approvalLevel = 'Manager';
             filter.assignedTo = req.user._id;
         }
@@ -41,7 +41,7 @@ router.get('/', protect, authorize('Director', 'Sales Manager'), async (req, res
 // @route   POST /api/approvals/:id/approve
 // @desc    Approve a pending approval
 // @access  Private (Director, Sales Manager)
-router.post('/:id/approve', protect, authorize('Director', 'Sales Manager'), async (req, res) => {
+router.post('/:id/approve', protect, authorize('Director', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         const approval = await Approval.findById(req.params.id);
 
@@ -58,8 +58,8 @@ router.post('/:id/approve', protect, authorize('Director', 'Sales Manager'), asy
             return res.status(403).json({ message: 'Only Director can approve GP < 10%' });
         }
 
-        if (approval.approvalLevel === 'Manager' && req.user.role !== 'Sales Manager') {
-            return res.status(403).json({ message: 'Only Sales Manager can approve GP 10-15%' });
+        if (approval.approvalLevel === 'Manager' && !['Sales Manager', 'Business Head'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Only Sales Manager or Business Head can approve GP 10-15%' });
         }
 
         // Update approval
@@ -102,7 +102,7 @@ router.post('/:id/approve', protect, authorize('Director', 'Sales Manager'), asy
 // @route   POST /api/approvals/:id/reject
 // @desc    Reject a pending approval
 // @access  Private (Director, Sales Manager)
-router.post('/:id/reject', protect, authorize('Director', 'Sales Manager'), async (req, res) => {
+router.post('/:id/reject', protect, authorize('Director', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         const { reason } = req.body;
         const approval = await Approval.findById(req.params.id);
@@ -159,7 +159,7 @@ router.post('/:id/reject', protect, authorize('Director', 'Sales Manager'), asyn
 // @route   POST /api/approvals/escalate
 // @desc    Escalate opportunity with low GP or Low Contingency to Manager (called by Sales Executive)
 // @access  Private (Sales Executive)
-router.post('/escalate', protect, authorize('Sales Executive'), async (req, res) => {
+router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         const { opportunityId, gpPercent, tov, totalExpense, contingencyPercent, triggerReason } = req.body;
 
@@ -246,7 +246,7 @@ router.post('/escalate', protect, authorize('Sales Executive'), async (req, res)
 // @route   PUT /api/approvals/:id/read
 // @desc    Mark approval as read
 // @access  Private (Director, Sales Manager)
-router.put('/:id/read', protect, authorize('Director', 'Sales Manager'), async (req, res) => {
+router.put('/:id/read', protect, authorize('Director', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         const approval = await Approval.findById(req.params.id);
         if (!approval) {

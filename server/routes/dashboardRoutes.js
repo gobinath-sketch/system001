@@ -1238,18 +1238,29 @@ router.get('/business-head/team-structure', protect, async (req, res) => {
         }
 
         // Get all Sales Managers reporting to this Business Head
-        const salesManagers = await User.find({
+        let salesManagers = await User.find({
             reportingManager: req.user._id,
             role: 'Sales Manager'
         }).select('_id name email creatorCode role targets');
 
-        const managerIds = salesManagers.map(m => m._id);
+        // Fallback: if hierarchy is not mapped yet, still return visible org users
+        if (!salesManagers.length) {
+            salesManagers = await User.find({ role: 'Sales Manager' })
+                .select('_id name email creatorCode role targets');
+        }
+
+        let managerIds = salesManagers.map(m => m._id);
 
         // Get all sales Executives reporting to those managers
-        const salesExecutives = await User.find({
+        let salesExecutives = await User.find({
             reportingManager: { $in: managerIds },
             role: 'Sales Executive'
         }).select('_id name email creatorCode reportingManager role targets');
+
+        if (!salesExecutives.length) {
+            salesExecutives = await User.find({ role: 'Sales Executive' })
+                .select('_id name email creatorCode reportingManager role targets');
+        }
 
         res.json({
             salesManagers,

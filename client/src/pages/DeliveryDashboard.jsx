@@ -87,6 +87,13 @@ const DeliveryDashboard = () => {
         value: currency === 'INR' ? item.value : (item.value / EXCHANGE_RATE)
     }));
 
+    const avgGpTrendData = (charts.avgGpChart || [])
+        .map((item) => ({
+            name: item.name || item.month || item.label || '',
+            gp: Number(item.gp ?? item.avgGp ?? item.gpPercent ?? item.percentage ?? 0)
+        }))
+        .filter((item) => item.name);
+
     return (
         <div className="p-3 sm:p-6 bg-bg-page h-full space-y-6 sm:space-y-8">
             {/* Header Removed */}
@@ -151,23 +158,29 @@ const DeliveryDashboard = () => {
             </div>
 
             {/* Charts Row 2: Monthly GP% Trend */}
-            <div style={glassCardStyle} className="min-h-[20rem] p-4 sm:p-6 rounded-xl">
+            <div style={glassCardStyle} className="h-[320px] sm:h-80 p-4 sm:p-6 rounded-xl flex flex-col">
                 <h3 className="text-lg font-bold text-gray-800 mb-4">Average GP % (Monthly)</h3>
-                <div className="w-full h-full pb-6">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={charts.avgGpChart} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} domain={[0, 'auto']} />
-                            <Tooltip
-                                cursor={false}
-                                formatter={(value) => [`${value}%`, 'Avg GP']}
-                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                            />
-                            <Legend />
-                            <Line type="monotone" dataKey="gp" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B' }} activeDot={{ r: 6 }} name="GP %" />
-                        </LineChart>
-                    </ResponsiveContainer>
+                <div className="w-full flex-1 min-h-0">
+                    {avgGpTrendData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={avgGpTrendData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} domain={[0, 'auto']} />
+                                <Tooltip
+                                    cursor={false}
+                                    formatter={(value) => [`${value}%`, 'Avg GP']}
+                                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
+                                />
+                                <Legend />
+                                <Line type="monotone" dataKey="gp" stroke="#F59E0B" strokeWidth={3} dot={{ r: 4, fill: '#F59E0B' }} activeDot={{ r: 6 }} name="GP %" />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                            No GP trend data available
+                        </div>
+                    )}
                 </div>
             </div>
 

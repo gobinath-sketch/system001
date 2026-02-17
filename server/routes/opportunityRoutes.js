@@ -113,7 +113,7 @@ const getAccessibleUserIds = async (user) => {
 // @route   POST /api/opportunities
 // @desc    Create new opportunity (Sales only - Base details)
 // @access  Private (Sales Executive, Sales Manager)
-router.post('/', protect, authorize('Sales Executive', 'Sales Manager'), upload.single('requirementDocument'), async (req, res) => {
+router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), upload.single('requirementDocument'), async (req, res) => {
     try {
         // Parse JSON fields if coming from FormData
         const body = req.body;
@@ -702,7 +702,7 @@ router.put('/:id', protect, async (req, res) => {
 // @route   PUT /api/opportunities/:id/type-specific
 // @desc    Update type-specific details (Sales only)
 // @access  Private (Sales Executive, Sales Manager)
-router.put('/:id/type-specific', protect, authorize('Sales Executive', 'Sales Manager'), async (req, res) => {
+router.put('/:id/type-specific', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -789,7 +789,7 @@ router.put('/:id/expenses', protect, authorize('Delivery Team'), async (req, res
 // @route   DELETE /api/opportunities/:id
 // @desc    Delete opportunity (Sales only, if not in delivery)
 // @access  Private (Sales Executive, Sales Manager)
-router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager'), async (req, res) => {
+router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
