@@ -431,7 +431,7 @@ const SalesExecutiveDashboard = ({
     const chartColors = ['#0F3D75', '#1556A8', '#1D6FD1', '#2F86DE', '#55A2E8', '#80BBEE'];
 
     return (
-        <div className="p-3 sm:p-4 pb-4 space-y-4 bg-bg-page h-full">
+        <div className="p-3 sm:p-4 pb-0 space-y-4 bg-bg-page h-full">
             {/* Render Filters via Portal */}
             <FilterControls />
             <style>
