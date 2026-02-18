@@ -202,7 +202,7 @@ const OperationalExpensesBreakdown = ({
     };
 
     return (
-        <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-3 sm:p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+        <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-5 pb-2 border-b border-slate-200/70">
                 <h3 className="text-base sm:text-lg leading-tight font-semibold tracking-tight text-blue-900">Operational Expenses Breakdown</h3>
@@ -221,7 +221,7 @@ const OperationalExpensesBreakdown = ({
             <div className="flex-grow overflow-y-auto pr-1">
                 {!canEdit ? (
                     // VIEW MODE: Grid Cards
-                    <div className="grid h-full gap-4 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+                    <div className="grid h-full gap-4 grid-cols-1 md:grid-cols-2">
                         {expenseConfig.map(config => renderViewCard(config))}
                     </div>
                 ) : (
