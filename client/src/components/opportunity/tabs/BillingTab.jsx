@@ -109,7 +109,7 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
 
             // Allow overrides for values that act as triggers (ensure we send the Triggered Value)
             const params = {
-                gpPercent: overrides.gpPercent ?? currentGpPercent,
+                gpPercent: overrides.gpPercent ?? overrides.targetGpPercent ?? currentGpPercent,
                 contingencyPercent: overrides.contingencyPercent ?? (data.expenses?.contingencyPercent || 20),
                 tov: currentTov,
                 totalExpense: currentTotalExpenses,
@@ -581,10 +581,10 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                                                     />
                                                     <button
                                                         onClick={() => document.getElementById('proposal-upload-mini').click()}
-                                                    className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap"
-                                                >
-                                                    Replace
-                                                </button>
+                                                        className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap"
+                                                    >
+                                                        Replace
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -615,11 +615,11 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                             {/* Approval Status */}
                             <div className="mb-7 pb-5 border-b border-slate-200/70">
                                 <div className="flex justify-between items-center mb-3">
-                                    <span className="text-[15px] font-medium text-gray-500">Approval Status</span>
+                                    <span className="text-[15px] font-medium text-blue-900">Approval Status</span>
                                     {opportunity.approvalStatus === 'Pending' || opportunity.approvalStatus?.includes('Pending') ? (
                                         <div className="flex items-center space-x-2">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
-                                                {opportunity.approvalStatus}
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                                                {opportunity.approvalStatus === 'Pending Manager' ? 'Pending - Manager' : opportunity.approvalStatus === 'Pending Director' ? 'Pending - Director' : opportunity.approvalStatus}
                                             </span>
                                             {/* Allow Escalation if pending */}
                                             {canEditExecution && (

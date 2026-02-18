@@ -174,14 +174,14 @@ const OperationalExpensesBreakdown = ({
                 </div>
 
                 <div className="flex justify-between items-center text-[15px] text-slate-600 leading-relaxed">
-                    <span className="text-slate-500">{typeLabel}</span>
+                    <span className="text-black-100">{typeLabel}</span>
                     <span className="font-semibold text-slate-800">
                         {CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}
                     </span>
                 </div>
 
                 {data.hours > 0 && data.type === 'costPerHour' && (
-                    <div className="text-xs text-slate-400 mt-1">Hours: {data.hours}</div>
+                    <div className="text-sm text-black-400 mt-1">Hours: {data.hours}</div>
                 )}
 
                 {(opportunity.expenseDocuments?.[category]?.length > 0) && (
