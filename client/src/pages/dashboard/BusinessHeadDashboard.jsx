@@ -1,0 +1,65 @@
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
+import SalesExecutiveDashboard from './SalesExecutiveDashboard';
+
+const BusinessHeadDashboard = () => {
+    const { user } = useAuth();
+    const [viewMode, setViewMode] = useState('self'); // 'self', managerId, or executiveId
+    const [salesManagers, setSalesManagers] = useState([]);
+    const [salesExecutives, setSalesExecutives] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const fetchTeamStructure = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await axios.get('http://localhost:5000/api/dashboard/business-head/team-structure', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setSalesManagers(response.data.salesManagers);
+            setSalesExecutives(response.data.salesExecutives);
+            setLoading(false);
+        } catch (err) {
+            console.error('Error fetching team structure:', err);
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchTeamStructure();
+    }, []);
+
+    const getCustomUserId = () => {
+        if (viewMode === 'self') {
+            return user.id; // Business Head's own data
+        } else {
+            return viewMode; // Manager or Executive ID
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="text-xl font-semibold text-gray-600">Loading...</div>
+            </div>
+        );
+    }
+
+    return (
+        <SalesExecutiveDashboard
+            user={user}
+            customUserId={getCustomUserId()}
+            showViewFilter={true}
+            viewMode={viewMode}
+            setViewMode={setViewMode}
+            teamMembers={[...salesManagers, ...salesExecutives]}
+            salesManagers={salesManagers}
+            salesExecutives={salesExecutives}
+            isBusinessHead={true}
+            onRefreshTeam={fetchTeamStructure}
+        />
+    );
+};
+
+export default BusinessHeadDashboard;
