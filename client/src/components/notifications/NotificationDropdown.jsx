@@ -542,6 +542,18 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
         return `${Math.floor(diffInSeconds / 86400)}d ago`;
     };
 
+    const renderMessageWithHighlightedId = (message) => {
+        if (!message) return '';
+        const idPattern = /(\s*GK[A-Z0-9]+)/gi;
+        const parts = String(message).split(idPattern);
+        const isIdPart = /^\s*GK[A-Z0-9]+$/i;
+        return parts.map((part, index) => (
+            isIdPart.test(part)
+                ? <span key={`${part}-${index}`} className="font-bold text-slate-900 whitespace-nowrap">{part}</span>
+                : <React.Fragment key={`${part}-${index}`}>{part}</React.Fragment>
+        ));
+    };
+
     return (
         <div
             onClick={() => onNavigate(notification)}
@@ -569,16 +581,16 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
             {/* Main Content */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-3">
-                    <p className={`text-[14px] leading-5 pr-2 tracking-[-0.01em] ${!notification.isRead ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
-                        {notification.message}
+                    <p className={`text-[13px] leading-5 pr-2 tracking-[-0.01em] ${!notification.isRead ? 'font-semibold text-slate-900' : 'font-medium text-slate-700'}`}>
+                        {renderMessageWithHighlightedId(notification.message)}
                     </p>
-                    <div className="shrink-0 flex items-center justify-end gap-2 min-w-[96px]">
+                    <div className="shrink-0 flex items-center justify-end gap-2 min-w-[78px]">
                         {!notification.isRead && (
-                            <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary-blue/10 text-primary-blue">
+                            <span className="text-[9px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-primary-blue/10 text-primary-blue">
                                 New
                             </span>
                         )}
-                        <span className="text-[12px] font-medium text-primary-blue/70">
+                        <span className="text-[11px] font-medium text-primary-blue/70">
                             {formatTime(notification.createdAt)}
                         </span>
                         {!notification.isRead && (
