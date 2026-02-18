@@ -29,8 +29,9 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const approvalRoutes = require('./routes/approvalRoutes');
 const targetRoutes = require('./routes/targetRoutes');
-const documentRoutes = require('./routes/documentRoutes');
+// const documentRoutes = require('./routes/documentRoutes'); // Removed redundant system
 const smeRoutes = require('./routes/smeRoutes');
+
 const reportRoutes = require('./routes/reports');
 
 // Force Restart Tracker
@@ -45,7 +46,7 @@ app.use('/api/dashboard', dashboardRoutes);
 
 app.use('/api/approvals', approvalRoutes);
 app.use('/api/targets', targetRoutes);
-app.use('/api/documents', documentRoutes);
+// app.use('/api/documents', documentRoutes); // Removed redundant system
 app.use('/api/smes', smeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
