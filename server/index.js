@@ -57,11 +57,22 @@ app.get('/', (req, res) => {
 const http = require('http');
 const { Server } = require('socket.io');
 
+const allowedSocketOrigins = (process.env.CLIENT_ORIGINS || '')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:5173", // Allow Client URL
-        methods: ["GET", "POST"]
+        origin: (origin, callback) => {
+            if (!origin) return callback(null, true);
+            if (allowedSocketOrigins.length === 0) return callback(null, true);
+            if (allowedSocketOrigins.includes(origin)) return callback(null, true);
+            return callback(new Error('Socket origin not allowed by CORS'));
+        },
+        methods: ["GET", "POST"],
+        credentials: true
     }
 });
 

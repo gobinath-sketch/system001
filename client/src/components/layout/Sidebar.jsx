@@ -170,7 +170,7 @@ const Sidebar = ({ isMobileOpen = false, onCloseMobile = () => { } }) => {
             {/* Sidebar */}
             <div
                 className={`
-          fixed top-0 left-0 h-screen bg-[linear-gradient(165deg,#0b4a8a_0%,#0a3b72_46%,#082f5c_100%)] border-r border-[#5ea2df]/35
+          fixed top-0 left-0 h-screen min-h-screen bg-[linear-gradient(165deg,#0b4a8a_0%,#0a3b72_46%,#082f5c_100%)] border-r border-[#5ea2df]/35
           transition-all duration-300 z-50 lg:z-40 flex flex-col shadow-2xl overflow-hidden
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0

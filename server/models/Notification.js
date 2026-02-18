@@ -69,4 +69,18 @@ NotificationSchema.post('save', function (doc) {
     }
 });
 
+// Emit real-time events for bulk inserts as well (insertMany does not trigger save middleware).
+NotificationSchema.post('insertMany', function (docs) {
+    if (!global.io || !Array.isArray(docs)) return;
+    docs.forEach((doc) => {
+        try {
+            if (doc?.recipientId) {
+                global.io.to(doc.recipientId.toString()).emit('notification_received', doc);
+            }
+        } catch (error) {
+            console.error('Socket Emission Failed (insertMany):', error);
+        }
+    });
+});
+
 module.exports = mongoose.model('Notification', NotificationSchema);

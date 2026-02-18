@@ -10,7 +10,7 @@ const Layout = ({ children }) => {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
     return (
-        <div className="flex h-screen bg-bg-page">
+        <div className="flex h-screen min-h-screen bg-bg-page overflow-hidden">
             {/* New Sidebar */}
             <Sidebar
                 isMobileOpen={isMobileSidebarOpen}
@@ -63,7 +63,7 @@ const Layout = ({ children }) => {
                 </header>
 
                 {/* Page Content */}
-                <main className="flex-1 overflow-auto min-w-0">
+                <main className="flex-1 overflow-y-auto overflow-x-hidden min-w-0 bg-bg-page">
                     {children}
                 </main>
             </div>

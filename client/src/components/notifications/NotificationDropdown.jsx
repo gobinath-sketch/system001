@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import { Check, FileText, DollarSign, Briefcase, X, ArrowLeft, Search, Bell as BellIcon, CheckCheck, CircleCheck } from 'lucide-react';
 import NotificationBellIcon from '../common/NotificationBellIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
+import { API_BASE } from '../../config/api';
 
 const safeStringify = (value) => {
     try {
@@ -128,32 +129,34 @@ const NotificationDropdown = () => {
 
     const { socket } = useSocket();
 
-    useEffect(() => {
-        let isMounted = true;
+    const loadNotifications = useCallback(async () => {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
 
-        const loadNotifications = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                if (!token) return;
+            const res = await axios.get(`${API_BASE}/api/notifications`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
 
-                const res = await axios.get('http://localhost:5000/api/notifications', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                if (!isMounted) return;
-                setNotifications(res.data.notifications);
-                setUnreadCount(res.data.unreadCount);
-            } catch (err) {
-                console.error('Error fetching notifications:', err);
-            }
-        };
-
-        loadNotifications();
-
-        return () => {
-            isMounted = false;
-        };
+            setNotifications(res.data.notifications);
+            setUnreadCount(res.data.unreadCount);
+        } catch (err) {
+            console.error('Error fetching notifications:', err);
+        }
     }, []);
+
+    useEffect(() => {
+        const initialFetchTimer = setTimeout(() => {
+            loadNotifications();
+        }, 0);
+
+        // Fallback sync for multi-system setups where socket event may not arrive.
+        const intervalId = setInterval(loadNotifications, 1000);
+        return () => {
+            clearTimeout(initialFetchTimer);
+            clearInterval(intervalId);
+        };
+    }, [loadNotifications]);
 
     // Real-time listener: Listen for NEW notifications from Socket.io
     useEffect(() => {
@@ -198,7 +201,7 @@ const NotificationDropdown = () => {
         if (e) e.stopPropagation();
         try {
             const token = localStorage.getItem('token');
-            await axios.put(`http://localhost:5000/api/notifications/${id}/read`, {}, {
+            await axios.put(`${API_BASE}/api/notifications/${id}/read`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
@@ -211,7 +214,7 @@ const NotificationDropdown = () => {
     const handleMarkAllRead = async () => {
         try {
             const token = localStorage.getItem('token');
-            await axios.put('http://localhost:5000/api/notifications/read-all', {}, {
+            await axios.put(`${API_BASE}/api/notifications/read-all`, {}, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             setNotifications(notifications.map(n => ({ ...n, isRead: true })));

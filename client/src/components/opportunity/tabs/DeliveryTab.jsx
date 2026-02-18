@@ -293,7 +293,7 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
         <div className="space-y-6">
 
             {/* Trainer Details */}
-            <Card>
+            <Card className="!bg-white">
                 <h3 className="text-lg font-bold text-primary-blue mb-4">Training Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Row 1: Support Type, SME */}
