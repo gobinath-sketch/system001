@@ -162,18 +162,18 @@ const OperationalExpensesBreakdown = ({
             : (fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed');
 
         return (
-            <div key={category} className="bg-white/80 border border-slate-200 rounded-xl p-3 flex flex-col justify-center h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
+            <div key={category} className="bg-white/80 border border-slate-200 rounded-xl p-3.5 flex flex-col justify-center h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
                 <div className="flex justify-between items-center mb-2">
-                    <span className="inline-flex items-center gap-2 font-semibold text-slate-700 text-sm">
-                        <Icon size={15} className="text-slate-500" />
+                    <span className="inline-flex items-center gap-2 font-semibold text-slate-700 text-[15px]">
+                        <Icon size={16} className="text-slate-500" />
                         {label}
                     </span>
-                    <span className="font-bold text-slate-800 text-sm">
+                    <span className="font-bold text-slate-800 text-[15px]">
                         {CURRENCY_SYMBOL} {(currentTotal / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                     </span>
                 </div>
 
-                <div className="flex justify-between items-center text-sm text-slate-600 leading-relaxed">
+                <div className="flex justify-between items-center text-[15px] text-slate-600 leading-relaxed">
                     <span className="text-slate-500">{typeLabel}</span>
                     <span className="font-semibold text-slate-800">
                         {CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}
@@ -205,9 +205,9 @@ const OperationalExpensesBreakdown = ({
         <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
             {/* Header Section */}
             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 mb-5 pb-2 border-b border-slate-200/70">
-                <h3 className="text-base sm:text-lg leading-tight font-semibold tracking-tight text-blue-900">Operational Expenses Breakdown</h3>
+                <h3 className="text-lg sm:text-xl leading-tight font-semibold tracking-tight text-blue-900">Operational Expenses Breakdown</h3>
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-medium text-blue-900">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-sm font-medium text-blue-900">
                         <span className="text-blue-900">Pax:</span>
                         <span className="font-bold">{pax}</span>
                         <span className="w-px h-3 bg-blue-200 mx-1"></span>
@@ -259,8 +259,8 @@ const OperationalExpensesBreakdown = ({
 
             {/* Footer / Total Section */}
             <div className="mt-4 pt-3 border-t border-slate-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                <span className="text-sm font-bold text-blue-900">Total Expenses</span>
-                <span className="text-xl sm:text-2xl font-bold text-blue-900">
+                <span className="text-base font-bold text-blue-900">Total Expenses</span>
+                <span className="text-2xl sm:text-[2rem] font-bold text-blue-900">
                     {CURRENCY_SYMBOL} {((Object.keys(activeData.expenses || {}).reduce((sum, key) => {
                         if (key === 'breakdown' || key === 'marketingPercent' || key === 'contingencyPercent' || key === 'targetGpPercent' || key === 'marketing' || key === 'contingency') return sum;
                         return sum + (parseFloat(activeData.expenses[key]) || 0);
