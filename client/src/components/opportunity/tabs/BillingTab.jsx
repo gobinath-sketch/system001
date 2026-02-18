@@ -547,7 +547,7 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                     <div className="lg:col-span-1 h-full min-h-0">
                         <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
                             <div className="flex justify-between items-center mb-5">
-                                <h3 className="text-[22px] leading-tight font-semibold tracking-tight text-slate-800">Execution Details</h3>
+                                <h3 className="text-lg sm:text-xl leading-tight font-semibold tracking-tight text-blue-900">Execution Details</h3>
                             </div>
 
                             {/* Proposal Value - Restored */}
