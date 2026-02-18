@@ -664,11 +664,16 @@ const SalesExecutiveDashboard = ({
                                             </div>
                                             <div className="h-full flex flex-col justify-center gap-2">
                                                 {radarData.map((item) => (
-                                                    <div key={item.type} className="grid grid-cols-[10px_minmax(0,1fr)_40px] items-center gap-2">
+                                                    <div key={item.type} className="grid grid-cols-[10px_minmax(0,1fr)] items-center gap-2">
                                                         <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: item.fill }} />
                                                         <div className="min-w-0">
                                                             <div className="flex items-center justify-between gap-2">
-                                                                <span className="text-[12px] md:text-[13px] font-semibold text-gray-800 truncate" title={item.type}>{item.type}</span>
+                                                                <div className="min-w-0 flex items-center gap-2">
+                                                                    <span className="text-[12px] md:text-[13px] font-semibold text-gray-800 truncate" title={item.type}>{item.type}</span>
+                                                                    <span className="shrink-0 inline-flex items-center justify-center min-w-[22px] h-5 px-1.5 rounded-full bg-blue-100 text-[11px] md:text-[12px] font-bold text-primary-blue">
+                                                                        {item.count}
+                                                                    </span>
+                                                                </div>
                                                                 <span className="text-[11px] md:text-[12px] font-medium text-gray-500">{item.share}%</span>
                                                             </div>
                                                             <div className="mt-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
@@ -678,7 +683,6 @@ const SalesExecutiveDashboard = ({
                                                                 />
                                                             </div>
                                                         </div>
-                                                        <span className="text-right text-[12px] md:text-[13px] font-bold text-primary-blue">{item.count}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -892,4 +896,3 @@ const SalesExecutiveDashboard = ({
 };
 
 export default SalesExecutiveDashboard;
-
