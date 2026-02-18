@@ -10,6 +10,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import RevenueAnalyticsRow from './RevenueAnalyticsRow';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useSocket } from '../../context/SocketContext';
 import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
 
 const OPPORTUNITY_TYPES = ['Training', 'Product Support', 'Resource Support', 'Vouchers', 'Content Development', 'Lab Support'];
@@ -26,6 +27,7 @@ const SalesExecutiveDashboard = ({
     isBusinessHead = false
 }) => {
     const navigate = useNavigate();
+    const { socket } = useSocket();
     const [clientHealth, setClientHealth] = useState({ active: 0, mid: 0, inactive: 0 });
     const [performance, setPerformance] = useState(null);
     const [allOpps, setAllOpps] = useState([]); // For Document Status Modal
@@ -77,6 +79,19 @@ const SalesExecutiveDashboard = ({
     useEffect(() => {
         fetchDashboardData();
     }, [fetchDashboardData]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'client', 'user', 'approval'].includes(event?.entity)) {
+                fetchDashboardData();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, fetchDashboardData]);
 
     // Helper to format money based on selected currency
     const formatMoney = (amountInINR) => {

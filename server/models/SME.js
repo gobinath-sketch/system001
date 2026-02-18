@@ -118,4 +118,19 @@ const SMESchema = new mongoose.Schema({
 SMESchema.index({ companyVendor: 1 });
 SMESchema.index({ smeType: 1 });
 
+SMESchema.pre('save', function (next) {
+    this.$locals.wasNew = this.isNew;
+    next();
+});
+
+SMESchema.post('save', function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'sme',
+        action: this.$locals?.wasNew ? 'created' : 'updated',
+        id: doc._id.toString(),
+        updatedAt: doc.updatedAt || new Date()
+    });
+});
+
 module.exports = mongoose.model('SME', SMESchema);

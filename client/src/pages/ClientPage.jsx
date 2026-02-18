@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 import { validateMobile, validateEmail } from '../utils/validation';
 
 const ClientPage = () => {
@@ -11,6 +12,7 @@ const ClientPage = () => {
     const location = useLocation();
     const { user } = useAuth();
     const { addToast } = useToast();
+    const { socket } = useSocket();
     const [clients, setClients] = useState([]);
     const [viewMode, setViewMode] = useState('list'); // 'list', 'details'
     const [showFormModal, setShowFormModal] = useState(false);
@@ -79,6 +81,18 @@ const ClientPage = () => {
     useEffect(() => {
         fetchClients();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity !== 'client') return;
+            fetchClients();
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchClients = async () => {
         try {

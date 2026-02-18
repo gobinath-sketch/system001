@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Eye, Search, Filter, X, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 import GPReportSection from '../components/reports/GPReportSection';
 import CreateOpportunityModal from '../components/opportunity/CreateOpportunityModal';
 import AlertModal from '../components/ui/AlertModal';
@@ -13,6 +14,7 @@ const OpportunityPage = () => {
     const location = useLocation(); // Add useLocation
     const { user } = useAuth();
     const { addToast } = useToast();
+    const { socket } = useSocket();
 
     // Data States
     const [opportunities, setOpportunities] = useState([]);
@@ -50,6 +52,19 @@ const OpportunityPage = () => {
     useEffect(() => {
         fetchOpportunities();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity === 'opportunity') {
+                fetchOpportunities();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchOpportunities = async () => {
         try {

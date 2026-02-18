@@ -65,7 +65,18 @@ const ApprovalSchema = new mongoose.Schema({
 
 // Update timestamp on save
 ApprovalSchema.pre('save', async function () {
+    this.$locals.wasNew = this.isNew;
     this.updatedAt = Date.now();
+});
+
+ApprovalSchema.post('save', function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'approval',
+        action: this.$locals?.wasNew ? 'created' : 'updated',
+        id: doc._id.toString(),
+        updatedAt: doc.updatedAt || new Date()
+    });
 });
 
 module.exports = mongoose.model('Approval', ApprovalSchema);

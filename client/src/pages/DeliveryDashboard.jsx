@@ -8,10 +8,12 @@ import {
 } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
+import { useSocket } from '../context/SocketContext';
 
 
 const DeliveryDashboard = () => {
     const { updateUserRole, user } = useAuth();
+    const { socket } = useSocket();
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState({
         active: 0, scheduledMonth: 0, completed: 0, smeDeployed: 0, pendingFeedback: 0
@@ -27,6 +29,19 @@ const DeliveryDashboard = () => {
         updateUserRole('Delivery Team');
         fetchDashboardRevamp();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'sme'].includes(event?.entity)) {
+                fetchDashboardRevamp();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchDashboardRevamp = async () => {
         try {

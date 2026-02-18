@@ -45,4 +45,19 @@ const ClientSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+ClientSchema.pre('save', function (next) {
+    this.$locals.wasNew = this.isNew;
+    next();
+});
+
+ClientSchema.post('save', function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'client',
+        action: this.$locals?.wasNew ? 'created' : 'updated',
+        id: doc._id.toString(),
+        updatedAt: new Date()
+    });
+});
+
 module.exports = mongoose.models.Client || mongoose.model('Client', ClientSchema);

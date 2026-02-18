@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import SalesExecutiveDashboard from './SalesExecutiveDashboard';
 
 const BusinessHeadDashboard = () => {
     const { user } = useAuth();
+    const { socket } = useSocket();
     const [viewMode, setViewMode] = useState('self'); // 'self', managerId, or executiveId
     const [salesManagers, setSalesManagers] = useState([]);
     const [salesExecutives, setSalesExecutives] = useState([]);
@@ -29,6 +31,19 @@ const BusinessHeadDashboard = () => {
     useEffect(() => {
         fetchTeamStructure();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['user', 'opportunity', 'client'].includes(event?.entity)) {
+                fetchTeamStructure();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const getCustomUserId = () => {
         if (viewMode === 'self') {

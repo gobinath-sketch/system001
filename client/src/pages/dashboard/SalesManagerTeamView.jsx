@@ -7,6 +7,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import AlertModal from '../../components/ui/AlertModal';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -16,6 +17,7 @@ const SalesManagerTeamView = () => {
     const navigate = useNavigate();
     const { addToast } = useToast();
     const { user } = useAuth();
+    const { socket } = useSocket();
     const [stats, setStats] = useState(null);
     const [documentStats, setDocumentStats] = useState({ poCount: 0, invoiceCount: 0 });
     const [monthlyPerformance, setMonthlyPerformance] = useState([]);
@@ -99,6 +101,19 @@ const SalesManagerTeamView = () => {
     useEffect(() => {
         fetchDashboardData();
     }, [selectedMember]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'client', 'approval', 'user'].includes(event?.entity)) {
+                fetchDashboardData();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, selectedMember]);
 
     const fetchDashboardData = async () => {
         try {

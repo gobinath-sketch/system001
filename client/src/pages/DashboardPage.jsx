@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import { Users, Briefcase, Activity, Clock, UserCheck } from 'lucide-react';
 import TargetProgress from '../components/dashboard/TargetProgress';
 import EscalationWidget from '../components/dashboard/EscalationWidget';
@@ -12,6 +13,7 @@ import ManagerDashboard from './ManagerDashboard';
 
 const DashboardPage = ({ mockRole }) => {
     const { user: authUser, updateUserRole } = useAuth();
+    const { socket } = useSocket();
     // Allow mockRole to override authUser for testing
     const user = mockRole ? { ...authUser, role: mockRole } : authUser;
 
@@ -41,30 +43,42 @@ const DashboardPage = ({ mockRole }) => {
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const fetchData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+
+            // Fetch Stats
+            const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setStats(statsRes.data);
+
+            // Fetch Recent Opportunities (Fetch all for Escalation Widget logic, slice for table)
+            const oppsRes = await axios.get('http://localhost:5000/api/opportunities', {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setOpportunities(oppsRes.data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-
-                // Fetch Stats
-                const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setStats(statsRes.data);
-
-                // Fetch Recent Opportunities (Fetch all for Escalation Widget logic, slice for table)
-                const oppsRes = await axios.get('http://localhost:5000/api/opportunities', {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setOpportunities(oppsRes.data);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, [mockRole]);
+
+    useEffect(() => {
+        if (!socket) return;
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'client', 'user'].includes(event?.entity)) {
+                fetchData();
+            }
+        };
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, mockRole]);
 
     // Glass Style for Cards
     const glassCardStyle = {

@@ -3,10 +3,12 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import { Search, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import Card from '../../components/ui/Card';
 
 const FinanceModulePage = () => {
     const { user } = useAuth();
+    const { socket } = useSocket();
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,6 +16,19 @@ const FinanceModulePage = () => {
     useEffect(() => {
         fetchOpportunities();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity === 'opportunity') {
+                fetchOpportunities();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchOpportunities = async () => {
         try {

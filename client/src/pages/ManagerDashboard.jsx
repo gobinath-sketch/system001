@@ -6,12 +6,14 @@ import {
 } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import SetTargetModal from '../components/dashboard/SetTargetModal';
 import DocumentTracking from '../components/dashboard/DocumentTracking';
 
 const ManagerDashboard = ({ user: userProp }) => {
     const navigate = useNavigate();
     const { user: authUser } = useAuth();
+    const { socket } = useSocket();
     const user = userProp || authUser;
     const [stats, setStats] = useState(null);
     const [teamPerformance, setTeamPerformance] = useState([]);
@@ -23,6 +25,19 @@ const ManagerDashboard = ({ user: userProp }) => {
     useEffect(() => {
         fetchDashboardData();
     }, [timeline]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'client', 'approval', 'user'].includes(event?.entity)) {
+                fetchDashboardData();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, timeline]);
 
     const fetchDashboardData = async () => {
         try {

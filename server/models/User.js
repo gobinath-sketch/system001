@@ -28,5 +28,20 @@ const UserSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+UserSchema.pre('save', function (next) {
+    this.$locals.wasNew = this.isNew;
+    next();
+});
+
+UserSchema.post('save', function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'user',
+        action: this.$locals?.wasNew ? 'created' : 'updated',
+        id: doc._id.toString(),
+        updatedAt: new Date()
+    });
+});
+
 module.exports = mongoose.model('User', UserSchema);
 

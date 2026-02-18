@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Search } from 'lucide-react';
+import { useSocket } from '../context/SocketContext';
 
 const ProgramExecutionList = () => {
+    const { socket } = useSocket();
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -11,6 +13,19 @@ const ProgramExecutionList = () => {
     useEffect(() => {
         fetchOpportunities();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity === 'opportunity') {
+                fetchOpportunities();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchOpportunities = async () => {
         try {

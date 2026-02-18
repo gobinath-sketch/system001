@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, FileText, Eye } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 import AddSMEModal from '../components/sme/AddSMEModal';
 import ViewSMEModal from '../components/sme/ViewSMEModal';
 
@@ -11,6 +12,7 @@ const SMEManagement = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
     const { addToast } = useToast();
+    const { socket } = useSocket();
     const [smes, setSmes] = useState([]);
     const [loading, setLoading] = useState(false);
 
@@ -29,6 +31,19 @@ const SMEManagement = () => {
     useEffect(() => {
         fetchSMEs();
     }, [filters]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity === 'sme') {
+                fetchSMEs();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, filters]);
 
     const fetchSMEs = async () => {
         try {

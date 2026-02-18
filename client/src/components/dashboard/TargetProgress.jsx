@@ -1,27 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
+import { useSocket } from '../../context/SocketContext';
 
 const TargetProgress = ({ userId }) => {
+    const { socket } = useSocket();
     const [timeline, setTimeline] = useState('Yearly');
     const [data, setData] = useState({ target: 0, achieved: 0, percentage: 0 });
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const res = await axios.get(`http://localhost:5000/api/dashboard/performance/${userId}?timeline=${timeline}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-                setData(res.data);
-                setLoading(false);
-            } catch (err) {
-                console.error("Error fetching target data:", err);
-                setLoading(false);
-            }
-        };
+    const fetchData = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`http://localhost:5000/api/dashboard/performance/${userId}?timeline=${timeline}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setData(res.data);
+            setLoading(false);
+        } catch (err) {
+            console.error("Error fetching target data:", err);
+            setLoading(false);
+        }
+    };
 
+    useEffect(() => {
         if (userId) {
             fetchData();
         } else {
@@ -29,6 +31,19 @@ const TargetProgress = ({ userId }) => {
             setLoading(false);
         }
     }, [userId, timeline]);
+
+    useEffect(() => {
+        if (!socket || !userId) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['user', 'opportunity'].includes(event?.entity)) {
+                fetchData();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, userId, timeline]);
 
     if (loading) return <div className="animate-pulse h-32 bg-gray-100 rounded-lg"></div>;
 
