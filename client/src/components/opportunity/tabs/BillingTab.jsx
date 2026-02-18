@@ -503,12 +503,12 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
     const inputClass = `w-full text-right bg-transparent border-none focus:ring-0 p-0 text-sm ${!isEditing ? 'cursor-not-allowed text-gray-500' : 'text-gray-900 font-medium'}`;
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="space-y-6">
             {/* Grid Layout: Sales gets OpEx/Billing (Left 2/3). Execution (Right 1/3). Delivery gets BillingDetails (Full) */}
-            <div className={`grid grid-cols-1 ${!isDelivery ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6 flex-1 items-stretch min-h-0`}>
+            <div className={`grid grid-cols-1 ${!isDelivery ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
 
                 {/* Left/Main Column: Operational Expenses (Sales) OR Billing Details (Delivery) */}
-                <div className={`${!isDelivery ? 'lg:col-span-2' : 'lg:col-span-1'} h-full min-h-0`}>
+                <div className={`${!isDelivery ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
                     {/* Sales View: Operational Expenses */}
                     {!isDelivery && (
                         <OperationalExpensesBreakdown
@@ -544,8 +544,8 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
 
                 {/* Right Column: Execution Details (Hidden for Delivery) */}
                 {!isDelivery && (
-                    <div className="lg:col-span-1 h-full min-h-0">
-                        <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+                    <div className="lg:col-span-1">
+                        <div className="flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
                             <div className="flex justify-between items-center mb-5">
                                 <h3 className="text-lg sm:text-xl leading-tight font-semibold tracking-tight text-blue-900">Execution Details</h3>
                             </div>

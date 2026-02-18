@@ -442,7 +442,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                 ) : (
                     // Main List View
                     <div className="flex-1 min-h-0">
-                        <div className="space-y-1">
+                        <div className="h-full flex flex-col justify-between gap-1">
                             {[...filteredData.techData]
                                 .sort((a, b) => (b.value || 0) - (a.value || 0))
                                 .map((tech, index) => (
@@ -453,7 +453,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                                                 setSelectedTechCategory(tech.name);
                                             }
                                         }}
-                                        className={`group relative flex items-center justify-between px-3 py-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer' : ''
+                                        className={`group relative flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors ${(tech.name === 'Emerging technologies' || tech.name === 'Other technologies') ? 'cursor-pointer' : ''
                                             }`}
                                     >
                                         <div className="flex items-center">
@@ -643,7 +643,7 @@ const RevenueAnalyticsRow = ({ allOpps, filter = 'Yearly', yearlyTarget, currenc
                                                             })}
                                                             className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                             placeholder="Enter target"
-                                                            onFocus={(e) => {
+                                                            onFocus={() => {
                                                                 const currentVal = editingTargets[member._id] ?? Math.round(displayTarget);
                                                                 if (currentVal == 0 || currentVal == '0') {
                                                                     setEditingTargets({ ...editingTargets, [member._id]: '' });
