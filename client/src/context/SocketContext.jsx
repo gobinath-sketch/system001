@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
+import { SOCKET_URL } from '../config/api';
 
 const SocketContext = createContext();
 
@@ -15,10 +16,7 @@ export const SocketProvider = ({ children }) => {
     useEffect(() => {
         if (!userId) return;
 
-        const fallbackSocketUrl = `${window.location.protocol}//${window.location.hostname}:5000`;
-        const socketUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL || fallbackSocketUrl;
-
-        const newSocket = io(socketUrl, {
+        const newSocket = io(SOCKET_URL, {
             transports: ['websocket', 'polling']
         });
 
