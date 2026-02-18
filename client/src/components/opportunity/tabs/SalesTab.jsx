@@ -184,7 +184,7 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
     return (
         <div className="space-y-6">
             {/* Basic Details Section - Dynamic based on Opportunity Type */}
-            <Card>
+            <Card className="!bg-white">
                 <h3 className="text-lg font-bold text-primary-blue mb-4">Basic Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Common Fields for All Types */}
@@ -577,7 +577,7 @@ const SalesTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData, use
             </Card >
 
             {/* Trainer Details Section */}
-            < Card >
+            <Card className="!bg-white">
                 <h3 className="text-lg font-bold text-primary-blue mb-4">Training Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>

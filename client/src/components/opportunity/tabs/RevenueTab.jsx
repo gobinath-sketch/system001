@@ -218,7 +218,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
             {/* PO and Invoice Details Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* PO Details */}
-                <Card>
+                <Card className="!bg-white">
                     <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">PO Details</h3>
                     <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-4">
@@ -319,7 +319,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                 </Card>
 
                 {/* Invoice Details */}
-                <Card>
+                <Card className="!bg-white">
                     <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">Invoice Details</h3>
                     <div className="space-y-3">
                         <div className="grid grid-cols-2 gap-4">
@@ -401,7 +401,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
 
             {isSales && (
                 <div className="max-w-5xl mx-auto">
-                    <Card>
+                    <Card className="!bg-white">
                         {/* Use calculated data (activeData) to ensure TOV is dynamic even if DB is stale */}
                         <FinancialSummary
                             opportunity={{
