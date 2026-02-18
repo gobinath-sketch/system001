@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 import { CheckCircle, XCircle } from 'lucide-react';
 
 import AlertModal from '../components/ui/AlertModal';
 
 const ApprovalsPage = () => {
     const { addToast } = useToast();
+    const { socket } = useSocket();
     const [approvals, setApprovals] = useState([]);
     const [loading, setLoading] = useState(true);
     const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: '', message: '', onConfirm: null, type: 'info' });
@@ -14,6 +16,19 @@ const ApprovalsPage = () => {
     useEffect(() => {
         fetchApprovals();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['approval', 'opportunity'].includes(event?.entity)) {
+                fetchApprovals();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchApprovals = async () => {
         try {

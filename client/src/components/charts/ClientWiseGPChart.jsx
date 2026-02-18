@@ -4,8 +4,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Calendar, Filter } from 'lucide-react';
 
 import { useCurrency } from '../../context/CurrencyContext';
+import { useSocket } from '../../context/SocketContext';
 
 const ClientWiseGPChart = () => {
+    const { socket } = useSocket();
     const [chartData, setChartData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [filterType, setFilterType] = useState('month');
@@ -37,6 +39,19 @@ const ClientWiseGPChart = () => {
     useEffect(() => {
         fetchChartData();
     }, [filterType, selectedMonth, selectedQuarter]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'client'].includes(event?.entity)) {
+                fetchChartData();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, filterType, selectedMonth, selectedQuarter]);
 
     const fetchChartData = async () => {
         setLoading(true);

@@ -11,7 +11,7 @@ const AddSMEModal = ({ isOpen, onClose, onSuccess, smeToEdit = null }) => {
     const [files, setFiles] = useState({
         sowDocument: null,
         ndaDocument: null,
-        contentUpload: null,
+        sme_profile: null,
         idProof: null,
         panDocument: null,
         gstDocument: null
@@ -372,7 +372,7 @@ const AddSMEModal = ({ isOpen, onClose, onSuccess, smeToEdit = null }) => {
                                     {[
                                         { id: 'upload-sow', name: 'sowDocument', label: 'SOW Document *', accept: '.pdf,.doc,.docx' },
                                         { id: 'upload-nda', name: 'ndaDocument', label: 'NDA Document *', accept: '.pdf,.doc,.docx' },
-                                        { id: 'upload-profile', name: 'contentUpload', label: 'Profile Document *', accept: '.pdf,.doc,.docx' },
+                                        { id: 'upload-profile', name: 'sme_profile', label: 'SME Profile *', accept: '.pdf,.doc,.docx' },
                                         { id: 'upload-idproof', name: 'idProof', label: 'ID Proof (Optional)', accept: '.pdf,.jpg,.png' }
                                     ].map(doc => (
                                         <div key={doc.id} className="border p-3 rounded bg-gray-50">

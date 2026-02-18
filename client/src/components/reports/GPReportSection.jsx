@@ -3,9 +3,11 @@ import axios from 'axios';
 import { Download, TrendingUp, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useSocket } from '../../context/SocketContext';
 
 
 const GPReportSection = () => {
+    const { socket } = useSocket();
     const [filterType, setFilterType] = useState('month'); // 'month', 'quarter', 'year'
     const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
     const [selectedQuarter, setSelectedQuarter] = useState('Q4'); // Q1, Q2, Q3, Q4
@@ -60,6 +62,19 @@ const GPReportSection = () => {
     useEffect(() => {
         fetchReportData();
     }, [filterType, selectedMonth, selectedQuarter]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'client'].includes(event?.entity)) {
+                fetchReportData();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, filterType, selectedMonth, selectedQuarter]);
 
     const fetchReportData = async () => {
         setLoading(true);

@@ -1,26 +1,42 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useSocket } from '../../context/SocketContext';
 import SalesExecutiveDashboard from './SalesExecutiveDashboard';
 
 const SalesManagerDashboard = () => {
     const { user } = useAuth();
+    const { socket } = useSocket();
     const [viewMode, setViewMode] = useState('self'); // 'self', 'team', or userId
     const [teamMembers, setTeamMembers] = useState([]);
 
+    const fetchTeamMembers = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { Authorization: `Bearer ${token}` };
+            const teamRes = await axios.get('http://localhost:5000/api/dashboard/manager/team-members', { headers });
+            setTeamMembers(teamRes.data || []);
+        } catch (err) {
+            console.error('Error fetching team members:', err);
+        }
+    };
+
     useEffect(() => {
-        const fetchTeamMembers = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const headers = { Authorization: `Bearer ${token}` };
-                const teamRes = await axios.get('http://localhost:5000/api/dashboard/manager/team-members', { headers });
-                setTeamMembers(teamRes.data || []);
-            } catch (err) {
-                console.error('Error fetching team members:', err);
-            }
-        };
         fetchTeamMembers();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity === 'user') {
+                fetchTeamMembers();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     // Determine customUserId based on viewMode
     const getCustomUserId = () => {

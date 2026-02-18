@@ -257,7 +257,7 @@ const OpportunitySchema = new mongoose.Schema({
         feedback: { type: String },
         assessment: { type: String },
         performance: { type: String },
-        sme_profile: { type: String }
+        contentDocument: { type: String }
     },
 
     // Auto-calculated financial fields
@@ -354,6 +354,8 @@ const OpportunitySchema = new mongoose.Schema({
 
 OpportunitySchema.pre('save', async function () {
     try {
+        this.$locals.wasNew = this.isNew;
+
         // Auto-fill sales person from creator
         if (!this.commonDetails.sales) {
             this.commonDetails.sales = this.createdBy;
@@ -530,5 +532,26 @@ OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
     console.log(`Checking permission: Role=${userRole}, Field=${fieldPath}, Allowed=${allowed}`);
     return allowed;
 };
+
+// Broadcast opportunity changes for cross-device instant refresh.
+OpportunitySchema.post('save', function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'opportunity',
+        action: this.$locals?.wasNew ? 'created' : 'updated',
+        id: doc._id.toString(),
+        updatedAt: doc.updatedAt || new Date()
+    });
+});
+
+OpportunitySchema.post('deleteOne', { document: true, query: false }, function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'opportunity',
+        action: 'deleted',
+        id: doc?._id?.toString?.() || null,
+        updatedAt: new Date()
+    });
+});
 
 module.exports = mongoose.model('Opportunity', OpportunitySchema);

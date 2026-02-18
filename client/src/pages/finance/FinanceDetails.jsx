@@ -3,12 +3,14 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Save, ArrowLeft, Calculator, ChevronDown, ChevronUp, Upload } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { useSocket } from '../../context/SocketContext';
 import UploadButton from '../../components/ui/UploadButton';
 
 const FinanceDetails = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const { addToast } = useToast();
+    const { socket } = useSocket();
 
     const [opportunity, setOpportunity] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -92,6 +94,19 @@ const FinanceDetails = () => {
     useEffect(() => {
         fetchOpportunity();
     }, [id]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity !== 'opportunity') return;
+            if (event?.id && event.id !== id) return;
+            fetchOpportunity();
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, id]);
 
     const fetchOpportunity = async () => {
         try {

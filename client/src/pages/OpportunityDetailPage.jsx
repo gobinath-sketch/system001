@@ -4,6 +4,7 @@ import axios from 'axios';
 import { ArrowLeft, Edit, Save, X, FileText, Activity, Building2, Tag, Calendar, User, GraduationCap, Handshake } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
+import { useSocket } from '../context/SocketContext';
 
 // Import Tabs
 import OverviewTab from '../components/opportunity/tabs/OverviewTab';
@@ -22,6 +23,7 @@ const OpportunityDetailPage = () => {
     const location = useLocation();
     const { user } = useAuth();
     const { addToast } = useToast();
+    const { socket } = useSocket();
 
     // State
     const [opportunity, setOpportunity] = useState(null);
@@ -103,6 +105,19 @@ const OpportunityDetailPage = () => {
     useEffect(() => {
         fetchOpportunity();
     }, [id]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (event?.entity !== 'opportunity') return;
+            if (event?.id && event.id !== id) return;
+            fetchOpportunity();
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket, id]);
 
     // Separate effect for handling navigation state
     useEffect(() => {

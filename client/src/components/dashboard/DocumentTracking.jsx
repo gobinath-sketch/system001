@@ -2,15 +2,30 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSocket } from '../../context/SocketContext';
 
 const DocumentTracking = () => {
     const navigate = useNavigate();
+    const { socket } = useSocket();
     const [opportunities, setOpportunities] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetchDocuments();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleEntityUpdated = (event) => {
+            if (['opportunity', 'approval'].includes(event?.entity)) {
+                fetchDocuments();
+            }
+        };
+
+        socket.on('entity_updated', handleEntityUpdated);
+        return () => socket.off('entity_updated', handleEntityUpdated);
+    }, [socket]);
 
     const fetchDocuments = async () => {
         try {

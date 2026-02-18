@@ -89,7 +89,7 @@ const SMESchema = new mongoose.Schema({
 
     sowDocument: { type: String, required: true },
     ndaDocument: { type: String, required: true },
-    contentUpload: { type: String, required: true },
+    sme_profile: { type: String, required: true },
 
     // Optional
     idProof: { type: String },
@@ -117,5 +117,20 @@ const SMESchema = new mongoose.Schema({
 // Index for faster queries
 SMESchema.index({ companyVendor: 1 });
 SMESchema.index({ smeType: 1 });
+
+SMESchema.pre('save', function (next) {
+    this.$locals.wasNew = this.isNew;
+    next();
+});
+
+SMESchema.post('save', function (doc) {
+    if (!global.io) return;
+    global.io.emit('entity_updated', {
+        entity: 'sme',
+        action: this.$locals?.wasNew ? 'created' : 'updated',
+        id: doc._id.toString(),
+        updatedAt: doc.updatedAt || new Date()
+    });
+});
 
 module.exports = mongoose.model('SME', SMESchema);
