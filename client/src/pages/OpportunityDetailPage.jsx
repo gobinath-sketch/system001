@@ -269,7 +269,7 @@ const OpportunityDetailPage = () => {
     };
 
     return (
-        <div className="p-3 sm:p-6 bg-gray-50 h-full font-inter">
+        <div className="p-3 sm:p-6 bg-gray-50 h-full font-inter flex flex-col min-h-0">
             {/* Header */}
             <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <div className="flex items-center min-w-0 w-full">
@@ -374,7 +374,7 @@ const OpportunityDetailPage = () => {
             </div>
 
             {/* Tabs */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex-1 min-h-0 flex flex-col">
                 <div className="flex border-b border-gray-200 justify-between items-start sm:items-center bg-white px-2 gap-2">
                     <div className="flex space-x-1 overflow-x-auto min-w-0">
                         {showOverviewTab && (
@@ -463,7 +463,7 @@ const OpportunityDetailPage = () => {
                 </div>
 
                 {/* Tab Content */}
-                <div className="p-3 sm:p-6">
+                <div className="p-3 sm:p-6 flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                     {renderTabContent()}
                 </div>
             </div>
