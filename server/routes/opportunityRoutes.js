@@ -32,7 +32,7 @@ async function processBufferedNotifications(oppId) {
         } else {
             // Format list: A, B, and C
             const formattedTypes = types.map(t => {
-                if (t === 'sme_profile') return 'SME Profile';
+                if (t === 'contentDocument') return 'Content Document';
                 return t.charAt(0).toUpperCase() + t.slice(1).replace('_', ' ');
             });
 
@@ -1127,9 +1127,9 @@ router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sal
             return res.status(400).json({ message: 'No file uploaded' });
         }
 
-        const { type } = req.body; // 'attendance', 'feedback', 'assessment', 'performance', 'sme_profile'
+        const { type } = req.body; // 'attendance', 'feedback', 'assessment', 'performance', 'contentDocument'
         // Fix: Types must match the schema keys (lowercase), not the UI labels
-        const validTypes = ['attendance', 'feedback', 'assessment', 'performance', 'sme_profile'];
+        const validTypes = ['attendance', 'feedback', 'assessment', 'performance', 'contentDocument'];
 
         if (!validTypes.includes(type)) {
             return res.status(400).json({ message: 'Invalid document type' });
@@ -1149,7 +1149,7 @@ router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sal
             details: `${type} document uploaded by ${req.user.name}`
         });
 
-        if (type === 'sme_profile' && req.body.smeId) {
+        if (type === 'contentDocument' && req.body.smeId) {
             // Update the selectedSME in the opportunity itself so it persists
             // Ensure we don't try to assign invalid IDs
             if (req.body.smeId.match(/^[0-9a-fA-F]{24}$/)) {
@@ -1164,10 +1164,10 @@ router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sal
         await opportunity.save();
 
         // Update SME record if applicable
-        if (type === 'sme_profile' && req.body.smeId) {
+        if (type === 'contentDocument' && req.body.smeId) {
             const sme = await SME.findById(req.body.smeId);
             if (sme) {
-                sme.contentUpload = req.file.path;
+                sme.sme_profile = req.file.path;
                 await sme.save({ validateBeforeSave: false });
                 console.log(`Updated SME ${sme.name} contentUpload`);
             }

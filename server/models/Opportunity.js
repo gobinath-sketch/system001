@@ -257,7 +257,7 @@ const OpportunitySchema = new mongoose.Schema({
         feedback: { type: String },
         assessment: { type: String },
         performance: { type: String },
-        sme_profile: { type: String }
+        contentDocument: { type: String }
     },
 
     // Auto-calculated financial fields

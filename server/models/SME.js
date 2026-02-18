@@ -89,7 +89,7 @@ const SMESchema = new mongoose.Schema({
 
     sowDocument: { type: String, required: true },
     ndaDocument: { type: String, required: true },
-    contentUpload: { type: String, required: true },
+    sme_profile: { type: String, required: true },
 
     // Optional
     idProof: { type: String },
