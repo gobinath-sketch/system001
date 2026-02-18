@@ -170,7 +170,7 @@ const Sidebar = ({ isMobileOpen = false, onCloseMobile = () => { } }) => {
             {/* Sidebar */}
             <div
                 className={`
-          fixed top-0 left-0 h-screen bg-gradient-to-b from-primary-blue/90 to-black/90 backdrop-blur-xl border-r border-white/20
+          fixed top-0 left-0 h-screen bg-[linear-gradient(165deg,#0b4a8a_0%,#0a3b72_46%,#082f5c_100%)] border-r border-[#5ea2df]/35
           transition-all duration-300 z-50 lg:z-40 flex flex-col shadow-2xl overflow-hidden
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0
@@ -178,8 +178,8 @@ const Sidebar = ({ isMobileOpen = false, onCloseMobile = () => { } }) => {
         `}
             >
                 {/* Glass Shine Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute -top-20 -left-20 w-40 h-40 bg-white/20 blur-3xl rounded-full pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_10%_0%,rgba(147,203,255,0.22)_0%,rgba(147,203,255,0)_45%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(100%_70%_at_80%_100%,rgba(7,26,54,0.45)_0%,rgba(7,26,54,0)_55%)] pointer-events-none" />
                 {/* Header - User & Toggle */}
                 <div className={`flex items-center p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     {!isCollapsed && (
@@ -275,77 +275,47 @@ const Sidebar = ({ isMobileOpen = false, onCloseMobile = () => { } }) => {
 };
 
 const StyledWrapper = styled.div`
-  /* Ensures the link fills the width */
   width: 100%;
 
   .button {
-    /* Use 100% width to fill sidebar container instead of fixed min-width */
     width: 100%;
-    min-height: 42px;
-    
-    /* Layout */
+    min-height: 44px;
     display: flex;
     align-items: center;
     position: relative;
     cursor: pointer;
-
-    padding: 6px 17px;
-    border: 0;
-    border-radius: 7px;
-
-    /* Base Styles */
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    padding: 7px 16px;
+    border-radius: 12px;
+    border: 1px solid rgba(74, 140, 205, 0.55);
     background: linear-gradient(
       180deg,
-      rgba(255, 255, 255, 0.1) 0%,
-      rgba(255, 255, 255, 0.03) 100%
+      rgba(41, 107, 177, 0.94) 0%,
+      rgba(20, 74, 134, 0.96) 100%
     );
-    backdrop-filter: blur(4px); /* Adds glass effect */
-
-    color: rgb(255, 255, 255, 0.75); /* Slightly brighter text for better contrast */
-
-    transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+    box-shadow:
+      0 1px 3px rgba(0, 24, 54, 0.46),
+      inset 0 1px 0 rgba(108, 173, 237, 0.28),
+      inset 0 -1px 0 rgba(2, 23, 48, 0.46);
+    color: rgb(255 255 255 / 0.95);
+    transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.2s ease;
     overflow: hidden;
-  }
-
-  /* Active State Styling */
-  .button.active {
-    color: rgb(255, 255, 255, 1);
-    transform: scale(1.05);
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.2) 0%,
-      rgba(255, 255, 255, 0.08) 100%
-    ); /* Brighter glass for active state */
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3), 0 0 15px rgba(255, 255, 255, 0.1);
-  }
-
-  .button.active::before {
-    opacity: 1;
   }
 
   .button::before {
     content: "";
-    width: 70%;
-    height: 1px;
-
     position: absolute;
-    bottom: 0;
-    left: 15%;
-
-    background: rgb(255, 255, 255);
+    inset: 4px;
+    border-radius: 8px;
     background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 1) 50%,
-      rgba(255, 255, 255, 0) 100%
+      180deg,
+      rgba(56, 126, 197, 0.52) 0%,
+      rgba(24, 83, 145, 0.54) 100%
     );
-    opacity: 0.2;
-
-    transition: all 1s cubic-bezier(0.15, 0.83, 0.66, 1);
+    box-shadow: none;
+    pointer-events: none;
+    z-index: 0;
   }
 
-  /* Inner pressed depth on click */
   .button .inner-press {
     position: absolute;
     inset: 0;
@@ -356,18 +326,37 @@ const StyledWrapper = styled.div`
     z-index: 1;
   }
 
+  .button:hover {
+    transform: translateY(-1px);
+    box-shadow:
+      0 6px 14px rgba(0, 37, 77, 0.42),
+      inset 0 1px 0 rgba(122, 189, 247, 0.34),
+      inset 0 -1px 0 rgba(3, 31, 61, 0.28);
+  }
+
+  .button:active {
+    transform: scale(0.995);
+    box-shadow:
+      0 0px 1px rgba(0, 24, 54, 0.45),
+      inset 0 2px 7px rgba(1, 26, 54, 0.55),
+      inset 0 1px 0 rgba(93, 160, 223, 0.22);
+  }
+
   .button:active .inner-press {
     box-shadow: inset 0 2px 8px -2px rgba(0, 0, 0, 0.65);
   }
 
-  .button:hover {
-    color: rgb(255, 255, 255, 1);
-    transform: scale(1.05) translateY(-3px); /* Adjusted scale for sidebar context */
-    z-index: 10;
-  }
-
-  .button:hover::before {
-    opacity: 1;
+  .button.active {
+    border-color: rgba(96, 168, 236, 0.78);
+    background: linear-gradient(
+      180deg,
+      rgba(52, 129, 206, 0.98) 0%,
+      rgba(22, 88, 160, 0.98) 100%
+    );
+    box-shadow:
+      0 8px 16px rgba(0, 34, 70, 0.4),
+      inset 0 1px 0 rgba(112, 183, 246, 0.36),
+      inset 0 -1px 0 rgba(5, 40, 76, 0.28);
   }
 `;
 
