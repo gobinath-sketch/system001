@@ -68,10 +68,6 @@ const OpportunitySchema = new mongoose.Schema({
         type: Date
     },
 
-    sowDocument: {
-        type: String // File path or URL
-    },
-
     // ===== STAGE 4: PO FIELDS =====
 
     poDocument: {
@@ -95,10 +91,6 @@ const OpportunitySchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
-
-
-
-    // selectedVendor removed
 
     selectedSME: {
         type: mongoose.Schema.Types.ObjectId,
@@ -135,8 +127,6 @@ const OpportunitySchema = new mongoose.Schema({
             type: String,
             enum: ['Virtual', 'Classroom', 'Hybrid']
         },
-        // batchSize removed (use participants)
-        // batchSize removed (use participants)
         trainingLocation: { type: String }, // Only for Classroom/Hybrid
 
         // Vouchers-specific
@@ -201,7 +191,6 @@ const OpportunitySchema = new mongoose.Schema({
         year: { type: Number },
         monthOfTraining: { type: String },
         adhocId: { type: String },
-        // technology removed (redundant)
 
         billingClientName: { type: String },
         endClientName: { type: String },
@@ -210,7 +199,6 @@ const OpportunitySchema = new mongoose.Schema({
         courseName: { type: String },
         brand: { type: String },
 
-        // numberOfParticipants removed (redundant)
         attendanceParticipants: { type: Number },
 
         startDate: { type: Date },
@@ -280,14 +268,6 @@ const OpportunitySchema = new mongoose.Schema({
         gktRevenue: { type: Number, default: 0 },
         gktRevenuePerDay: { type: Number, default: 0 },
         grossProfitPercent: { type: Number, default: 0 }
-    },
-
-    // ===== CHECKPOINT 5: ROLE-BASED LOCKING & OWNERSHIP =====
-
-    fieldOwnership: {
-        // Track which fields are locked for which roles
-        salesLockedFields: [String], // Fields locked for Sales (filled by Delivery)
-        deliveryLockedFields: [String] // Fields locked for Delivery (filled by Sales)
     },
 
     // ===== FINANCE DETAILS (FINANCE MODULE) =====

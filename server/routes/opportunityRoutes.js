@@ -954,41 +954,7 @@ router.post('/:id/upload-po', protect, authorize('Sales Executive', 'Sales Manag
     }
 });
 
-// @route   POST /api/opportunities/:id/upload-sow
-// @desc    Upload SOW document (Stage 3/4)
-// @access  Private (Sales Executive, Sales Manager)
-router.post('/:id/upload-sow', protect, authorize('Sales Executive', 'Sales Manager'), upload.single('sow'), async (req, res) => {
-    try {
-        const opportunity = await Opportunity.findById(req.params.id);
 
-        if (!opportunity) {
-            return res.status(404).json({ message: 'Opportunity not found' });
-        }
-
-        if (!req.file) {
-            return res.status(400).json({ message: 'No file uploaded' });
-        }
-
-        opportunity.sowDocument = req.file.path;
-
-        opportunity.activityLog.push({
-            action: 'SOW Uploaded',
-            by: req.user._id,
-            role: req.user.role,
-            details: `SOW uploaded by ${req.user.name}`
-        });
-
-        await opportunity.save();
-
-        res.json({
-            message: 'SOW uploaded successfully',
-            sowDocument: opportunity.sowDocument,
-            progress: opportunity.progressPercentage
-        });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
 
 // @route   POST /api/opportunities/:id/upload-finance-doc
 // @desc    Upload finance-related document (PO, Invoice, etc.)
