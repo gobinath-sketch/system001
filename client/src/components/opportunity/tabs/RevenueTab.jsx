@@ -144,7 +144,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                 // Append required fields for PO upload
                 // Use formData if edited, otherwise fallback to opportunity data
                 const poVal = formData.poValue !== undefined && formData.poValue !== '' ? formData.poValue : (opportunity.poValue || 0);
-                const poDt = formData.poDate ? formData.poDate : (opportunity.commonDetails?.clientPODate || '');
+                const poDt = formData.poDate || opportunity.poDate || opportunity.commonDetails?.clientPODate || '';
 
                 specificTypFormData.append('poValue', poVal);
                 specificTypFormData.append('poDate', poDt);

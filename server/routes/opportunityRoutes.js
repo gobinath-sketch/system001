@@ -912,6 +912,7 @@ router.post('/:id/upload-po', protect, authorize('Sales Executive', 'Sales Manag
         opportunity.poDocument = req.file.path;
         opportunity.poValue = Number(poValue);
         opportunity.poDate = new Date(poDate);
+        opportunity.commonDetails.clientPODate = new Date(poDate);
 
         opportunity.activityLog.push({
             action: 'PO Uploaded',
