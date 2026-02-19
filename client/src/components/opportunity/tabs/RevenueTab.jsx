@@ -40,66 +40,17 @@ const RevenueTab = forwardRef(({
     poDate: ''
   });
 
-  // Helper to Recalculate Totals (Mirroring BillingTab logic for consistency)
+  // Helper to recalculate derived TOV from expense model.
   const recalculateTotals = data => {
-    const exp = {
-      ...(data.expenses || {})
+    const exp = { ...(data.expenses || {}) };
+    const common = { ...(data.commonDetails || {}) };
+
+    const parseCurrency = val => {
+      if (val === null || val === undefined || val === '') return 0;
+      const cleaned = String(val).replace(/,/g, '');
+      return parseFloat(cleaned) || 0;
     };
-    const common = {
-      ...(data.commonDetails || {})
-    };
 
-    // Expose handleSave to parent
-    useImperativeHandle(ref, () => ({
-        handleSave: async () => {
-            try {
-                const token = localStorage.getItem('token');
-
-                // 1. Update Opportunity Core Fields (poValue, invoiceValue)
-                await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, {
-                    poValue: parseFloat(formData.poValue) || 0,
-                    invoiceValue: parseFloat(formData.invoiceValue) || 0,
-                    // Also update financial details to ensure sync
-                    'financeDetails.clientReceivables.invoiceAmount': parseFloat(formData.invoiceValue) || 0,
-                    // Update PO Details (Sales can edit)
-                    'commonDetails.clientPONumber': formData.poNumber,
-                    'commonDetails.clientPODate': formData.poDate
-                }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                const uploadEntries = Object.entries(pendingUploads).filter(([, file]) => !!file);
-                if (uploadEntries.length > 0) {
-                    setUploading(true);
-                    for (const [type, file] of uploadEntries) {
-                        await uploadFileByType(file, type, token);
-                    }
-                    setPendingUploads({ po: null, invoice: null, proposal: null });
-                }
-
-                addToast('Changes saved successfully', 'success');
-                refreshData();
-                return true;
-            } catch (error) {
-                console.error('Error saving revenue details:', error);
-                addToast(`Failed to save details: ${error.response?.data?.message || error.message}`, 'error');
-                return false;
-            } finally {
-                setUploading(false);
-            }
-        },
-        handleCancel: () => {
-            setFormData({
-                poValue: opportunity.poValue || 0,
-                invoiceValue: opportunity.invoiceValue || 0
-            });
-            setPendingUploads({ po: null, invoice: null, proposal: null });
-        }
-    }));
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
     const expenseTypesList = ['trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs', 'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance'];
     const opEx = expenseTypesList.reduce((sum, key) => sum + parseCurrency(exp[key]), 0);
     const contingencyPercent = exp.contingencyPercent ?? 15;
@@ -107,16 +58,12 @@ const RevenueTab = forwardRef(({
     const marketingPercent = exp.marketingPercent ?? 0;
     const marketingAmount = opEx * marketingPercent / 100;
     const totalExpenses = opEx + contingencyAmount + marketingAmount;
-
-    // Profit logic (Cost Plus)
     const profitPercent = exp.targetGpPercent ?? 30;
     const profitAmount = totalExpenses * profitPercent / 100;
     const finalTov = totalExpenses + profitAmount;
+
     common.tov = Math.round(finalTov);
-    return {
-      ...data,
-      commonDetails: common
-    };
+    return { ...data, commonDetails: common };
   };
   useEffect(() => {
     if (opportunity) {
