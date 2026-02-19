@@ -48,10 +48,57 @@ const RevenueTab = forwardRef(({
     const common = {
       ...(data.commonDetails || {})
     };
-    const parseCurrency = val => {
-      if (!val) return 0;
-      const strVal = String(val).replace(/,/g, '');
-      return parseFloat(strVal) || 0;
+
+    // Expose handleSave to parent
+    useImperativeHandle(ref, () => ({
+        handleSave: async () => {
+            try {
+                const token = localStorage.getItem('token');
+
+                // 1. Update Opportunity Core Fields (poValue, invoiceValue)
+                await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, {
+                    poValue: parseFloat(formData.poValue) || 0,
+                    invoiceValue: parseFloat(formData.invoiceValue) || 0,
+                    // Also update financial details to ensure sync
+                    'financeDetails.clientReceivables.invoiceAmount': parseFloat(formData.invoiceValue) || 0,
+                    // Update PO Details (Sales can edit)
+                    'commonDetails.clientPONumber': formData.poNumber,
+                    'commonDetails.clientPODate': formData.poDate
+                }, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const uploadEntries = Object.entries(pendingUploads).filter(([, file]) => !!file);
+                if (uploadEntries.length > 0) {
+                    setUploading(true);
+                    for (const [type, file] of uploadEntries) {
+                        await uploadFileByType(file, type, token);
+                    }
+                    setPendingUploads({ po: null, invoice: null, proposal: null });
+                }
+
+                addToast('Changes saved successfully', 'success');
+                refreshData();
+                return true;
+            } catch (error) {
+                console.error('Error saving revenue details:', error);
+                addToast(`Failed to save details: ${error.response?.data?.message || error.message}`, 'error');
+                return false;
+            } finally {
+                setUploading(false);
+            }
+        },
+        handleCancel: () => {
+            setFormData({
+                poValue: opportunity.poValue || 0,
+                invoiceValue: opportunity.invoiceValue || 0
+            });
+            setPendingUploads({ po: null, invoice: null, proposal: null });
+        }
+    }));
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
     const expenseTypesList = ['trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs', 'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance'];
     const opEx = expenseTypesList.reduce((sum, key) => sum + parseCurrency(exp[key]), 0);

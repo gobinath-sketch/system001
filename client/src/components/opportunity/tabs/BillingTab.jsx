@@ -40,7 +40,7 @@ const BillingTab = forwardRef(({
 
   // Currency Constants
   const CONVERSION_RATE = currency === 'USD' ? 84 : 1;
-  const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '₹';
+  const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '\u20B9';
 
   // Helper to Recalculate Totals based on current state
   const recalculateTotals = data => {
@@ -371,7 +371,8 @@ const BillingTab = forwardRef(({
         }
         setPendingProposalFile(null);
         setPendingExpenseDocs({});
-        addToast('Expenses saved successfully', 'success');
+
+        addToast('Changes saved successfully', 'success');
         refreshData();
         return true;
       } catch (error) {
@@ -386,6 +387,7 @@ const BillingTab = forwardRef(({
       setPendingExpenseDocs({});
     }
   }));
+
   const handleChange = (section, field, value) => {
     setFormData(prev => {
       const newState = {
@@ -757,3 +759,4 @@ const BillingTab = forwardRef(({
         </div>;
 });
 export default BillingTab;
+
