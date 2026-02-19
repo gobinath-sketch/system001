@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import { validateMobile, validateEmail } from '../utils/validation';
+import { API_BASE } from '../config/api';
 const ClientPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -45,7 +46,7 @@ const ClientPage = () => {
     if (selectedClient && selectedClient.companyName.toLowerCase() === name.toLowerCase()) return;
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/api/clients/check-duplicate?name=${encodeURIComponent(name)}`, {
+      const res = await axios.get(`${API_BASE}/api/clients/check-duplicate?name=${encodeURIComponent(name)}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -95,7 +96,7 @@ const ClientPage = () => {
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/clients', {
+      const res = await axios.get(`${API_BASE}/api/clients`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -214,7 +215,7 @@ const ClientPage = () => {
       let res;
       if (selectedClient && selectedClient._id) {
         // Update existing client
-        res = await axios.put(`http://localhost:5000/api/clients/${selectedClient._id}`, formData, {
+        res = await axios.put(`${API_BASE}/api/clients/${selectedClient._id}`, formData, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -222,7 +223,7 @@ const ClientPage = () => {
         addToast('Client updated successfully', 'success');
       } else {
         // Create new client
-        res = await axios.post('http://localhost:5000/api/clients', formData, {
+        res = await axios.post(`${API_BASE}/api/clients`, formData, {
           headers: {
             Authorization: `Bearer ${token}`
           }

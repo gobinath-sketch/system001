@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { Search } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
+import { API_BASE } from '../config/api';
 const ProgramExecutionList = () => {
   const {
     socket
@@ -26,7 +27,7 @@ const ProgramExecutionList = () => {
   const fetchOpportunities = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/opportunities', {
+      const res = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import UploadButton from '../ui/UploadButton';
 import { useToast } from '../../context/ToastContext';
 import { validateMobile, validateEmail, validatePAN, validateGST, validateBankAccount, validateIFSC } from '../../utils/validation';
+import { API_BASE } from '../../config/api';
 const AddSMEModal = ({
   isOpen,
   onClose,
@@ -76,7 +77,7 @@ const AddSMEModal = ({
       setFiles({
         sowDocument: null,
         ndaDocument: null,
-        contentUpload: null,
+        sme_profile: null,
         idProof: null,
         panDocument: null,
         gstDocument: null
@@ -228,6 +229,8 @@ const AddSMEModal = ({
     Object.keys(formData).forEach(key => {
       if (key === 'bankDetails') {
         data.append('bankDetails', JSON.stringify(formData.bankDetails));
+      } else if (key === 'yearsExperience') {
+        data.append('yearsExperience', Number(formData.yearsExperience || 0));
       } else {
         data.append(key, formData[key]);
       }
@@ -237,6 +240,17 @@ const AddSMEModal = ({
         data.append(key, files[key]);
       }
     });
+
+    // Backward compatibility: older SME docs may still have `contentUpload`
+    // in DB instead of `sme_profile`. Preserve it during edit when no new file is selected.
+    if (
+      smeToEdit &&
+      !files.sme_profile &&
+      !smeToEdit?.sme_profile &&
+      smeToEdit?.contentUpload
+    ) {
+      data.append('sme_profile', smeToEdit.contentUpload);
+    }
     try {
       const token = localStorage.getItem('token');
       const config = {
@@ -247,10 +261,10 @@ const AddSMEModal = ({
       };
       let res;
       if (smeToEdit) {
-        res = await axios.put(`http://localhost:5000/api/smes/${smeToEdit._id}`, data, config);
+        res = await axios.put(`${API_BASE}/api/smes/${smeToEdit._id}`, data, config);
         addToast('SME updated successfully!', 'success');
       } else {
-        res = await axios.post('http://localhost:5000/api/smes', data, config);
+        res = await axios.post(`${API_BASE}/api/smes`, data, config);
         addToast('SME created successfully!', 'success');
       }
       onSuccess(res.data);
@@ -414,7 +428,11 @@ const AddSMEModal = ({
                                                 <input type="file" id={doc.id} name={doc.name} onChange={handleFileChange} className="hidden" accept={doc.accept} />
                                                 <div className="flex items-center gap-2">
                                                     <UploadButton onClick={() => document.getElementById(doc.id).click()} type="button" size="sm">
-                                                        {files[doc.name] ? 'Selected' : smeToEdit?.[doc.name] ? 'Replace' : 'Upload'}
+                                                        {files[doc.name]
+                  ? 'Selected'
+                  : smeToEdit?.[doc.name] || (doc.name === 'sme_profile' && smeToEdit?.contentUpload)
+                    ? 'Replace'
+                    : 'Upload'}
                                                     </UploadButton>
                                                     {files[doc.name] && <span className="text-xs text-green-600 truncate max-w-[100px]">{files[doc.name].name}</span>}
                                                 </div>

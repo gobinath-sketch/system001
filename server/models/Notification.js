@@ -69,6 +69,11 @@ NotificationSchema.post('save', function (doc) {
     }
 });
 
+// Query-performance indexes
+NotificationSchema.index({ recipientId: 1, createdAt: -1 });
+NotificationSchema.index({ recipientId: 1, isRead: 1, createdAt: -1 });
+NotificationSchema.index({ opportunityId: 1, createdAt: -1 });
+
 // Emit real-time events for bulk inserts as well (insertMany does not trigger save middleware).
 NotificationSchema.post('insertMany', function (docs) {
     if (!global.io || !Array.isArray(docs)) return;

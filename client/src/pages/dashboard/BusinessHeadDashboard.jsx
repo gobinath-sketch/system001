@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import SalesExecutiveDashboard from './SalesExecutiveDashboard';
+import { API_BASE } from '../../config/api';
 const BusinessHeadDashboard = () => {
   const {
     user
@@ -17,7 +18,7 @@ const BusinessHeadDashboard = () => {
   const fetchTeamStructure = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/dashboard/business-head/team-structure', {
+      const response = await axios.get(`${API_BASE}/api/dashboard/business-head/team-structure`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

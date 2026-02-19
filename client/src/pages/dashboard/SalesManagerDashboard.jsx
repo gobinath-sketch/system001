@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import SalesExecutiveDashboard from './SalesExecutiveDashboard';
+import { API_BASE } from '../../config/api';
 const SalesManagerDashboard = () => {
   const {
     user
@@ -18,7 +19,7 @@ const SalesManagerDashboard = () => {
       const headers = {
         Authorization: `Bearer ${token}`
       };
-      const teamRes = await axios.get('http://localhost:5000/api/dashboard/manager/team-members', {
+      const teamRes = await axios.get(`${API_BASE}/api/dashboard/manager/team-members`, {
         headers
       });
       setTeamMembers(teamRes.data || []);

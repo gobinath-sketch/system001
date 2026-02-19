@@ -7,6 +7,7 @@ import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import AddSMEModal from '../components/sme/AddSMEModal';
 import ViewSMEModal from '../components/sme/ViewSMEModal';
+import { API_BASE } from '../config/api';
 const SMEManagement = () => {
   const navigate = useNavigate();
   useAuth();
@@ -50,7 +51,7 @@ const SMEManagement = () => {
       const queryParams = new URLSearchParams();
       if (filters.search) queryParams.append('search', filters.search);
       if (filters.type) queryParams.append('type', filters.type);
-      const res = await axios.get(`http://localhost:5000/api/smes?${queryParams}`, {
+      const res = await axios.get(`${API_BASE}/api/smes?${queryParams}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -90,7 +91,7 @@ const SMEManagement = () => {
     if (!window.confirm('Are you sure you want to delete this SME?')) return;
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/smes/${id}`, {
+      await axios.delete(`${API_BASE}/api/smes/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

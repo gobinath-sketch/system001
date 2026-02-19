@@ -76,6 +76,7 @@ const CustomTooltip = ({
   return null;
 };
 import { TECHNOLOGIES, LOGO_MAP } from '../../utils/TechnologyConstants';
+import { API_BASE } from '../../config/api';
 const RevenueAnalyticsRow = ({
   allOpps,
   filter = 'Yearly',
@@ -543,7 +544,7 @@ const RevenueAnalyticsRow = ({
                           try {
                             const token = localStorage.getItem('token');
                             const amountInInr = currency === 'INR' ? parseFloat(targetValue) : parseFloat(targetValue) * EXCHANGE_RATE;
-                            await axios.put(`http://localhost:5000/api/dashboard/manager/set-target/${member._id}`, {
+                            await axios.put(`${API_BASE}/api/dashboard/manager/set-target/${member._id}`, {
                               period: targetPeriod,
                               year: new Date().getFullYear(),
                               amount: amountInInr

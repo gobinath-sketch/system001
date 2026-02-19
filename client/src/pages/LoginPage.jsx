@@ -48,7 +48,7 @@ const LoginPage = () => {
                 <video autoPlay loop muted playsInline className="absolute top-0 left-0 w-full h-full object-cover z-0" style={{
         transform: 'translateX(-15%)'
       }}>
-                    <source src="/login-bg.mp4" type="video/mp4" />
+                    <source src={`${import.meta.env.BASE_URL}login-bg.mp4`} type="video/mp4" />
                 </video>
 
                 {/* Overlay for better readability */}
@@ -80,7 +80,7 @@ const LoginPage = () => {
                     </style>
                     <div className="text-center mb-8">
                         <div className="flex flex-col items-center justify-center mb-4">
-                            <img src="/login-logo.png" alt="Global Knowledge" className="h-20 w-auto object-contain mb-4" />
+                            <img src={`${import.meta.env.BASE_URL}login-logo.png`} alt="Global Knowledge" className="h-20 w-auto object-contain mb-4" />
                             <h2 className="text-xl sm:text-2xl font-bold text-gray-800 tracking-wide text-center">Global Knowledge Technologies</h2>
                         </div>
                     </div>

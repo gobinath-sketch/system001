@@ -2,6 +2,7 @@ import axios from 'axios';
 import { AlertCircle, ArrowRight } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../../config/api';
 const EscalationWidget = ({
   opportunities,
   onEscalate
@@ -41,7 +42,7 @@ const EscalationWidget = ({
     opp.financials?.totalExpense || 0;
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/opportunities/${opp._id}/escalate`, {}, {
+      await axios.post(`${API_BASE}/api/opportunities/${opp._id}/escalate`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }

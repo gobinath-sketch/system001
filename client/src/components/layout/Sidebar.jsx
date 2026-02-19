@@ -229,7 +229,7 @@ const Sidebar = ({
                 <div className={`flex items-center p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
                     {!isCollapsed && <>
                             <div className="mr-3 w-11 h-11 rounded-md overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
-                                {avatarUrl ? <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" /> : <img src="/profile-default.svg" alt="Logo" className="w-full h-full object-contain p-1 drop-shadow-lg" />}
+                    {avatarUrl ? <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" /> : <img src={`${import.meta.env.BASE_URL}profile-default.svg`} alt="Logo" className="w-full h-full object-contain p-1 drop-shadow-lg" />}
                             </div>
                             <div className="flex-1 overflow-hidden mr-3">
                                 <h3 className="text-white font-bold text-sm truncate">{user?.name || 'User'}</h3>

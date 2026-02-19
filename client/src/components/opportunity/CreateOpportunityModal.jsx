@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext';
 import AddClientModal from '../clients/AddClientModal';
 import SearchableSelect from '../ui/SearchableSelect';
 import { getTechnologyOptions } from '../../utils/TechnologyConstants';
+import { API_BASE } from '../../config/api';
 const CreateOpportunityModal = ({
   isOpen,
   onClose,
@@ -65,7 +66,7 @@ const CreateOpportunityModal = ({
   const fetchClients = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/clients', {
+      const res = await axios.get(`${API_BASE}/api/clients`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -160,7 +161,7 @@ const CreateOpportunityModal = ({
       if (requirementDoc) {
         payload.append('requirementDocument', requirementDoc);
       }
-      await axios.post('http://localhost:5000/api/opportunities', payload, {
+      await axios.post(`${API_BASE}/api/opportunities`, payload, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

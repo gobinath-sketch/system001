@@ -7,6 +7,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { useCurrency } from '../../../context/CurrencyContext';
 import UploadButton from '../../ui/UploadButton';
 import FinancialSummary from '../sections/FinancialSummary';
+import { API_BASE } from '../../../config/api';
 const RevenueTab = forwardRef(({
   opportunity,
   canEdit,
@@ -40,66 +41,17 @@ const RevenueTab = forwardRef(({
     poDate: ''
   });
 
-  // Helper to Recalculate Totals (Mirroring BillingTab logic for consistency)
+  // Helper to recalculate derived TOV from expense model.
   const recalculateTotals = data => {
-    const exp = {
-      ...(data.expenses || {})
+    const exp = { ...(data.expenses || {}) };
+    const common = { ...(data.commonDetails || {}) };
+
+    const parseCurrency = val => {
+      if (val === null || val === undefined || val === '') return 0;
+      const cleaned = String(val).replace(/,/g, '');
+      return parseFloat(cleaned) || 0;
     };
-    const common = {
-      ...(data.commonDetails || {})
-    };
 
-    // Expose handleSave to parent
-    useImperativeHandle(ref, () => ({
-        handleSave: async () => {
-            try {
-                const token = localStorage.getItem('token');
-
-                // 1. Update Opportunity Core Fields (poValue, invoiceValue)
-                await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, {
-                    poValue: parseFloat(formData.poValue) || 0,
-                    invoiceValue: parseFloat(formData.invoiceValue) || 0,
-                    // Also update financial details to ensure sync
-                    'financeDetails.clientReceivables.invoiceAmount': parseFloat(formData.invoiceValue) || 0,
-                    // Update PO Details (Sales can edit)
-                    'commonDetails.clientPONumber': formData.poNumber,
-                    'commonDetails.clientPODate': formData.poDate
-                }, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                const uploadEntries = Object.entries(pendingUploads).filter(([, file]) => !!file);
-                if (uploadEntries.length > 0) {
-                    setUploading(true);
-                    for (const [type, file] of uploadEntries) {
-                        await uploadFileByType(file, type, token);
-                    }
-                    setPendingUploads({ po: null, invoice: null, proposal: null });
-                }
-
-                addToast('Changes saved successfully', 'success');
-                refreshData();
-                return true;
-            } catch (error) {
-                console.error('Error saving revenue details:', error);
-                addToast(`Failed to save details: ${error.response?.data?.message || error.message}`, 'error');
-                return false;
-            } finally {
-                setUploading(false);
-            }
-        },
-        handleCancel: () => {
-            setFormData({
-                poValue: opportunity.poValue || 0,
-                invoiceValue: opportunity.invoiceValue || 0
-            });
-            setPendingUploads({ po: null, invoice: null, proposal: null });
-        }
-    }));
-
-    const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-    };
     const expenseTypesList = ['trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs', 'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance'];
     const opEx = expenseTypesList.reduce((sum, key) => sum + parseCurrency(exp[key]), 0);
     const contingencyPercent = exp.contingencyPercent ?? 15;
@@ -107,16 +59,12 @@ const RevenueTab = forwardRef(({
     const marketingPercent = exp.marketingPercent ?? 0;
     const marketingAmount = opEx * marketingPercent / 100;
     const totalExpenses = opEx + contingencyAmount + marketingAmount;
-
-    // Profit logic (Cost Plus)
     const profitPercent = exp.targetGpPercent ?? 30;
     const profitAmount = totalExpenses * profitPercent / 100;
     const finalTov = totalExpenses + profitAmount;
+
     common.tov = Math.round(finalTov);
-    return {
-      ...data,
-      commonDetails: common
-    };
+    return { ...data, commonDetails: common };
   };
   useEffect(() => {
     if (opportunity) {
@@ -140,17 +88,17 @@ const RevenueTab = forwardRef(({
     let endpoint = '';
     const specificTypFormData = new FormData();
     if (type === 'po') {
-      endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-po`;
+      endpoint = `${API_BASE}/api/opportunities/${opportunity._id}/upload-po`;
       specificTypFormData.append('po', file);
       const poVal = formData.poValue !== undefined && formData.poValue !== '' ? formData.poValue : opportunity.poValue || 0;
       const poDt = formData.poDate || opportunity.poDate || opportunity.commonDetails?.clientPODate || '';
       specificTypFormData.append('poValue', poVal);
       specificTypFormData.append('poDate', poDt);
     } else if (type === 'proposal') {
-      endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
+      endpoint = `${API_BASE}/api/opportunities/${opportunity._id}/upload-proposal`;
       specificTypFormData.append('proposal', file);
     } else {
-      endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`;
+      endpoint = `${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`;
       specificTypFormData.append('invoice', file);
     }
     await axios.post(endpoint, specificTypFormData, {
@@ -168,7 +116,7 @@ const RevenueTab = forwardRef(({
         const token = localStorage.getItem('token');
 
         // 1. Update Opportunity Core Fields (poValue, invoiceValue)
-        await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, {
+        await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, {
           poValue: parseFloat(formData.poValue) || 0,
           invoiceValue: parseFloat(formData.invoiceValue) || 0,
           // Also update financial details to ensure sync
@@ -193,7 +141,7 @@ const RevenueTab = forwardRef(({
             proposal: null
           });
         }
-        addToast('Revenue details updated successfully', 'success');
+        addToast('Changes saved successfully', 'success');
         refreshData();
         return true;
       } catch (error) {
@@ -320,7 +268,7 @@ const RevenueTab = forwardRef(({
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">PO Document</label>
                                 <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px]">
-                                    {opportunity.poDocument ? <a href={`http://localhost:5000/${opportunity.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center font-medium truncate max-w-[100px]" title="View Document">
+                                    {opportunity.poDocument ? <a href={`${API_BASE}/${opportunity.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center font-medium truncate max-w-[100px]" title="View Document">
                                             <CheckCircle size={14} className="mr-1 flex-shrink-0" /> View
                                         </a> : <span className="text-xs text-gray-400 italic">No Doc</span>}
 
@@ -367,7 +315,7 @@ const RevenueTab = forwardRef(({
                             <div>
                                 <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Doc</label>
                                 <div className="bg-gray-50 p-2 rounded border border-gray-100 flex items-center justify-between min-h-[38px]">
-                                    {opportunity.invoiceDocument ? <a href={`http://localhost:5000/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline text-xs flex items-center font-bold truncate max-w-[100px]" title="View Document">
+                                    {opportunity.invoiceDocument ? <a href={`${API_BASE}/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline text-xs flex items-center font-bold truncate max-w-[100px]" title="View Document">
                                             <CheckCircle size={14} className="mr-1 flex-shrink-0" /> View
                                         </a> : <span className="text-xs text-gray-400 italic">No Doc</span>}
 

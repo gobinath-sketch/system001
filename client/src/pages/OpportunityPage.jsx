@@ -8,6 +8,7 @@ import { useSocket } from '../context/SocketContext';
 import GPReportSection from '../components/reports/GPReportSection';
 import CreateOpportunityModal from '../components/opportunity/CreateOpportunityModal';
 import AlertModal from '../components/ui/AlertModal';
+import { API_BASE } from '../config/api';
 const OpportunityPage = () => {
   const navigate = useNavigate();
   const location = useLocation(); // Add useLocation
@@ -73,7 +74,7 @@ const OpportunityPage = () => {
   const fetchOpportunities = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/opportunities', {
+      const res = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -94,7 +95,7 @@ const OpportunityPage = () => {
   const handleStatusChange = async (oppId, newStatus) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/opportunities/${oppId}/status`, {
+      await axios.put(`${API_BASE}/api/opportunities/${oppId}/status`, {
         status: newStatus
       }, {
         headers: {

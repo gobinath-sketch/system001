@@ -4,6 +4,7 @@ import { Download, TrendingUp, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
+import { API_BASE } from '../../config/api';
 const GPReportSection = () => {
   const {
     socket
@@ -122,7 +123,7 @@ const GPReportSection = () => {
         params.append('type', 'fiscal_year');
         params.append('year', fiscalYearStart);
       }
-      const res = await axios.get(`http://localhost:5000/api/reports/gp-analysis?${params.toString()}`, {
+      const res = await axios.get(`${API_BASE}/api/reports/gp-analysis?${params.toString()}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

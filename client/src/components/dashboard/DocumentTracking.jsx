@@ -3,6 +3,7 @@ import axios from 'axios';
 import { CheckCircle, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useSocket } from '../../context/SocketContext';
+import { API_BASE } from '../../config/api';
 const DocumentTracking = () => {
   const navigate = useNavigate();
   const {
@@ -26,7 +27,7 @@ const DocumentTracking = () => {
   const fetchDocuments = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/dashboard/manager/documents', {
+      const response = await axios.get(`${API_BASE}/api/dashboard/manager/documents`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

@@ -350,6 +350,18 @@ const OpportunitySchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 
+// Query-performance indexes
+OpportunitySchema.index({ createdBy: 1, createdAt: -1 });
+OpportunitySchema.index({ createdBy: 1, progressPercentage: 1 });
+OpportunitySchema.index({ createdBy: 1, statusStage: 1 });
+OpportunitySchema.index({ createdBy: 1, type: 1, createdAt: -1 });
+OpportunitySchema.index({ client: 1, createdAt: -1 });
+OpportunitySchema.index({ selectedSME: 1, createdAt: -1 });
+OpportunitySchema.index({ approvalStatus: 1, createdAt: -1 });
+OpportunitySchema.index({ 'commonDetails.year': 1, 'commonDetails.monthOfTraining': 1 });
+OpportunitySchema.index({ 'commonDetails.sales': 1, createdAt: -1 });
+OpportunitySchema.index({ type: 1, createdAt: -1 });
+
 // ===== PRE-SAVE HOOKS =====
 
 OpportunitySchema.pre('save', async function () {

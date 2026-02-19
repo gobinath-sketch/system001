@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Target, TrendingUp, AlertTriangle } from 'lucide-react';
 import { useSocket } from '../../context/SocketContext';
+import { API_BASE } from '../../config/api';
 const TargetProgress = ({
   userId
 }) => {
@@ -18,7 +19,7 @@ const TargetProgress = ({
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/api/dashboard/performance/${userId}?timeline=${timeline}`, {
+      const res = await axios.get(`${API_BASE}/api/dashboard/performance/${userId}?timeline=${timeline}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

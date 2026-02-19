@@ -9,6 +9,7 @@ import AlertModal from '../../ui/AlertModal';
 import BillingDetails from '../sections/BillingDetails';
 import OperationalExpensesBreakdown from '../sections/OperationalExpensesBreakdown';
 import FinancialSummary from '../sections/FinancialSummary';
+import { API_BASE } from '../../../config/api';
 const BillingTab = forwardRef(({
   opportunity,
   isEditing,
@@ -147,7 +148,7 @@ const BillingTab = forwardRef(({
       };
 
       // API 1: Save Opportunity Changes
-      await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, {
+      await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, {
         expenses: {
           ...data.expenses,
           ...overrides
@@ -160,7 +161,7 @@ const BillingTab = forwardRef(({
       });
 
       // API 2: Trigger Escalation
-      await axios.post(`http://localhost:5000/api/approvals/escalate`, {
+      await axios.post(`${API_BASE}/api/approvals/escalate`, {
         opportunityId: opportunity._id,
         ...params
       }, {
@@ -342,7 +343,7 @@ const BillingTab = forwardRef(({
           commonDetails: sanitizedCommonDetails,
           financeDetails: financeDetails
         };
-        await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, payload, {
+        await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -350,7 +351,7 @@ const BillingTab = forwardRef(({
         if (pendingProposalFile) {
           const proposalData = new FormData();
           proposalData.append('proposal', pendingProposalFile);
-          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`, proposalData, {
+          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-proposal`, proposalData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -362,7 +363,7 @@ const BillingTab = forwardRef(({
           const expenseData = new FormData();
           expenseData.append('document', file);
           expenseData.append('category', category);
-          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
+          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -431,10 +432,10 @@ const BillingTab = forwardRef(({
 
       // Differentiate between generic 'expense' docs and the 'proposal' doc
       if (expenseKey === 'proposal') {
-        endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
+        endpoint = `${API_BASE}/api/opportunities/${opportunity._id}/upload-proposal`;
         uploadFormData.append('proposal', file); // Use 'proposal' as field name
       } else {
-        endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`;
+        endpoint = `${API_BASE}/api/opportunities/${opportunity._id}/upload-expense-doc`;
         // Use 'document' as field name matching backend for expenses
         uploadFormData.append('document', file);
         uploadFormData.append('category', expenseKey);
@@ -580,7 +581,7 @@ const BillingTab = forwardRef(({
                                 {/* Proposal Document Action */}
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                     {opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
-                                            <a href={`http://localhost:5000/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900 p-1.5 bg-white/80 rounded-full shadow-sm border border-emerald-200 transition-all hover:scale-110" title="View Proposal">
+                                            <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900 p-1.5 bg-white/80 rounded-full shadow-sm border border-emerald-200 transition-all hover:scale-110" title="View Proposal">
                                                 <FileText size={18} />
                                             </a>
                                             {canEditExecution && <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity">

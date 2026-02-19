@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import SetTargetModal from '../components/dashboard/SetTargetModal';
 import DocumentTracking from '../components/dashboard/DocumentTracking';
+import { API_BASE } from '../config/api';
 const ManagerDashboard = ({
   user: userProp
 }) => {
@@ -44,11 +45,11 @@ const ManagerDashboard = ({
       const headers = {
         Authorization: `Bearer ${token}`
       };
-      const statsRes = await axios.get('http://localhost:5000/api/dashboard/manager/stats', {
+      const statsRes = await axios.get(`${API_BASE}/api/dashboard/manager/stats`, {
         headers
       });
       setStats(statsRes.data);
-      const perfRes = await axios.get(`http://localhost:5000/api/dashboard/manager/team-performance?timeline=${timeline}`, {
+      const perfRes = await axios.get(`${API_BASE}/api/dashboard/manager/team-performance?timeline=${timeline}`, {
         headers
       });
       setTeamPerformance(perfRes.data);
