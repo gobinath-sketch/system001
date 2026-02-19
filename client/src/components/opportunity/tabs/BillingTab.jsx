@@ -16,6 +16,8 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
     const { user } = useAuth();
     const { currency } = useCurrency();
     const [uploading, setUploading] = useState(null);
+    const [pendingProposalFile, setPendingProposalFile] = useState(null);
+    const [pendingExpenseDocs, setPendingExpenseDocs] = useState({});
     const [escalating, setEscalating] = useState(false);
     const [formData, setFormData] = useState({});
 
@@ -166,29 +168,11 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
         // Immediate State Update for UI responsiveness
         handleChange('expenses', 'targetGpPercent', value);
 
-        // Validation Logic
-        if (value >= 15) {
-            // No approval needed
-        } else if (value >= 10 && value < 15) {
-            confirmAction(
-                "Manager Approval Required",
-                "GP Margin is between 10-15%. This requires Manager approval. Do you want to proceed?",
-                // On Confirm: Escalate
-                () => handleEscalate('gp', { targetGpPercent: value }),
-                // On Cancel: Revert to default (30%)
-                () => handleChange('expenses', 'targetGpPercent', 30),
-                'info'
-            );
+        // Keep changes local until user clicks Save Changes.
+        if (value >= 10 && value < 15) {
+            addToast('GP between 10-15%. Approval will be triggered after Save Changes.', 'info');
         } else if (value < 10) {
-            confirmAction(
-                "Director Approval Required",
-                "GP Margin is below 10%. This requires Director approval. Do you want to proceed?",
-                // On Confirm: Escalate
-                () => handleEscalate('gp', { targetGpPercent: value }),
-                // On Cancel: Revert to default (30%)
-                () => handleChange('expenses', 'targetGpPercent', 30),
-                'warning'
-            );
+            addToast('GP below 10%. Approval will be triggered after Save Changes.', 'warning');
         }
     };
 
@@ -196,18 +180,9 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
         // Immediate Update
         handleChange('expenses', 'contingencyPercent', value);
 
-        if (value >= 10) {
-            // No approval
-        } else if (value < 10) {
-            confirmAction(
-                "Manager Approval Required",
-                "Contingency is below 10%. This requires Manager approval. Do you want to proceed?",
-                // On Confirm: Escalate
-                () => handleEscalate('contingency', { contingencyPercent: value }),
-                // On Cancel: Revert to default (15%)
-                () => handleChange('expenses', 'contingencyPercent', 15),
-                'warning'
-            );
+        // Keep changes local until user clicks Save Changes.
+        if (value < 10) {
+            addToast('Contingency below 10%. Approval will be triggered after Save Changes.', 'warning');
         }
     };
 
@@ -351,6 +326,31 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
 
+                if (pendingProposalFile) {
+                    const proposalData = new FormData();
+                    proposalData.append('proposal', pendingProposalFile);
+                    await axios.post(
+                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`,
+                        proposalData,
+                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+                    );
+                }
+
+                for (const [category, file] of Object.entries(pendingExpenseDocs)) {
+                    if (!file) continue;
+                    const expenseData = new FormData();
+                    expenseData.append('document', file);
+                    expenseData.append('category', category);
+                    await axios.post(
+                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`,
+                        expenseData,
+                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+                    );
+                }
+
+                setPendingProposalFile(null);
+                setPendingExpenseDocs({});
+
                 addToast('Expenses saved successfully', 'success');
                 refreshData();
                 return true;
@@ -362,6 +362,8 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
         },
         handleCancel: () => {
             setFormData(JSON.parse(JSON.stringify(opportunity)));
+            setPendingProposalFile(null);
+            setPendingExpenseDocs({});
         }
     }));
 
@@ -394,6 +396,16 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
     const handleProposalUpload = async (e, expenseKey) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        if (isEditing) {
+            if (expenseKey === 'proposal') {
+                setPendingProposalFile(file);
+            } else {
+                setPendingExpenseDocs(prev => ({ ...prev, [expenseKey]: file }));
+            }
+            addToast(`${expenseKey === 'proposal' ? 'Proposal' : 'Document'} selected. It will upload when you click Save Changes.`, 'info');
+            return;
+        }
 
         setUploading(expenseKey);
         try {

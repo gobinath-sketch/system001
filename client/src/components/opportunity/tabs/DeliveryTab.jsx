@@ -18,6 +18,9 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
     const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [expenseUploading, setExpenseUploading] = useState(null);
+    const [pendingInvoiceFile, setPendingInvoiceFile] = useState(null);
+    const [pendingExpenseDocs, setPendingExpenseDocs] = useState({});
+    const [pendingDeliveryDocs, setPendingDeliveryDocs] = useState({});
     const [isSMEModalOpen, setIsSMEModalOpen] = useState(false);
 
     const [formData, setFormData] = useState({});
@@ -112,6 +115,47 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                     { headers: { Authorization: `Bearer ${token}` } }
                 );
 
+                if (pendingInvoiceFile) {
+                    const invoiceData = new FormData();
+                    invoiceData.append('invoice', pendingInvoiceFile);
+                    await axios.post(
+                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`,
+                        invoiceData,
+                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+                    );
+                }
+
+                for (const [category, file] of Object.entries(pendingExpenseDocs)) {
+                    if (!file) continue;
+                    const expenseData = new FormData();
+                    expenseData.append('document', file);
+                    expenseData.append('category', category);
+                    await axios.post(
+                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`,
+                        expenseData,
+                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+                    );
+                }
+
+                for (const [type, file] of Object.entries(pendingDeliveryDocs)) {
+                    if (!file) continue;
+                    const deliveryData = new FormData();
+                    deliveryData.append('document', file);
+                    deliveryData.append('type', type);
+                    if (type === 'sme_profile' && formData.selectedSME) {
+                        deliveryData.append('smeId', formData.selectedSME);
+                    }
+                    await axios.post(
+                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-delivery-doc`,
+                        deliveryData,
+                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+                    );
+                }
+
+                setPendingInvoiceFile(null);
+                setPendingExpenseDocs({});
+                setPendingDeliveryDocs({});
+
                 addToast('Changes saved successfully', 'success');
                 refreshData();
                 return true;
@@ -133,6 +177,9 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                 // selectedVendor removed
                 selectedSME: typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME?._id : opportunity.selectedSME
             });
+            setPendingInvoiceFile(null);
+            setPendingExpenseDocs({});
+            setPendingDeliveryDocs({});
         }
     }));
 
@@ -196,6 +243,12 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
         const file = e.target.files[0];
         if (!file) return;
 
+        if (isEditing) {
+            setPendingInvoiceFile(file);
+            addToast('Invoice selected. It will upload when you click Save Changes.', 'info');
+            return;
+        }
+
         setUploading(true);
         try {
             const token = localStorage.getItem('token');
@@ -223,6 +276,12 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
     const handleProposalUpload = async (e, expenseKey) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        if (isEditing) {
+            setPendingExpenseDocs(prev => ({ ...prev, [expenseKey]: file }));
+            addToast('Document selected. It will upload when you click Save Changes.', 'info');
+            return;
+        }
 
         setExpenseUploading(expenseKey);
         try {
@@ -252,6 +311,12 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
     const handleDeliveryDocUpload = async (e, type) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        if (isEditing) {
+            setPendingDeliveryDocs(prev => ({ ...prev, [type]: file }));
+            addToast(`${type} selected. It will upload when you click Save Changes.`, 'info');
+            return;
+        }
 
         setUploading(true);
         try {

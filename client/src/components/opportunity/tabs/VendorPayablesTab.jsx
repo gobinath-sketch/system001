@@ -9,6 +9,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
     const { addToast } = useToast();
     const { currency } = useCurrency();
     const [uploading, setUploading] = useState(false);
+    const [pendingUploads, setPendingUploads] = useState({});
 
     // Initial State Helpers
     const defaultDetailed = {
@@ -203,42 +204,8 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
         const file = e.target.files[0];
         if (!file) return;
 
-        setUploading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const formData = new FormData();
-            formData.append('document', file);
-            formData.append('category', category); // e.g. 'trainer', 'perDiem'
-            formData.append('docType', docType); // e.g. 'poDocument', 'document'
-
-            const res = await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-finance-doc`, formData, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            const updatedVP = res.data.vendorPayables;
-
-            // Update local state with the returned file path
-            setVendorData(prev => {
-                if (['perDiem', 'other'].includes(category)) {
-                    return { ...prev, [category]: { ...prev[category], document: updatedVP[category].document } };
-                } else {
-                    return {
-                        ...prev,
-                        detailed: {
-                            ...prev.detailed,
-                            [category]: { ...prev.detailed[category], [docType]: updatedVP.detailed[category][docType] }
-                        }
-                    };
-                }
-            });
-
-            addToast('Document uploaded successfully', 'success');
-        } catch (error) {
-            console.error('Upload failed', error);
-            addToast('Failed to upload document', 'error');
-        } finally {
-            setUploading(false);
-        }
+        setPendingUploads(prev => ({ ...prev, [`${category}:${docType}`]: file }));
+        addToast('Document selected. It will upload when you click Save Changes.', 'info');
     };
 
     // Expose handleSave to parent
@@ -258,6 +225,23 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
+                const uploadEntries = Object.entries(pendingUploads);
+                if (uploadEntries.length > 0) {
+                    setUploading(true);
+                    for (const [key, file] of uploadEntries) {
+                        if (!file) continue;
+                        const [category, docType] = key.split(':');
+                        const formData = new FormData();
+                        formData.append('document', file);
+                        formData.append('category', category);
+                        formData.append('docType', docType);
+                        await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-finance-doc`, formData, {
+                            headers: { Authorization: `Bearer ${token}` }
+                        });
+                    }
+                    setPendingUploads({});
+                }
+
                 addToast('Vendor Payables saved successfully', 'success');
                 if (refreshData) refreshData();
                 return true;
@@ -265,10 +249,13 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                 console.error('Error saving vendor payables:', err);
                 addToast('Failed to save details', 'error');
                 return false;
+            } finally {
+                setUploading(false);
             }
         },
         handleCancel: () => {
             // Reset logic if needed, or just do nothing as page reload/fetch handles it
+            setPendingUploads({});
             if (refreshData) refreshData();
         }
     }));

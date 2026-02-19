@@ -14,6 +14,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
     const { user } = useAuth();
     const { currency } = useCurrency();
     const [uploading, setUploading] = useState(false);
+    const [pendingUploads, setPendingUploads] = useState({ po: null, invoice: null, proposal: null });
 
     // Check if user is Sales (Invoice fields should be read-only for Sales)
     const isSales = user?.role === 'Sales Executive' || user?.role === 'Sales Manager' || user?.role === 'Business Head';
@@ -81,6 +82,30 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
 
     const USD_TO_INR = 83; // Conversion rate
 
+    const uploadFileByType = async (file, type, token) => {
+        let endpoint = '';
+        const specificTypFormData = new FormData();
+
+        if (type === 'po') {
+            endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-po`;
+            specificTypFormData.append('po', file);
+            const poVal = formData.poValue !== undefined && formData.poValue !== '' ? formData.poValue : (opportunity.poValue || 0);
+            const poDt = formData.poDate || opportunity.poDate || opportunity.commonDetails?.clientPODate || '';
+            specificTypFormData.append('poValue', poVal);
+            specificTypFormData.append('poDate', poDt);
+        } else if (type === 'proposal') {
+            endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
+            specificTypFormData.append('proposal', file);
+        } else {
+            endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`;
+            specificTypFormData.append('invoice', file);
+        }
+
+        await axios.post(endpoint, specificTypFormData, {
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+        });
+    };
+
     // Expose handleSave to parent
     useImperativeHandle(ref, () => ({
         handleSave: async () => {
@@ -100,6 +125,15 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
+                const uploadEntries = Object.entries(pendingUploads).filter(([, file]) => !!file);
+                if (uploadEntries.length > 0) {
+                    setUploading(true);
+                    for (const [type, file] of uploadEntries) {
+                        await uploadFileByType(file, type, token);
+                    }
+                    setPendingUploads({ po: null, invoice: null, proposal: null });
+                }
+
                 addToast('Revenue details updated successfully', 'success');
                 refreshData();
                 return true;
@@ -107,6 +141,8 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                 console.error('Error saving revenue details:', error);
                 addToast(`Failed to save details: ${error.response?.data?.message || error.message}`, 'error');
                 return false;
+            } finally {
+                setUploading(false);
             }
         },
         handleCancel: () => {
@@ -114,6 +150,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                 poValue: opportunity.poValue || 0,
                 invoiceValue: opportunity.invoiceValue || 0
             });
+            setPendingUploads({ po: null, invoice: null, proposal: null });
         }
     }));
 
@@ -125,40 +162,16 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
         const file = e.target.files[0];
         if (!file) return;
 
+        if (isEditing) {
+            setPendingUploads(prev => ({ ...prev, [type]: file }));
+            addToast(`${type.toUpperCase()} selected. It will upload when you click Save Changes.`, 'info');
+            return;
+        }
+
         setUploading(true);
         try {
             const token = localStorage.getItem('token');
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', file); // Generic field name, backend handles type via URL
-
-            let endpoint = '';
-            if (type === 'po') endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-po`;
-            else if (type === 'invoice') endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`;
-            else if (type === 'proposal') endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
-
-            // Adjust form data based on endpoint expectation if needed (assuming generic upload route or specific routes)
-            // Re-using specific routes from previous logic
-            const specificTypFormData = new FormData();
-            if (type === 'po') {
-                specificTypFormData.append('po', file);
-                // Append required fields for PO upload
-                // Use formData if edited, otherwise fallback to opportunity data
-                const poVal = formData.poValue !== undefined && formData.poValue !== '' ? formData.poValue : (opportunity.poValue || 0);
-                const poDt = formData.poDate || opportunity.poDate || opportunity.commonDetails?.clientPODate || '';
-
-                specificTypFormData.append('poValue', poVal);
-                specificTypFormData.append('poDate', poDt);
-            } else if (type === 'proposal') {
-                specificTypFormData.append('proposal', file);
-            } else {
-                specificTypFormData.append('invoice', file);
-            }
-
-            await axios.post(
-                endpoint,
-                specificTypFormData,
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-            );
+            await uploadFileByType(file, type, token);
 
             addToast(`${type.toUpperCase()} uploaded successfully`, 'success');
             refreshData();
