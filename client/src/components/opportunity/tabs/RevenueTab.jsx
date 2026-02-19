@@ -134,7 +134,7 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
                     setPendingUploads({ po: null, invoice: null, proposal: null });
                 }
 
-                addToast('Revenue details updated successfully', 'success');
+                addToast('Changes saved successfully', 'success');
                 refreshData();
                 return true;
             } catch (error) {

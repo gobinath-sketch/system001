@@ -241,7 +241,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                     setPendingUploads({});
                 }
 
-                addToast('Vendor Payables saved successfully', 'success');
+                addToast('Changes saved successfully', 'success');
                 if (refreshData) refreshData();
                 return true;
             } catch (err) {

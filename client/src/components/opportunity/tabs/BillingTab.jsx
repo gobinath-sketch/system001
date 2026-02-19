@@ -351,7 +351,7 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
                 setPendingProposalFile(null);
                 setPendingExpenseDocs({});
 
-                addToast('Expenses saved successfully', 'success');
+                addToast('Changes saved successfully', 'success');
                 refreshData();
                 return true;
             } catch (error) {
