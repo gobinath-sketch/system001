@@ -140,7 +140,7 @@ const RevenueTab = forwardRef(({
             proposal: null
           });
         }
-        addToast('Revenue details updated successfully', 'success');
+        addToast('Changes saved successfully', 'success');
         refreshData();
         return true;
       } catch (error) {
