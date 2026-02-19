@@ -5,6 +5,7 @@ import { Search, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import Card from '../../components/ui/Card';
+import { API_BASE } from '../../config/api';
 const FinanceModulePage = () => {
   useAuth();
   const {
@@ -29,7 +30,7 @@ const FinanceModulePage = () => {
   const fetchOpportunities = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/opportunities', {
+      const res = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

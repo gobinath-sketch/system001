@@ -63,6 +63,11 @@ const ApprovalSchema = new mongoose.Schema({
     updatedAt: { type: Date, default: Date.now }
 });
 
+// Query-performance indexes
+ApprovalSchema.index({ status: 1, approvalLevel: 1, assignedTo: 1, requestedAt: -1 });
+ApprovalSchema.index({ opportunity: 1, status: 1 });
+ApprovalSchema.index({ requestedBy: 1, requestedAt: -1 });
+
 // Update timestamp on save
 ApprovalSchema.pre('save', async function () {
     this.$locals.wasNew = this.isNew;

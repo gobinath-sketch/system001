@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import UploadButton from '../ui/UploadButton';
 import { useToast } from '../../context/ToastContext';
 import { validateMobile, validateEmail, validatePAN, validateGST, validateBankAccount, validateIFSC } from '../../utils/validation';
+import { API_BASE } from '../../config/api';
 const AddSMEModal = ({
   isOpen,
   onClose,
@@ -247,10 +248,10 @@ const AddSMEModal = ({
       };
       let res;
       if (smeToEdit) {
-        res = await axios.put(`http://localhost:5000/api/smes/${smeToEdit._id}`, data, config);
+        res = await axios.put(`${API_BASE}/api/smes/${smeToEdit._id}`, data, config);
         addToast('SME updated successfully!', 'success');
       } else {
-        res = await axios.post('http://localhost:5000/api/smes', data, config);
+        res = await axios.post(`${API_BASE}/api/smes`, data, config);
         addToast('SME created successfully!', 'success');
       }
       onSuccess(res.data);

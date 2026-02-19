@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import { API_BASE } from '../../config/api';
 const SetTargetModal = ({
   onClose,
   onSuccess
@@ -23,7 +24,7 @@ const SetTargetModal = ({
   const fetchTeamMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/dashboard/manager/team-performance', {
+      const response = await axios.get(`${API_BASE}/api/dashboard/manager/team-performance`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -43,7 +44,7 @@ const SetTargetModal = ({
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/dashboard/manager/set-target/${formData.userId}`, {
+      await axios.put(`${API_BASE}/api/dashboard/manager/set-target/${formData.userId}`, {
         period: formData.period,
         year: formData.year,
         amount: parseFloat(formData.amount)

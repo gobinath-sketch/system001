@@ -1,5 +1,6 @@
 import { X, FileText, Building, User, MapPin, Phone, Mail, Award, CreditCard, Briefcase, Home } from 'lucide-react';
 import ProfileIcon from '../common/ProfileIcon';
+import { API_BASE } from '../../config/api';
 const LabelValue = ({
   label,
   value,
@@ -28,7 +29,7 @@ const ViewSMEModal = ({
                 </div>
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-                    {isUploaded ? <a href={`http://localhost:5000/${path}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">
+                    {isUploaded ? <a href={`${API_BASE}/${path}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">
                             View Document
                         </a> : <span className="text-sm font-bold text-red-600">Not Uploaded</span>}
                 </div>

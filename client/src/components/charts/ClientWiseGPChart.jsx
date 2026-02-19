@@ -4,6 +4,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { Filter } from 'lucide-react';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
+import { API_BASE } from '../../config/api';
 const ClientWiseGPChart = () => {
   const {
     socket
@@ -100,7 +101,7 @@ const ClientWiseGPChart = () => {
       } else {
         timeline = 'thisYear';
       }
-      const res = await axios.get(`http://localhost:5000/api/reports/gp-analysis?timeline=${timeline}`, {
+      const res = await axios.get(`${API_BASE}/api/reports/gp-analysis?timeline=${timeline}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

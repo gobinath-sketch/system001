@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useSocket } from '../context/SocketContext';
+import { API_BASE } from '../config/api';
 const DeliveryDashboard = () => {
   const {
     updateUserRole
@@ -46,7 +47,7 @@ const DeliveryDashboard = () => {
   const fetchDashboardRevamp = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/dashboard/delivery/revamp-stats', {
+      const res = await axios.get(`${API_BASE}/api/dashboard/delivery/revamp-stats`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

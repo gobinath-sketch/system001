@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Upload, Eye, GraduationCap, Package, FlaskConical, BadgePercent, Hotel, UtensilsCrossed, Building2, Plane, Ticket, Car, Wallet } from 'lucide-react';
 import { useCurrency } from '../../../context/CurrencyContext';
+import { API_BASE } from '../../../config/api';
 const OperationalExpensesBreakdown = ({
   activeData,
   handleChange,
@@ -231,7 +232,7 @@ const OperationalExpensesBreakdown = ({
       {data.hours > 0 && data.type === 'costPerHour' && <div className="text-sm text-black-400 mt-1">Hours: {data.hours}</div>}
 
       {opportunity.expenseDocuments?.[category]?.length > 0 && <div className="flex justify-end mt-1 pt-1 border-t border-slate-100">
-        <a href={`http://localhost:5000/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-sky-700" title="View Document">
+        <a href={`${API_BASE}/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-sky-700" title="View Document">
           <Eye size={14} />
         </a>
       </div>}

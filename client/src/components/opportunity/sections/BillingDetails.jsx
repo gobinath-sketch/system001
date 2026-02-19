@@ -1,5 +1,6 @@
 import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
+import { API_BASE } from '../../../config/api';
 const BillingDetails = ({
   opportunity,
   formData,
@@ -36,7 +37,7 @@ const BillingDetails = ({
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">PO Document</label>
                             <div className="flex items-center p-2 border border-gray-100 rounded-lg bg-gray-50 h-[38px]">
-                                {opportunity.poDocument ? <a href={`http://localhost:5000/${opportunity.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center text-sm font-medium">
+                                {opportunity.poDocument ? <a href={`${API_BASE}/${opportunity.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline flex items-center text-sm font-medium">
                                         <CheckCircle size={14} className="mr-1" /> View PO
                                     </a> : <span className="text-gray-400 text-sm italic">Not Uploaded</span>}
                             </div>
@@ -66,7 +67,7 @@ const BillingDetails = ({
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Document</label>
                             <div className="flex items-center space-x-2 h-[38px]">
-                                {opportunity.invoiceDocument ? <a href={`http://localhost:5000/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 text-xs font-bold flex items-center hover:underline">
+                                {opportunity.invoiceDocument ? <a href={`${API_BASE}/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 text-xs font-bold flex items-center hover:underline">
                                         <CheckCircle size={14} className="mr-1" /> View Invoice
                                     </a> : <span className="text-xs text-gray-400 italic">No File</span>}
                             </div>

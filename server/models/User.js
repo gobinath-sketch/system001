@@ -28,6 +28,11 @@ const UserSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
+// Query-performance indexes
+UserSchema.index({ reportingManager: 1, role: 1 });
+UserSchema.index({ role: 1 });
+UserSchema.index({ creatorCode: 1 });
+
 UserSchema.pre('save', function (next) {
     this.$locals.wasNew = this.isNew;
     next();

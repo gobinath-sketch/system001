@@ -8,6 +8,7 @@ import RevenueAnalyticsRow from './RevenueAnalyticsRow';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
 import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
+import { API_BASE } from '../../config/api';
 const OPPORTUNITY_TYPES = ['Training', 'Product Support', 'Resource Support', 'Vouchers', 'Content Development', 'Lab Support'];
 const SalesExecutiveDashboard = ({
   user,
@@ -61,20 +62,20 @@ const SalesExecutiveDashboard = ({
       const params = customUserId ? {
         userId: customUserId
       } : {};
-      const perfRes = await axios.get(`http://localhost:5000/api/dashboard/performance/${customUserId || user.id}`, {
+      const perfRes = await axios.get(`${API_BASE}/api/dashboard/performance/${customUserId || user.id}`, {
         headers
       });
       setPerformance(perfRes.data);
 
       // Fetch all opps for document status card and top 5 clients
-      const docsRes = await axios.get('http://localhost:5000/api/dashboard/all-opportunities', {
+      const docsRes = await axios.get(`${API_BASE}/api/dashboard/all-opportunities`, {
         headers,
         params
       });
       setAllOpps(docsRes.data);
 
       // Fetch client health metrics
-      const healthRes = await axios.get('http://localhost:5000/api/dashboard/client-health', {
+      const healthRes = await axios.get(`${API_BASE}/api/dashboard/client-health`, {
         headers,
         params
       });

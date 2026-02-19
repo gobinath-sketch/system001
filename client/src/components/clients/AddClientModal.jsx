@@ -3,6 +3,7 @@ import axios from 'axios';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { validateMobile, validateEmail } from '../../utils/validation';
+import { API_BASE } from '../../config/api';
 const AddClientModal = ({
   isOpen,
   onClose,
@@ -129,7 +130,7 @@ const AddClientModal = ({
     }
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/clients', formData, {
+      const res = await axios.post(`${API_BASE}/api/clients`, formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }

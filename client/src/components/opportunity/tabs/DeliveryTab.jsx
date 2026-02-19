@@ -9,6 +9,7 @@ import BillingDetails from '../sections/BillingDetails';
 import OperationalExpensesBreakdown from '../sections/OperationalExpensesBreakdown';
 import DeliveryDocuments from '../sections/DeliveryDocuments';
 import AddSMEModal from '../../sme/AddSMEModal';
+import { API_BASE } from '../../../config/api';
 const DeliveryTab = forwardRef(({
   opportunity,
   canEdit,
@@ -41,7 +42,7 @@ const DeliveryTab = forwardRef(({
     const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const [smesRes] = await Promise.all([axios.get('http://localhost:5000/api/smes', {
+        const [smesRes] = await Promise.all([axios.get(`${API_BASE}/api/smes`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -117,7 +118,7 @@ const DeliveryTab = forwardRef(({
           days: formData.days,
           participants: formData.participants
         };
-        await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, payload, {
+        await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -125,7 +126,7 @@ const DeliveryTab = forwardRef(({
         if (pendingInvoiceFile) {
           const invoiceData = new FormData();
           invoiceData.append('invoice', pendingInvoiceFile);
-          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`, invoiceData, {
+          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, invoiceData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -137,7 +138,7 @@ const DeliveryTab = forwardRef(({
           const expenseData = new FormData();
           expenseData.append('document', file);
           expenseData.append('category', category);
-          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
+          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -152,7 +153,7 @@ const DeliveryTab = forwardRef(({
           if (type === 'sme_profile' && formData.selectedSME) {
             deliveryData.append('smeId', formData.selectedSME);
           }
-          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-delivery-doc`, deliveryData, {
+          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-delivery-doc`, deliveryData, {
             headers: {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'multipart/form-data'
@@ -256,7 +257,7 @@ const DeliveryTab = forwardRef(({
       const token = localStorage.getItem('token');
       const uploadFormData = new FormData();
       uploadFormData.append('invoice', file);
-      await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`, uploadFormData, {
+      await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, uploadFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -290,7 +291,7 @@ const DeliveryTab = forwardRef(({
       // Use 'document' as field name matching backend
       uploadFormData.append('document', file);
       uploadFormData.append('category', expenseKey);
-      await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`, uploadFormData, {
+      await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-expense-doc`, uploadFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -324,7 +325,7 @@ const DeliveryTab = forwardRef(({
       if (type === 'sme_profile' && formData.selectedSME) {
         uploadFormData.append('smeId', formData.selectedSME);
       }
-      await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-delivery-doc`, uploadFormData, {
+      await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-delivery-doc`, uploadFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
@@ -375,7 +376,7 @@ const DeliveryTab = forwardRef(({
                             {/* Integrated Upload Trigger */}
                             <div className="flex items-center px-2 border-l border-gray-200 bg-gray-100 h-full">
                                 {opportunity.deliveryDocuments?.sme_profile ? <div className="flex items-center gap-2">
-                                        <a href={`http://localhost:5000/${opportunity.deliveryDocuments.sme_profile.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary-blue hover:text-blue-700 font-medium" title="View Profile">
+                                        <a href={`${API_BASE}/${opportunity.deliveryDocuments.sme_profile.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary-blue hover:text-blue-700 font-medium" title="View Profile">
                                             <CheckCircle size={14} />
                                             <span> content upload</span>
                                         </a>

@@ -1,6 +1,7 @@
 import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
 import UploadButton from '../../ui/UploadButton';
+import { API_BASE } from '../../../config/api';
 const DeliveryDocuments = ({
   opportunity,
   canEdit,
@@ -14,7 +15,7 @@ const DeliveryDocuments = ({
                 {['attendance', 'feedback', 'assessment', 'performance', 'contentDocument'].map(docType => <div key={docType} className="border border-gray-200 p-3 rounded-lg bg-gray-50 flex flex-col justify-between">
                         <h4 className="font-semibold text-gray-700 capitalize text-sm mb-2">{docType === 'contentDocument' ? 'Content Document' : docType}</h4>
                         <div className="flex flex-col gap-2">
-                            {opportunity.deliveryDocuments?.[docType] ? <a href={`http://localhost:5000/${opportunity.deliveryDocuments[docType].replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline flex items-center text-xs font-medium">
+                            {opportunity.deliveryDocuments?.[docType] ? <a href={`${API_BASE}/${opportunity.deliveryDocuments[docType].replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline flex items-center text-xs font-medium">
                                     <CheckCircle size={14} className="mr-1" /> View
                                 </a> : <span className="text-xs text-gray-400 italic">Not Uploaded</span>}
 

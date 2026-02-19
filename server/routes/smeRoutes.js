@@ -126,7 +126,6 @@ router.get('/', protect, async (req, res) => {
 
         const smes = await SME.find(filter)
             .populate('createdBy', 'name email')
-            .populate('createdBy', 'name email')
             .sort({ createdAt: -1 });
 
         res.json(smes);

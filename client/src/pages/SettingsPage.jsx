@@ -248,10 +248,10 @@ const SettingsPage = () => {
                                             <div className="flex-1 min-w-0">
                                                 <div className="mt-2 flex flex-wrap items-center gap-3">
                                                     <button onClick={() => fileInputRef.current?.click()} disabled={!isEditing} aria-label="Upload profile picture" title="Upload profile picture" className="inline-flex items-center justify-center h-10 w-10 text-gray-900 hover:opacity-80 disabled:opacity-50">
-                                                        <img src="/upload-icon.svg" alt="Upload" className="w-6 h-6 object-contain scale-125 origin-center" />
+                                                <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-6 h-6 object-contain scale-125 origin-center" />
                                                     </button>
                                                     <button onClick={removeAvatar} disabled={!isEditing} aria-label="Remove profile picture" title="Remove profile picture" className="inline-flex items-center justify-center h-10 w-10 text-gray-700 hover:opacity-80 disabled:opacity-50">
-                                                        <img src="/delete-icon.svg" alt="Delete" className="w-6 h-6 object-contain scale-125 origin-center" />
+                                                <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-6 h-6 object-contain scale-125 origin-center" />
                                                     </button>
                                                     <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!isEditing} onChange={onAvatarUpload} />
                                                 </div>

@@ -4,6 +4,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useCurrency } from '../../../context/CurrencyContext';
 import UploadButton from '../../ui/UploadButton';
+import { API_BASE } from '../../../config/api';
 
 const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref) => {
     const { addToast } = useToast();
@@ -220,7 +221,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                     'financeDetails.vendorPayables': vendorData
                 };
 
-                await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, payload, {
+                await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
@@ -234,7 +235,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                         formData.append('document', file);
                         formData.append('category', category);
                         formData.append('docType', docType);
-                        await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-finance-doc`, formData, {
+                        await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-finance-doc`, formData, {
                             headers: { Authorization: `Bearer ${token}` }
                         });
                     }
@@ -305,7 +306,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
                             <div className="flex items-center gap-2 mt-2">
                                 {vendorData.perDiem.document ? (
-                                    <a href={`http://localhost:5000/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
+                                    <a href={`${API_BASE}/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
                                 ) : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                 {canEdit && (
                                     <div className="inline-block">
@@ -348,7 +349,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
                             <div className="flex items-center gap-2 mt-2">
                                 {vendorData.other.document ? (
-                                    <a href={`http://localhost:5000/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
+                                    <a href={`${API_BASE}/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
                                 ) : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                 {canEdit && (
                                     <div className="inline-block">
@@ -431,7 +432,7 @@ const ExpenseRow = ({
                     <div className="flex-1">
                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Document</label>
                         <div className="flex items-center gap-2">
-                            {data.poDocument ? <a href={`http://localhost:5000/${data.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded PO</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
+                            {data.poDocument ? <a href={`${API_BASE}/${data.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded PO</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
                             {canEdit && <div className="inline-block">
                                 <input type="file" id={`upload-po-${category}`} className="hidden" onChange={e => handleFileUpload(e, category, 'poDocument')} disabled={uploading} />
                                 <UploadButton onClick={() => document.getElementById(`upload-po-${category}`).click()} disabled={uploading}>
@@ -471,7 +472,7 @@ const ExpenseRow = ({
                     <div className="flex-1">
                         <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Document</label>
                         <div className="flex items-center gap-2">
-                            {data.invoiceDocument ? <a href={`http://localhost:5000/${data.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded Invoice</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
+                            {data.invoiceDocument ? <a href={`${API_BASE}/${data.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded Invoice</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
                             {canEdit && <div className="inline-block">
                                 <input type="file" id={`upload-invoice-${category}`} className="hidden" onChange={e => handleFileUpload(e, category, 'invoiceDocument')} disabled={uploading} />
                                 <UploadButton onClick={() => document.getElementById(`upload-invoice-${category}`).click()} disabled={uploading}>

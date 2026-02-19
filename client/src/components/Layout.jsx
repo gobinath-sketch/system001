@@ -25,7 +25,7 @@ const Layout = ({
                             <Menu size={20} />
                         </button>
                         {/* Globe Logo */}
-                        <img src="/gk-globe-logo.png" alt="Global Knowledge" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
+                        <img src={`${import.meta.env.BASE_URL}gk-globe-logo.png`} alt="Global Knowledge" className="h-8 w-8 sm:h-10 sm:w-10 object-contain shrink-0" />
                         {/* Company Name */}
                         <h1 className="text-sm sm:text-lg font-bold text-primary-blue truncate">
                             Global Knowledge Technologies

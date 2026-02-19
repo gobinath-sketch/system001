@@ -9,6 +9,7 @@ import { useSocket } from '../../context/SocketContext';
 import AlertModal from '../../components/ui/AlertModal';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useCurrency } from '../../context/CurrencyContext';
+import { API_BASE } from '../../config/api';
 const SalesManagerTeamView = () => {
   const navigate = useNavigate();
   const {
@@ -80,7 +81,7 @@ const SalesManagerTeamView = () => {
       if (hasChecked) return;
       try {
         const token = localStorage.getItem('token');
-        const res = await axios.get('http://localhost:5000/api/approvals?status=Pending', {
+        const res = await axios.get(`${API_BASE}/api/approvals?status=Pending`, {
           headers: {
             Authorization: `Bearer ${token}`
           }
@@ -126,32 +127,32 @@ const SalesManagerTeamView = () => {
       };
 
       // Fetch KPI stats
-      const statsRes = await axios.get('http://localhost:5000/api/dashboard/manager/stats', {
+      const statsRes = await axios.get(`${API_BASE}/api/dashboard/manager/stats`, {
         headers
       });
       setStats(statsRes.data);
 
       // Fetch document stats
-      const docStatsRes = await axios.get('http://localhost:5000/api/dashboard/manager/document-stats', {
+      const docStatsRes = await axios.get(`${API_BASE}/api/dashboard/manager/document-stats`, {
         headers
       });
       setDocumentStats(docStatsRes.data);
 
       // Fetch monthly performance
-      const perfUrl = selectedMember === 'all' ? 'http://localhost:5000/api/dashboard/manager/monthly-performance' : `http://localhost:5000/api/dashboard/manager/monthly-performance?userId=${selectedMember}`;
+      const perfUrl = selectedMember === 'all' ? `${API_BASE}/api/dashboard/manager/monthly-performance` : `${API_BASE}/api/dashboard/manager/monthly-performance?userId=${selectedMember}`;
       const perfRes = await axios.get(perfUrl, {
         headers
       });
       setMonthlyPerformance(perfRes.data);
 
       // Fetch team members for filter
-      const teamRes = await axios.get('http://localhost:5000/api/dashboard/manager/team-members', {
+      const teamRes = await axios.get(`${API_BASE}/api/dashboard/manager/team-members`, {
         headers
       });
       setTeamMembers(teamRes.data || []);
 
       // Fetch team opportunities for document modal
-      const oppsRes = await axios.get('http://localhost:5000/api/opportunities', {
+      const oppsRes = await axios.get(`${API_BASE}/api/opportunities`, {
         headers
       });
       const formattedOpps = oppsRes.data.map(opp => ({
@@ -233,7 +234,7 @@ const SalesManagerTeamView = () => {
       const token = localStorage.getItem('token');
       // Convert back to INR if saving in USD
       const amountInInr = currency === 'INR' ? parseFloat(targetValue) : parseFloat(targetValue) * EXCHANGE_RATE;
-      await axios.put(`http://localhost:5000/api/dashboard/manager/set-target/${memberId}`, {
+      await axios.put(`${API_BASE}/api/dashboard/manager/set-target/${memberId}`, {
         period: targetPeriod,
         year: new Date().getFullYear(),
         amount: amountInInr

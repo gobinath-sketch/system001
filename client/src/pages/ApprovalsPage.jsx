@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import { CheckCircle, XCircle } from 'lucide-react';
 import AlertModal from '../components/ui/AlertModal';
+import { API_BASE } from '../config/api';
 const ApprovalsPage = () => {
   const {
     addToast
@@ -36,7 +37,7 @@ const ApprovalsPage = () => {
   const fetchApprovals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://localhost:5000/api/approvals', {
+      const res = await axios.get(`${API_BASE}/api/approvals`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -51,7 +52,7 @@ const ApprovalsPage = () => {
   const executeApprove = async id => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/approvals/${id}/approve`, {}, {
+      await axios.post(`${API_BASE}/api/approvals/${id}/approve`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -97,7 +98,7 @@ const ApprovalsPage = () => {
     }
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`http://localhost:5000/api/approvals/${rejectionModal.id}/reject`, {
+      await axios.post(`${API_BASE}/api/approvals/${rejectionModal.id}/reject`, {
         reason: rejectionModal.reason
       }, {
         headers: {
@@ -119,7 +120,7 @@ const ApprovalsPage = () => {
     if (currentStatus) return; // Already read
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/approvals/${id}/read`, {}, {
+      await axios.put(`${API_BASE}/api/approvals/${id}/read`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
         }

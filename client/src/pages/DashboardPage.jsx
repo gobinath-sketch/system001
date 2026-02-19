@@ -9,6 +9,7 @@ import TargetProgress from '../components/dashboard/TargetProgress';
 import EscalationWidget from '../components/dashboard/EscalationWidget';
 import SalesExecutiveDashboard from './dashboard/SalesExecutiveDashboard';
 import ManagerDashboard from './ManagerDashboard';
+import { API_BASE } from '../config/api';
 const DashboardPage = ({
   mockRole
 }) => {
@@ -52,7 +53,7 @@ const DashboardPage = ({
       const token = localStorage.getItem('token');
 
       // Fetch Stats
-      const statsRes = await axios.get('http://localhost:5000/api/dashboard/stats', {
+      const statsRes = await axios.get(`${API_BASE}/api/dashboard/stats`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -60,7 +61,7 @@ const DashboardPage = ({
       setStats(statsRes.data);
 
       // Fetch Recent Opportunities (Fetch all for Escalation Widget logic, slice for table)
-      const oppsRes = await axios.get('http://localhost:5000/api/opportunities', {
+      const oppsRes = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`
         }

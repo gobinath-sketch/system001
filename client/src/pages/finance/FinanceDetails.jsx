@@ -5,6 +5,7 @@ import { Save, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
 import { useSocket } from '../../context/SocketContext';
 import UploadButton from '../../components/ui/UploadButton';
+import { API_BASE } from '../../config/api';
 const FinanceDetails = () => {
   const {
     id
@@ -131,7 +132,7 @@ const FinanceDetails = () => {
   const fetchOpportunity = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`http://localhost:5000/api/opportunities/${id}`, {
+      const res = await axios.get(`${API_BASE}/api/opportunities/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -327,7 +328,7 @@ const FinanceDetails = () => {
       formData.append('category', category); // e.g. 'trainer', 'perDiem'
       formData.append('docType', docType); // e.g. 'poDocument', 'document'
 
-      const res = await axios.post(`http://localhost:5000/api/opportunities/${id}/upload-finance-doc`, formData, {
+      const res = await axios.post(`${API_BASE}/api/opportunities/${id}/upload-finance-doc`, formData, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -379,7 +380,7 @@ const FinanceDetails = () => {
           vendorPayables: vendorData
         }
       };
-      await axios.put(`http://localhost:5000/api/opportunities/${id}`, payload, {
+      await axios.put(`${API_BASE}/api/opportunities/${id}`, payload, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -455,7 +456,7 @@ const FinanceDetails = () => {
                                         <div className="flex-1">
                                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
                                             <div className="flex items-center gap-2 mt-2">
-                                                {vendorData.perDiem.document ? <a href={`http://localhost:5000/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a> : <span className="text-gray-400 text-xs italic">No Doc</span>}
+                                                {vendorData.perDiem.document ? <a href={`${API_BASE}/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a> : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                                 <div className="inline-block">
                                                     <input type="file" id="upload-perdiem-doc" className="hidden" onChange={e => handleFileUpload(e, 'perDiem', 'document')} disabled={uploading} />
                                                     <UploadButton onClick={() => document.getElementById('upload-perdiem-doc').click()} disabled={uploading}>
@@ -477,7 +478,7 @@ const FinanceDetails = () => {
                                         <div className="flex-1">
                                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
                                             <div className="flex items-center gap-2 mt-2">
-                                                {vendorData.other.document ? <a href={`http://localhost:5000/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a> : <span className="text-gray-400 text-xs italic">No Doc</span>}
+                                                {vendorData.other.document ? <a href={`${API_BASE}/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a> : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                                 <div className="inline-block">
                                                     <input type="file" id="upload-other-doc" className="hidden" onChange={e => handleFileUpload(e, 'other', 'document')} disabled={uploading} />
                                                     <UploadButton onClick={() => document.getElementById('upload-other-doc').click()} disabled={uploading}>
@@ -730,7 +731,7 @@ const ExpenseRow = ({
                             <div className="flex-1">
                                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Document</label>
                                 <div className="flex items-center gap-2">
-                                    {data.poDocument ? <a href={`http://localhost:5000/${data.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded PO</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
+                                    {data.poDocument ? <a href={`${API_BASE}/${data.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded PO</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
                                     <div className="inline-block">
                                         <input type="file" id={`upload-po-${category}`} className="hidden" onChange={e => handleFileUpload(e, category, 'poDocument')} disabled={uploading} />
                                         <UploadButton onClick={() => document.getElementById(`upload-po-${category}`).click()} disabled={uploading}>
@@ -768,7 +769,7 @@ const ExpenseRow = ({
                             <div className="flex-1">
                                 <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Document</label>
                                 <div className="flex items-center gap-2">
-                                    {data.invoiceDocument ? <a href={`http://localhost:5000/${data.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded Invoice</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
+                                    {data.invoiceDocument ? <a href={`${API_BASE}/${data.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded Invoice</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
                                     <div className="inline-block">
                                         <input type="file" id={`upload-invoice-${category}`} className="hidden" onChange={e => handleFileUpload(e, category, 'invoiceDocument')} disabled={uploading} />
                                         <UploadButton onClick={() => document.getElementById(`upload-invoice-${category}`).click()} disabled={uploading}>

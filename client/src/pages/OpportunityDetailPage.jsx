@@ -15,6 +15,7 @@ import RevenueTab from '../components/opportunity/tabs/RevenueTab';
 import VendorPayablesTab from '../components/opportunity/tabs/VendorPayablesTab';
 import { useCurrency } from '../context/CurrencyContext';
 import AlertModal from '../components/ui/AlertModal';
+import { API_BASE } from '../config/api';
 const OpportunityDetailPage = () => {
   const {
     id
@@ -97,7 +98,7 @@ const OpportunityDetailPage = () => {
   const fetchOpportunity = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/opportunities/${id}`, {
+      const response = await axios.get(`${API_BASE}/api/opportunities/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -203,7 +204,7 @@ const OpportunityDetailPage = () => {
   const executeStatusUpdate = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:5000/api/opportunities/${id}/status`, {
+      await axios.put(`${API_BASE}/api/opportunities/${id}/status`, {
         status: statusModal.newStatus
       }, {
         headers: {
