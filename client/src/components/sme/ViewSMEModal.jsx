@@ -1,9 +1,10 @@
-import React from 'react';
 import { X, FileText, Building, User, MapPin, Phone, Mail, Award, CreditCard, Briefcase, Home } from 'lucide-react';
 import ProfileIcon from '../common/ProfileIcon';
-
-const LabelValue = ({ label, value, icon: Icon }) => (
-    <div className="flex items-start gap-3">
+const LabelValue = ({
+  label,
+  value,
+  icon: Icon
+}) => <div className="flex items-start gap-3">
         <div className="flex items-center gap-2 text-gray-500 text-xs uppercase font-bold w-40 shrink-0">
             {Icon && <Icon size={14} className="text-gray-400" />}
             <span>{label}</span>
@@ -12,43 +13,28 @@ const LabelValue = ({ label, value, icon: Icon }) => (
         <span className="text-gray-900 font-medium text-sm flex-1 break-words">
             {value || '-'}
         </span>
-    </div>
-);
-
-const ViewSMEModal = ({ isOpen, onClose, sme }) => {
-    if (!isOpen || !sme) return null;
-
-    const renderDocumentLink = (path, label) => {
-        const isUploaded = !!path;
-        return (
-            <div className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${isUploaded
-                ? 'bg-blue-50 border-blue-200 hover:shadow-md'
-                : 'bg-red-50 border-red-200'
-                }`}>
+    </div>;
+const ViewSMEModal = ({
+  isOpen,
+  onClose,
+  sme
+}) => {
+  if (!isOpen || !sme) return null;
+  const renderDocumentLink = (path, label) => {
+    const isUploaded = !!path;
+    return <div className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${isUploaded ? 'bg-blue-50 border-blue-200 hover:shadow-md' : 'bg-red-50 border-red-200'}`}>
                 <div className={`p-2 rounded-full ${isUploaded ? 'bg-blue-100 text-blue-600' : 'bg-red-100 text-red-600'}`}>
                     <FileText size={18} />
                 </div>
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-                    {isUploaded ? (
-                        <a
-                            href={`http://localhost:5000/${path}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline"
-                        >
+                    {isUploaded ? <a href={`http://localhost:5000/${path}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">
                             View Document
-                        </a>
-                    ) : (
-                        <span className="text-sm font-bold text-red-600">Not Uploaded</span>
-                    )}
+                        </a> : <span className="text-sm font-bold text-red-600">Not Uploaded</span>}
                 </div>
-            </div>
-        );
-    };
-
-    return (
-        <div className="fixed inset-0 bg-gray-500/20 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
+            </div>;
+  };
+  return <div className="fixed inset-0 bg-gray-500/20 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-100 animate-in fade-in zoom-in duration-200">
                 {/* Header */}
                 <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-100 flex justify-between items-center z-10">
@@ -69,8 +55,7 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
                 <div className="p-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* Company Details (if applicable) */}
-                        {sme.smeType === 'Company' && (
-                            <div className="col-span-full bg-blue-50/50 p-6 rounded-xl border border-blue-100">
+                        {sme.smeType === 'Company' && <div className="col-span-full bg-blue-50/50 p-6 rounded-xl border border-blue-100">
                                 <h3 className="font-bold text-blue-900 mb-6 flex items-center gap-2 text-lg">
                                     <Building size={20} /> Company Details
                                 </h3>
@@ -83,8 +68,7 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
                                         <LabelValue label="Address" value={sme.companyAddress} icon={Home} />
                                     </div>
                                 </div>
-                            </div>
-                        )}
+                            </div>}
 
                         {/* Basic Details */}
                         <div className="border border-blue-600 rounded-xl p-5">
@@ -96,9 +80,7 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
                                 <LabelValue label="Contact" value={sme.contactNumber} icon={Phone} />
                                 <LabelValue label="Experience" value={`${sme.yearsExperience} Years`} icon={Award} />
                                 <LabelValue label="Location" value={sme.location} icon={MapPin} />
-                                {sme.smeType === 'Freelancer' && (
-                                    <LabelValue label="Address" value={sme.address} icon={MapPin} />
-                                )}
+                                {sme.smeType === 'Freelancer' && <LabelValue label="Address" value={sme.address} icon={MapPin} />}
                             </div>
                         </div>
 
@@ -133,8 +115,6 @@ const ViewSMEModal = ({ isOpen, onClose, sme }) => {
                     </div>
                 </div>
             </div>
-        </div>
-    );
+        </div>;
 };
-
 export default ViewSMEModal;

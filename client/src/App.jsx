@@ -1,9 +1,8 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import LoginPage from './pages/LoginPage';
 import Layout from './components/Layout';
-
 import DashboardPage from './pages/DashboardPage';
 import DirectorDashboard from './pages/DirectorDashboard';
 import SalesManagerDashboard from './pages/dashboard/SalesManagerDashboard';
@@ -13,40 +12,31 @@ import OpportunityPage from './pages/OpportunityPage';
 import OpportunityDetailPage from './pages/OpportunityDetailPage';
 import DeliveryDashboard from './pages/DeliveryDashboard';
 import ProgramExecutionList from './pages/ProgramExecutionList';
-
-
 import SMEManagement from './pages/SMEManagement';
-
 import ApprovalsPage from './pages/ApprovalsPage';
 import FinanceDashboard from './pages/finance/FinanceDashboard';
 import FinanceModulePage from './pages/finance/FinanceModulePage';
 import FinanceDetails from './pages/finance/FinanceDetails';
 import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
-
 import { ToastProvider } from './context/ToastContext';
-
 import { CurrencyProvider } from './context/CurrencyContext';
-
 import { SocketProvider } from './context/SocketContext';
-
 function App() {
   useEffect(() => {
-    const handleWheel = (e) => {
+    const handleWheel = () => {
       if (document.activeElement.type === 'number') {
         document.activeElement.blur();
       }
     };
-
-    document.addEventListener('wheel', handleWheel, { passive: false });
-
+    document.addEventListener('wheel', handleWheel, {
+      passive: false
+    });
     return () => {
       document.removeEventListener('wheel', handleWheel);
     };
   }, []);
-
-  return (
-    <AuthProvider>
+  return <AuthProvider>
       <SocketProvider>
         <CurrencyProvider>
           <ToastProvider>
@@ -84,8 +74,6 @@ function App() {
           </ToastProvider>
         </CurrencyProvider>
       </SocketProvider>
-    </AuthProvider>
-  );
+    </AuthProvider>;
 }
-
 export default App;
