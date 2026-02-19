@@ -1,9 +1,7 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
-import UploadButton from '../../ui/UploadButton';
 import { useAuth } from '../../../context/AuthContext';
 import BillingDetails from '../sections/BillingDetails';
 import OperationalExpensesBreakdown from '../sections/OperationalExpensesBreakdown';
@@ -150,9 +148,6 @@ const DeliveryTab = forwardRef(({
           const deliveryData = new FormData();
           deliveryData.append('document', file);
           deliveryData.append('type', type);
-          if (type === 'sme_profile' && formData.selectedSME) {
-            deliveryData.append('smeId', formData.selectedSME);
-          }
           await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-delivery-doc`, deliveryData, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -322,9 +317,6 @@ const DeliveryTab = forwardRef(({
       const uploadFormData = new FormData();
       uploadFormData.append('document', file);
       uploadFormData.append('type', type);
-      if (type === 'sme_profile' && formData.selectedSME) {
-        uploadFormData.append('smeId', formData.selectedSME);
-      }
       await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-delivery-doc`, uploadFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -373,26 +365,6 @@ const DeliveryTab = forwardRef(({
                                     </option>)}
                             </select>
 
-                            {/* Integrated Upload Trigger */}
-                            <div className="flex items-center px-2 border-l border-gray-200 bg-gray-100 h-full">
-                                {opportunity.deliveryDocuments?.sme_profile ? <div className="flex items-center gap-2">
-                                        <a href={`${API_BASE}/${opportunity.deliveryDocuments.sme_profile.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary-blue hover:text-blue-700 font-medium" title="View Profile">
-                                            <CheckCircle size={14} />
-                                            <span> content upload</span>
-                                        </a>
-                                        {isEditing && <div className="inline-block">
-                                                <input type="file" id="sme-profile-replace" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'sme_profile')} disabled={uploading} />
-                                                <UploadButton onClick={() => document.getElementById('sme-profile-replace').click()} disabled={uploading}>
-                                                    Replace
-                                                </UploadButton>
-                                            </div>}
-                                    </div> : isEditing && <div className="inline-block">
-                                            <input type="file" id="sme-profile-upload" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'sme_profile')} disabled={uploading} />
-                                            <UploadButton onClick={() => document.getElementById('sme-profile-upload').click()} disabled={uploading}>
-                                                Upload
-                                            </UploadButton>
-                                        </div>}
-                            </div>
                         </div>
                     </div>
                     <div>

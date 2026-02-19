@@ -72,6 +72,9 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Directo
             }
         }
 
+        // Normalize numeric inputs coming from multipart/form-data.
+        smeData.yearsExperience = Number(smeData.yearsExperience);
+
         // Handle file uploads
         if (req.files) {
             if (req.files.sowDocument) smeData.sowDocument = req.files.sowDocument[0].path;
@@ -99,6 +102,9 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Directo
         });
     } catch (err) {
         console.error('SME creation error:', err);
+        if (err.name === 'ValidationError' || err.name === 'CastError') {
+            return res.status(400).json({ message: err.message });
+        }
         res.status(500).json({ message: err.message });
     }
 });
@@ -180,6 +186,10 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Direc
             }
         }
 
+        if (updateData.yearsExperience !== undefined) {
+            updateData.yearsExperience = Number(updateData.yearsExperience);
+        }
+
         // Handle file uploads - only update if new file provided
         if (req.files) {
             if (req.files.sowDocument) updateData.sowDocument = req.files.sowDocument[0].path;
@@ -188,6 +198,15 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Direc
             if (req.files.idProof) updateData.idProof = req.files.idProof[0].path;
             if (req.files.panDocument) updateData.panDocument = req.files.panDocument[0].path;
             if (req.files.gstDocument) updateData.gstDocument = req.files.gstDocument[0].path;
+        }
+
+        // Backward compatibility for older records that stored profile as `contentUpload`.
+        if (!updateData.sme_profile) {
+            if (typeof updateData.contentUpload === 'string' && updateData.contentUpload.trim()) {
+                updateData.sme_profile = updateData.contentUpload.trim();
+            } else if (typeof sme.get === 'function' && sme.get('contentUpload')) {
+                updateData.sme_profile = sme.get('contentUpload');
+            }
         }
 
         // Apply updates
@@ -203,6 +222,9 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Direc
         });
     } catch (err) {
         console.error('SME update error:', err);
+        if (err.name === 'ValidationError' || err.name === 'CastError') {
+            return res.status(400).json({ message: err.message });
+        }
         res.status(500).json({ message: err.message });
     }
 });

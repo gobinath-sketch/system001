@@ -120,9 +120,8 @@ SMESchema.index({ smeType: 1, isActive: 1, createdAt: -1 });
 SMESchema.index({ createdBy: 1, createdAt: -1 });
 SMESchema.index({ technology: 1, isActive: 1 });
 
-SMESchema.pre('save', function (next) {
+SMESchema.pre('save', function () {
     this.$locals.wasNew = this.isNew;
-    next();
 });
 
 SMESchema.post('save', function (doc) {

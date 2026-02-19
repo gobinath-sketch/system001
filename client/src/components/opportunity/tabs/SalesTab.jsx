@@ -429,18 +429,10 @@ const SalesTab = forwardRef(({
                                 </div>
                             </div>
 
-                            {/* Content Document (from Delivery Upload) */}
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Content Document</label>
-                                {opportunity.deliveryDocuments?.sme_profile ? <a href={`${API_BASE}/${opportunity.deliveryDocuments.sme_profile.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Content Document">
-                                        <CheckCircle size={14} /> View Content
-                                    </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Uploaded</span>}
-                            </div>
-
                             {/* Profile Document (from SME Details) */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">SME Profile</label>
-                                {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME.contentUpload ? <a href={`${API_BASE}/${opportunity.selectedSME.contentUpload.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-purple-600 hover:text-purple-800 hover:border-purple-300 transition-colors" title="View SME Profile">
+                                {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-purple-600 hover:text-purple-800 hover:border-purple-300 transition-colors" title="View SME Profile">
                                         <CheckCircle size={14} /> View Profile
                                     </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Available</span>}
                             </div>

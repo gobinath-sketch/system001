@@ -50,9 +50,8 @@ ClientSchema.index({ createdBy: 1, createdAt: -1 });
 ClientSchema.index({ companyName: 1 });
 ClientSchema.index({ sector: 1, createdAt: -1 });
 
-ClientSchema.pre('save', function (next) {
+ClientSchema.pre('save', function () {
     this.$locals.wasNew = this.isNew;
-    next();
 });
 
 ClientSchema.post('save', function (doc) {
