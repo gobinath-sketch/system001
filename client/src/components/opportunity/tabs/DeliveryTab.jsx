@@ -1,5 +1,6 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
+import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -7,6 +8,7 @@ import BillingDetails from '../sections/BillingDetails';
 import OperationalExpensesBreakdown from '../sections/OperationalExpensesBreakdown';
 import DeliveryDocuments from '../sections/DeliveryDocuments';
 import AddSMEModal from '../../sme/AddSMEModal';
+import UploadButton from '../../ui/UploadButton';
 import { API_BASE } from '../../../config/api';
 const DeliveryTab = forwardRef(({
   opportunity,
@@ -148,6 +150,9 @@ const DeliveryTab = forwardRef(({
           const deliveryData = new FormData();
           deliveryData.append('document', file);
           deliveryData.append('type', type);
+          if (type === 'contentDocument' && formData.selectedSME) {
+            deliveryData.append('smeId', formData.selectedSME);
+          }
           await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-delivery-doc`, deliveryData, {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -317,6 +322,9 @@ const DeliveryTab = forwardRef(({
       const uploadFormData = new FormData();
       uploadFormData.append('document', file);
       uploadFormData.append('type', type);
+      if (type === 'contentDocument' && formData.selectedSME) {
+        uploadFormData.append('smeId', formData.selectedSME);
+      }
       await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-delivery-doc`, uploadFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -336,6 +344,8 @@ const DeliveryTab = forwardRef(({
   const inputClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
   const selectClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
   if (loading) return <div>Loading data...</div>;
+  const hasPendingContentDoc = Boolean(isEditing && pendingDeliveryDocs.contentDocument);
+  const hasUploadedContentDoc = Boolean(opportunity?.deliveryDocuments?.contentDocument);
 
   // Show all SMEs (no vendor filtering for delivery team)
   const filteredSMEs = smes;
@@ -370,6 +380,27 @@ const DeliveryTab = forwardRef(({
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Technology</label>
                         <input type="text" value={opportunity.typeSpecificDetails?.technology || 'N/A'} disabled className="w-full border p-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed" placeholder="Technology from Opportunity" />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Content Document</label>
+                        <div className="w-full border p-2 rounded-lg bg-gray-50 border-gray-200 flex items-center justify-between gap-2">
+                            <div className="min-w-0">
+                                {hasPendingContentDoc ? <div className="text-sm text-green-700 font-semibold">
+                                        Uploaded
+                                        <div className="text-[11px] text-gray-500 font-normal truncate" title={pendingDeliveryDocs.contentDocument.name}>
+                                            {pendingDeliveryDocs.contentDocument.name}
+                                        </div>
+                                    </div> : hasUploadedContentDoc ? <a href={`${API_BASE}/${opportunity.deliveryDocuments.contentDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-medium text-green-600 hover:underline">
+                                        <CheckCircle size={14} className="mr-1" /> View
+                                    </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                            </div>
+                            {isDeliveryRole && isEditing && <div className="shrink-0">
+                                    <input type="file" id="content-document-upload" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'contentDocument')} accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx" disabled={uploading} />
+                                    <UploadButton onClick={() => document.getElementById('content-document-upload').click()} disabled={uploading}>
+                                        {hasPendingContentDoc || hasUploadedContentDoc ? 'Replace' : 'Upload'}
+                                    </UploadButton>
+                                </div>}
+                        </div>
                     </div>
 
                     {/* Row 2: Course Details, Year/Month */}
@@ -432,7 +463,7 @@ const DeliveryTab = forwardRef(({
             {/* 4. Billing Details (Hidden for Delivery Team, Visible for Sales) */}
             {!isDeliveryRole && <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass={inputClass} />}
 
-            <DeliveryDocuments opportunity={opportunity} canEdit={canEdit && isEditing} handleUpload={handleDeliveryDocUpload} uploading={uploading} />
+            <DeliveryDocuments opportunity={opportunity} canEdit={canEdit && isEditing} handleUpload={handleDeliveryDocUpload} uploading={uploading} pendingDocs={pendingDeliveryDocs} isEditing={isEditing} />
 
             <AddSMEModal isOpen={isSMEModalOpen} onClose={() => setIsSMEModalOpen(false)} onSuccess={handleSMESuccess} />
         </div>;

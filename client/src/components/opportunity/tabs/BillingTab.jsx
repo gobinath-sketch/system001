@@ -580,7 +580,17 @@ const BillingTab = forwardRef(({
                                 </div>
                                 {/* Proposal Document Action */}
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
+                                    {isEditing && pendingProposalFile ? <div className="flex flex-col items-end gap-1">
+                                            <span className="text-[10px] font-semibold text-emerald-700 bg-white/80 border border-emerald-200 rounded px-2 py-0.5 max-w-[130px] truncate" title={pendingProposalFile.name}>
+                                                Uploaded
+                                            </span>
+                                            {canEditExecution && <div>
+                                                    <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
+                                                    <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap">
+                                                        Replace
+                                                    </button>
+                                                </div>}
+                                        </div> : opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
                                             <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900 p-1.5 bg-white/80 rounded-full shadow-sm border border-emerald-200 transition-all hover:scale-110" title="View Proposal">
                                                 <FileText size={18} />
                                             </a>
@@ -760,4 +770,3 @@ const BillingTab = forwardRef(({
         </div>;
 });
 export default BillingTab;
-

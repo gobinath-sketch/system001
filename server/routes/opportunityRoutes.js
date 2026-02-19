@@ -4,7 +4,6 @@ const Opportunity = require('../models/Opportunity');
 const Client = require('../models/Client');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const SME = require('../models/SME');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { calculateOpportunityProgress } = require('../utils/progressCalculator');
 const multer = require('multer');
@@ -1164,16 +1163,6 @@ router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sal
         // Save Opportunity ONCE
         await opportunity.save();
 
-        // Update SME record if applicable
-        if (type === 'contentDocument' && req.body.smeId) {
-            const sme = await SME.findById(req.body.smeId);
-            if (sme) {
-                sme.sme_profile = req.file.path;
-                await sme.save({ validateBeforeSave: false });
-                console.log(`Updated SME ${sme.name} contentUpload`);
-            }
-        }
-
         // IMMEDIATE NOTIFICATION LOGIC (Buffer Removed)
         try {
             const opportunityCreator = opportunity.createdBy;
@@ -1269,4 +1258,3 @@ router.post('/:id/upload-expense-doc', protect, authorize('Delivery Team', 'Deli
 });
 
 module.exports = router;
-

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, Eye } from 'lucide-react';
+import { Plus, Trash2, ArrowLeft, Edit, Search, Filter } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
@@ -154,7 +154,7 @@ const SMEManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {loading ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">Loading...</td></tr> : smes.length === 0 ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No SMEs found</td></tr> : smes.map(sme => <tr key={sme._id} className="hover:bg-gray-50 transition-colors">
+                            {loading ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">Loading...</td></tr> : smes.length === 0 ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No SMEs found</td></tr> : smes.map(sme => <tr key={sme._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={e => handleViewClick(sme, e)}>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`px-2 py-1 text-xs rounded-full font-medium ${sme.smeType === 'Company' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
                                                 {sme.smeType || 'Freelancer'}
@@ -169,9 +169,6 @@ const SMEManagement = () => {
                                         <td className="px-6 py-4 text-gray-700 text-center">{sme.location}</td>
                                         <td className="px-6 py-4 text-center">
                                             <div className="flex items-center justify-center gap-4">
-                                                <button onClick={e => handleViewClick(sme, e)} className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View">
-                                                    <Eye size={18} />
-                                                </button>
                                                 <button onClick={e => handleEditClick(sme, e)} className="text-green-600 hover:text-green-800 transition-transform hover:scale-110" title="Edit">
                                                     <Edit size={18} />
                                                 </button>

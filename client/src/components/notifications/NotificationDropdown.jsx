@@ -224,12 +224,12 @@ const NotificationDropdown = () => {
         }
     };
 
-    // 1. CLICK ON LIST ITEM -> OPEN PREVIEW
+    // CLICK ON LIST ITEM -> NAVIGATE DIRECTLY (no details preview screen)
     const handleNotificationClick = async (notification) => {
         if (!notification.isRead) {
             handleMarkAsRead(notification._id);
         }
-        setSelectedNotification(notification);
+        handlePreviewNavigate(notification);
     };
 
     // 2. CLICK "VIEW PAGE" IN PREVIEW -> NAVIGATE
@@ -237,19 +237,11 @@ const NotificationDropdown = () => {
         setIsOpen(false);
         setSelectedNotification(null);
 
-        if (notification.type === 'gp_approval_request' || notification.type === 'approval_status_change') {
-            if (notification.opportunityId) {
-                navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'expenses' } });
-            } else {
-                navigate('/approvals');
-            }
-        } else if (notification.type === 'approval_granted' || notification.type === 'approval_rejected') {
-            if (notification.opportunityId) {
-                navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'expenses' } });
-            }
-        } else if (notification.opportunityId) {
-            const state = notification.targetTab ? { activeTab: notification.targetTab } : {};
-            navigate(`/opportunities/${notification.opportunityId}`, { state });
+        // User requirement: open opportunity Requirements page immediately.
+        if (notification.opportunityId) {
+            navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
+        } else if (notification.type === 'gp_approval_request' || notification.type === 'approval_status_change') {
+            navigate('/approvals');
         } else {
             navigate('/dashboard');
         }
