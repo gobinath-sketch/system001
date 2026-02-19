@@ -164,7 +164,6 @@ const RevenueTab = forwardRef(({ opportunity, canEdit, refreshData, isEditing },
 
         if (isEditing) {
             setPendingUploads(prev => ({ ...prev, [type]: file }));
-            addToast(`${type.toUpperCase()} selected. It will upload when you click Save Changes.`, 'info');
             return;
         }
 

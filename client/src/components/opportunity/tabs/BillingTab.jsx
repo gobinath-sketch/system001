@@ -170,9 +170,9 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
 
         // Keep changes local until user clicks Save Changes.
         if (value >= 10 && value < 15) {
-            addToast('GP between 10-15%. Approval will be triggered after Save Changes.', 'info');
+            // Approval flow handled on save.
         } else if (value < 10) {
-            addToast('GP below 10%. Approval will be triggered after Save Changes.', 'warning');
+            // Approval flow handled on save.
         }
     };
 
@@ -182,7 +182,7 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
 
         // Keep changes local until user clicks Save Changes.
         if (value < 10) {
-            addToast('Contingency below 10%. Approval will be triggered after Save Changes.', 'warning');
+            // Approval flow handled on save.
         }
     };
 
@@ -403,7 +403,6 @@ const BillingTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData },
             } else {
                 setPendingExpenseDocs(prev => ({ ...prev, [expenseKey]: file }));
             }
-            addToast(`${expenseKey === 'proposal' ? 'Proposal' : 'Document'} selected. It will upload when you click Save Changes.`, 'info');
             return;
         }
 

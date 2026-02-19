@@ -245,7 +245,6 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
 
         if (isEditing) {
             setPendingInvoiceFile(file);
-            addToast('Invoice selected. It will upload when you click Save Changes.', 'info');
             return;
         }
 
@@ -279,7 +278,6 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
 
         if (isEditing) {
             setPendingExpenseDocs(prev => ({ ...prev, [expenseKey]: file }));
-            addToast('Document selected. It will upload when you click Save Changes.', 'info');
             return;
         }
 
@@ -314,7 +312,6 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
 
         if (isEditing) {
             setPendingDeliveryDocs(prev => ({ ...prev, [type]: file }));
-            addToast(`${type} selected. It will upload when you click Save Changes.`, 'info');
             return;
         }
 

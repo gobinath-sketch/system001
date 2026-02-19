@@ -205,7 +205,6 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
         if (!file) return;
 
         setPendingUploads(prev => ({ ...prev, [`${category}:${docType}`]: file }));
-        addToast('Document selected. It will upload when you click Save Changes.', 'info');
     };
 
     // Expose handleSave to parent
