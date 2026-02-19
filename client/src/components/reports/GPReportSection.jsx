@@ -1,184 +1,219 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Download, TrendingUp, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
-
-
 const GPReportSection = () => {
-    const { socket } = useSocket();
-    const [filterType, setFilterType] = useState('month'); // 'month', 'quarter', 'year'
-    const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
-    const [selectedQuarter, setSelectedQuarter] = useState('Q4'); // Q1, Q2, Q3, Q4
-    const [reportData, setReportData] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [lastUpdated, setLastUpdated] = useState(new Date());
-    const { currency } = useCurrency(); // Global Currency
-    const USD_TO_INR = 83; // Conversion rate
+  const {
+    socket
+  } = useSocket();
+  const [filterType, setFilterType] = useState('month'); // 'month', 'quarter', 'year'
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth()); // 0-11
+  const [selectedQuarter, setSelectedQuarter] = useState('Q4'); // Q1, Q2, Q3, Q4
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(new Date());
+  const {
+    currency
+  } = useCurrency(); // Global Currency
+  const USD_TO_INR = 83; // Conversion rate
 
-    // Month options with year
-    const currentYear = new Date().getFullYear();
-    const months = [
-        { value: 0, label: `Jan ${currentYear}` },
-        { value: 1, label: `Feb ${currentYear}` },
-        { value: 2, label: `Mar ${currentYear}` },
-        { value: 3, label: `Apr ${currentYear}` },
-        { value: 4, label: `May ${currentYear}` },
-        { value: 5, label: `Jun ${currentYear}` },
-        { value: 6, label: `Jul ${currentYear}` },
-        { value: 7, label: `Aug ${currentYear}` },
-        { value: 8, label: `Sep ${currentYear}` },
-        { value: 9, label: `Oct ${currentYear}` },
-        { value: 10, label: `Nov ${currentYear}` },
-        { value: 11, label: `Dec ${currentYear}` }
-    ];
+  // Month options with year
+  const currentYear = new Date().getFullYear();
+  const months = [{
+    value: 0,
+    label: `Jan ${currentYear}`
+  }, {
+    value: 1,
+    label: `Feb ${currentYear}`
+  }, {
+    value: 2,
+    label: `Mar ${currentYear}`
+  }, {
+    value: 3,
+    label: `Apr ${currentYear}`
+  }, {
+    value: 4,
+    label: `May ${currentYear}`
+  }, {
+    value: 5,
+    label: `Jun ${currentYear}`
+  }, {
+    value: 6,
+    label: `Jul ${currentYear}`
+  }, {
+    value: 7,
+    label: `Aug ${currentYear}`
+  }, {
+    value: 8,
+    label: `Sep ${currentYear}`
+  }, {
+    value: 9,
+    label: `Oct ${currentYear}`
+  }, {
+    value: 10,
+    label: `Nov ${currentYear}`
+  }, {
+    value: 11,
+    label: `Dec ${currentYear}`
+  }];
 
-    // Quarter options with year
-    const currentMonth = new Date().getMonth();
+  // Quarter options with year
+  const currentMonth = new Date().getMonth();
+  const fiscalYearStart = currentMonth >= 3 ? currentYear : currentYear - 1;
+  const fiscalYearEnd = fiscalYearStart + 1;
+  const quarters = [{
+    value: 'Q1',
+    label: `Q1 (Apr ${fiscalYearStart} - Jun ${fiscalYearStart})`
+  }, {
+    value: 'Q2',
+    label: `Q2 (Jul ${fiscalYearStart} - Sep ${fiscalYearStart})`
+  }, {
+    value: 'Q3',
+    label: `Q3 (Oct ${fiscalYearStart} - Dec ${fiscalYearStart})`
+  }, {
+    value: 'Q4',
+    label: `Q4 (Jan ${fiscalYearEnd} - Mar ${fiscalYearEnd})`
+  }];
+
+  // Get current fiscal year display
+  const getFiscalYearDisplay = () => {
+    const now = new Date();
+    const currentMonth = now.getMonth();
+    const currentYear = now.getFullYear();
+
+    // Fiscal year starts in April (month 3)
     const fiscalYearStart = currentMonth >= 3 ? currentYear : currentYear - 1;
     const fiscalYearEnd = fiscalYearStart + 1;
+    return `April ${fiscalYearStart} - March ${fiscalYearEnd}`;
+  };
+  useEffect(() => {
+    fetchReportData();
+  }, [filterType, selectedMonth, selectedQuarter]);
+  useEffect(() => {
+    if (!socket) return;
+    const handleEntityUpdated = event => {
+      if (['opportunity', 'client'].includes(event?.entity)) {
+        fetchReportData();
+      }
+    };
+    socket.on('entity_updated', handleEntityUpdated);
+    return () => socket.off('entity_updated', handleEntityUpdated);
+  }, [socket, filterType, selectedMonth, selectedQuarter]);
+  const fetchReportData = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
 
-    const quarters = [
-        { value: 'Q1', label: `Q1 (Apr ${fiscalYearStart} - Jun ${fiscalYearStart})` },
-        { value: 'Q2', label: `Q2 (Jul ${fiscalYearStart} - Sep ${fiscalYearStart})` },
-        { value: 'Q3', label: `Q3 (Oct ${fiscalYearStart} - Dec ${fiscalYearStart})` },
-        { value: 'Q4', label: `Q4 (Jan ${fiscalYearEnd} - Mar ${fiscalYearEnd})` }
+      // Build query params
+      const params = new URLSearchParams();
+      if (filterType === 'month') {
+        params.append('type', 'month');
+        // Convert 0-11 to "Jan", "Feb", etc.
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        params.append('month', monthNames[selectedMonth]);
+        params.append('year', currentYear); // Uses currentYear variable defined in component scope
+      } else if (filterType === 'quarter') {
+        params.append('type', 'quarter');
+        params.append('quarter', selectedQuarter);
+        params.append('year', fiscalYearStart); // Context of fiscal year
+      } else {
+        params.append('type', 'fiscal_year');
+        params.append('year', fiscalYearStart);
+      }
+      const res = await axios.get(`http://localhost:5000/api/reports/gp-analysis?${params.toString()}`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      setReportData(res.data);
+      setLastUpdated(new Date());
+    } catch (error) {
+      console.error('Error fetching GP report:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const generateExcelReport = () => {
+    if (!reportData || !reportData.clientData) return;
+
+    // Prepare data for Excel
+    const excelData = reportData.clientData.map(client => ({
+      'S.No': client.sno,
+      'Client Name': client.clientName,
+      'Total Revenue': client.totalRevenue,
+      'Total Expenses': client.totalExpenses,
+      'Profit': client.gp,
+      'GP %': client.gpPercent.toFixed(2) + '%'
+    }));
+
+    // Create worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData);
+
+    // Set column widths
+    ws['!cols'] = [{
+      wch: 8
+    },
+    // S.No
+    {
+      wch: 30
+    },
+    // Client Name
+    {
+      wch: 15
+    },
+    // Total Revenue
+    {
+      wch: 15
+    },
+    // Total Expenses
+    {
+      wch: 15
+    },
+    // GP
+    {
+      wch: 10
+    } // GP %
     ];
 
-    // Get current fiscal year display
-    const getFiscalYearDisplay = () => {
-        const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'GP Report');
 
-        // Fiscal year starts in April (month 3)
-        const fiscalYearStart = currentMonth >= 3 ? currentYear : currentYear - 1;
-        const fiscalYearEnd = fiscalYearStart + 1;
+    // Generate filename with date
+    const dateStr = new Date().toISOString().split('T')[0];
+    const filename = `GP_Report_${filterType}_${dateStr}.xlsx`;
 
-        return `April ${fiscalYearStart} - March ${fiscalYearEnd}`;
-    };
-
-    useEffect(() => {
-        fetchReportData();
-    }, [filterType, selectedMonth, selectedQuarter]);
-
-    useEffect(() => {
-        if (!socket) return;
-
-        const handleEntityUpdated = (event) => {
-            if (['opportunity', 'client'].includes(event?.entity)) {
-                fetchReportData();
-            }
-        };
-
-        socket.on('entity_updated', handleEntityUpdated);
-        return () => socket.off('entity_updated', handleEntityUpdated);
-    }, [socket, filterType, selectedMonth, selectedQuarter]);
-
-    const fetchReportData = async () => {
-        setLoading(true);
-        try {
-            const token = localStorage.getItem('token');
-
-            // Build query params
-            const params = new URLSearchParams();
-
-            if (filterType === 'month') {
-                params.append('type', 'month');
-                // Convert 0-11 to "Jan", "Feb", etc.
-                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                params.append('month', monthNames[selectedMonth]);
-                params.append('year', currentYear); // Uses currentYear variable defined in component scope
-            } else if (filterType === 'quarter') {
-                params.append('type', 'quarter');
-                params.append('quarter', selectedQuarter);
-                params.append('year', fiscalYearStart); // Context of fiscal year
-            } else {
-                params.append('type', 'fiscal_year');
-                params.append('year', fiscalYearStart);
-            }
-
-            const res = await axios.get(`http://localhost:5000/api/reports/gp-analysis?${params.toString()}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            setReportData(res.data);
-            setLastUpdated(new Date());
-        } catch (error) {
-            console.error('Error fetching GP report:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const generateExcelReport = () => {
-        if (!reportData || !reportData.clientData) return;
-
-        // Prepare data for Excel
-        const excelData = reportData.clientData.map(client => ({
-            'S.No': client.sno,
-            'Client Name': client.clientName,
-            'Total Revenue': client.totalRevenue,
-            'Total Expenses': client.totalExpenses,
-            'Profit': client.gp,
-            'GP %': client.gpPercent.toFixed(2) + '%'
-        }));
-
-        // Create worksheet
-        const ws = XLSX.utils.json_to_sheet(excelData);
-
-        // Set column widths
-        ws['!cols'] = [
-            { wch: 8 },  // S.No
-            { wch: 30 }, // Client Name
-            { wch: 15 }, // Total Revenue
-            { wch: 15 }, // Total Expenses
-            { wch: 15 }, // GP
-            { wch: 10 }  // GP %
-        ];
-
-        // Create workbook
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, 'GP Report');
-
-        // Generate filename with date
-        const dateStr = new Date().toISOString().split('T')[0];
-        const filename = `GP_Report_${filterType}_${dateStr}.xlsx`;
-
-        // Download
-        XLSX.writeFile(wb, filename);
-    };
-
-    const formatCurrency = (value) => {
-        const displayValue = currency === 'USD' ? value / USD_TO_INR : value;
-        return new Intl.NumberFormat('en-IN', {
-            style: 'currency',
-            currency: currency,
-            maximumFractionDigits: currency === 'USD' ? 0 : 0
-        }).format(displayValue);
-    };
-
-    const formatDateTime = (date) => {
-        return new Intl.DateTimeFormat('en-US', {
-            month: 'numeric',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-        }).format(date);
-    };
-
-    const summary = reportData?.summary || {
-        totalRevenue: 0,
-        totalExpenses: 0,
-        grossProfit: 0,
-        gpPercent: 0,
-        totalOpportunities: 0
-    };
-
-    return (
-        <div className="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
+    // Download
+    XLSX.writeFile(wb, filename);
+  };
+  const formatCurrency = value => {
+    const displayValue = currency === 'USD' ? value / USD_TO_INR : value;
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: currency,
+      maximumFractionDigits: currency === 'USD' ? 0 : 0
+    }).format(displayValue);
+  };
+  const formatDateTime = date => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    }).format(date);
+  };
+  const summary = reportData?.summary || {
+    totalRevenue: 0,
+    totalExpenses: 0,
+    grossProfit: 0,
+    gpPercent: 0,
+    totalOpportunities: 0
+  };
+  return <div className="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-200">
             {/* Header */}
             <div className="flex items-center justify-between mb-6">
                 <div>
@@ -192,11 +227,7 @@ const GPReportSection = () => {
                 </div>
                 <div className="flex items-center gap-3">
                     {/* Currency Toggle moved to global header */}
-                    <button
-                        onClick={generateExcelReport}
-                        disabled={!reportData || loading}
-                        className="flex items-center gap-2 bg-primary-blue hover:bg-opacity-90 text-white font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                    >
+                    <button onClick={generateExcelReport} disabled={!reportData || loading} className="flex items-center gap-2 bg-primary-blue hover:bg-opacity-90 text-white font-semibold px-6 py-3 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm">
                         <Download size={18} />
                         Generate Report
                     </button>
@@ -208,90 +239,51 @@ const GPReportSection = () => {
                 <div className="flex items-center gap-4 flex-wrap">
                     {/* Filter Type Selector */}
                     <div className="flex gap-2">
-                        <button
-                            onClick={() => setFilterType('month')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${filterType === 'month'
-                                ? 'bg-primary-blue text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
+                        <button onClick={() => setFilterType('month')} className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${filterType === 'month' ? 'bg-primary-blue text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                             Month
                         </button>
-                        <button
-                            onClick={() => setFilterType('quarter')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${filterType === 'quarter'
-                                ? 'bg-primary-blue text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
+                        <button onClick={() => setFilterType('quarter')} className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${filterType === 'quarter' ? 'bg-primary-blue text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                             Quarter
                         </button>
-                        <button
-                            onClick={() => setFilterType('year')}
-                            className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${filterType === 'year'
-                                ? 'bg-primary-blue text-white shadow-md'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                }`}
-                        >
+                        <button onClick={() => setFilterType('year')} className={`px-4 py-2 rounded-lg font-medium transition-all text-sm ${filterType === 'year' ? 'bg-primary-blue text-white shadow-md' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}>
                             Year
                         </button>
                     </div>
 
                     {/* Month Dropdown */}
-                    {filterType === 'month' && (
-                        <div className="flex items-center gap-2">
+                    {filterType === 'month' && <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-gray-500" />
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary-blue bg-white"
-                            >
-                                {months.map(month => (
-                                    <option key={month.value} value={month.value}>
+                            <select value={selectedMonth} onChange={e => setSelectedMonth(parseInt(e.target.value))} className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary-blue bg-white">
+                                {months.map(month => <option key={month.value} value={month.value}>
                                         {month.label}
-                                    </option>
-                                ))}
+                                    </option>)}
                             </select>
-                        </div>
-                    )}
+                        </div>}
 
                     {/* Quarter Dropdown */}
-                    {filterType === 'quarter' && (
-                        <div className="flex items-center gap-2">
+                    {filterType === 'quarter' && <div className="flex items-center gap-2">
                             <Calendar size={16} className="text-gray-500" />
-                            <select
-                                value={selectedQuarter}
-                                onChange={(e) => setSelectedQuarter(e.target.value)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary-blue bg-white"
-                            >
-                                {quarters.map(quarter => (
-                                    <option key={quarter.value} value={quarter.value}>
+                            <select value={selectedQuarter} onChange={e => setSelectedQuarter(e.target.value)} className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-primary-blue bg-white">
+                                {quarters.map(quarter => <option key={quarter.value} value={quarter.value}>
                                         {quarter.label}
-                                    </option>
-                                ))}
+                                    </option>)}
                             </select>
-                        </div>
-                    )}
+                        </div>}
 
                     {/* Fiscal Year Display */}
-                    {filterType === 'year' && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
+                    {filterType === 'year' && <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-lg">
                             <Calendar size={16} className="text-primary-blue" />
                             <span className="text-sm font-medium text-primary-blue">
                                 {getFiscalYearDisplay()}
                             </span>
-                        </div>
-                    )}
+                        </div>}
                 </div>
             </div>
 
             {/* Summary Cards */}
-            {loading ? (
-                <div className="flex items-center justify-center py-12">
+            {loading ? <div className="flex items-center justify-center py-12">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-blue"></div>
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                </div> : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                     {/* Total Revenue */}
                     <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-6">
                         <div className="flex items-center gap-2 mb-2">
@@ -344,10 +336,7 @@ const GPReportSection = () => {
                             {summary.totalOpportunities}
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
-    );
+                </div>}
+        </div>;
 };
-
 export default GPReportSection;

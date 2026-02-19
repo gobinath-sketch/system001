@@ -1,25 +1,24 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { FileText, Maximize2, X, Check, FileCheck, Banknote, ArrowUpRight } from 'lucide-react';
+const DocumentStatusCard = ({
+  opportunities
+}) => {
+  const [showModal, setShowModal] = useState(false);
 
-const DocumentStatusCard = ({ opportunities }) => {
-    const [showModal, setShowModal] = useState(false);
+  // Calculate Counts
+  const totalOpps = opportunities.length;
+  const poCount = opportunities.filter(o => o.poDocument).length;
+  const invoiceCount = opportunities.filter(o => o.invoiceDocument).length;
 
-    // Calculate Counts
-    const totalOpps = opportunities.length;
-    const poCount = opportunities.filter(o => o.poDocument).length;
-    const invoiceCount = opportunities.filter(o => o.invoiceDocument).length;
+  // Derived stats
+  const pendingPO = totalOpps - poCount;
+  const pendingInvoice = totalOpps - invoiceCount;
 
-    // Derived stats
-    const pendingPO = totalOpps - poCount;
-    const pendingInvoice = totalOpps - invoiceCount;
-
-    // Assumes 2 docs per opp (PO + Inv) for total status tracking
-    const totalDocsRequired = totalOpps * 2;
-    const processedDocs = poCount + invoiceCount;
-    const pendingDocs = totalDocsRequired - processedDocs;
-
-    return (
-        <>
+  // Assumes 2 docs per opp (PO + Inv) for total status tracking
+  const totalDocsRequired = totalOpps * 2;
+  const processedDocs = poCount + invoiceCount;
+  const pendingDocs = totalDocsRequired - processedDocs;
+  return <>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full">
                 {/* Header */}
                 <div className="bg-primary-blue p-4 flex justify-between items-center text-white">
@@ -29,10 +28,7 @@ const DocumentStatusCard = ({ opportunities }) => {
                         </div>
                         <h3 className="font-bold text-lg">Document Status</h3>
                     </div>
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="flex items-center gap-1 text-xs font-medium bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors"
-                    >
+                    <button onClick={() => setShowModal(true)} className="flex items-center gap-1 text-xs font-medium bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-full transition-colors">
                         <Maximize2 size={12} /> Expand View
                     </button>
                 </div>
@@ -96,8 +92,7 @@ const DocumentStatusCard = ({ opportunities }) => {
             </div>
 
             {/* Expand Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            {showModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                     <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[80vh] flex flex-col">
                         <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
                             <h2 className="text-xl font-bold text-gray-800">Document Status Overview</h2>
@@ -118,47 +113,34 @@ const DocumentStatusCard = ({ opportunities }) => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {opportunities.map(opp => (
-                                        <tr key={opp._id} className="border-b border-gray-100 hover:bg-gray-50">
+                                    {opportunities.map(opp => <tr key={opp._id} className="border-b border-gray-100 hover:bg-gray-50">
                                             <td className="py-3 px-4 font-mono text-brand-blue">{opp.opportunityNumber}</td>
                                             <td className="py-3 px-4 text-gray-800">{opp.clientName}</td>
                                             <td className="py-3 px-4 text-center">
-                                                {opp.poDocument ? (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                                {opp.poDocument ? <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                                                         <Check size={12} className="mr-1" /> Uploaded
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
+                                                    </span> : <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
                                                         Pending
-                                                    </span>
-                                                )}
+                                                    </span>}
                                             </td>
                                             <td className="py-3 px-4 text-center">
-                                                {opp.invoiceDocument ? (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                                                {opp.invoiceDocument ? <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
                                                         <Check size={12} className="mr-1" /> Uploaded
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
+                                                    </span> : <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
                                                         Pending
-                                                    </span>
-                                                )}
+                                                    </span>}
                                             </td>
                                             <td className="py-3 px-4">
                                                 <a href={`/opportunities/${opp._id}`} className="text-brand-blue hover:underline text-sm">
                                                     View
                                                 </a>
                                             </td>
-                                        </tr>
-                                    ))}
+                                        </tr>)}
                                 </tbody>
                             </table>
                         </div>
                     </div>
-                </div>
-            )}
-        </>
-    );
+                </div>}
+        </>;
 };
-
 export default DocumentStatusCard;

@@ -27,7 +27,6 @@ export const validateEmail = (email) => {
         return { valid: false, message: 'Please enter a valid email address' };
     }
     return { valid: true, message: '' };
-    return { valid: true, message: '' };
 };
 
 export const validatePAN = (pan) => {
