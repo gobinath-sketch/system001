@@ -40,7 +40,7 @@ const BillingTab = forwardRef(({
 
   // Currency Constants
   const CONVERSION_RATE = currency === 'USD' ? 84 : 1;
-  const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '₹';
+  const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '\u20B9';
 
   // Helper to Recalculate Totals based on current state
   const recalculateTotals = data => {
@@ -369,305 +369,25 @@ const BillingTab = forwardRef(({
             }
           });
         }
-    };
+        setPendingProposalFile(null);
+        setPendingExpenseDocs({});
 
-
-
-    // Permissions Logic
-    const isSales = user?.role === 'Sales Executive' || user?.role === 'Sales Manager';
-    const isDelivery = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
-    const isAdmin = ['Super Admin', 'Director'].includes(user?.role);
-
-    // Execution Details (TOV, Marketing, Contingency): Editable by Sales, Admin (NOT Delivery)
-    const canEditExecution = isEditing && (isSales || isAdmin);
-
-    // Operational Expenses Breakdown: Editable by Delivery, Admin (NOT Sales)
-    const canEditOpExpenses = isEditing && (isDelivery || isAdmin);
-
-    // Initialize formData
-    useEffect(() => {
-        if (opportunity) {
-            const initialData = JSON.parse(JSON.stringify(opportunity));
-            const exp = initialData.expenses || {};
-
-            // DEFAULT VALUES Logic
-            // If marketingPercent is undefined/null, default to 0
-            if (exp.marketingPercent === undefined || exp.marketingPercent === null) {
-                exp.marketingPercent = 0;
-            }
-            // If contingencyPercent is undefined/null, default to 15
-            if (exp.contingencyPercent === undefined || exp.contingencyPercent === null) {
-                exp.contingencyPercent = 15;
-            }
-            // Clamp to 15 if legacy value is higher (fixes dropdown default to 1% issue)
-            if (exp.contingencyPercent > 15) {
-                exp.contingencyPercent = 15;
-            }
-
-            // Auto-calculate Marketing & Contingency if values are missing
-            const tov = initialData.commonDetails?.tov || 0;
-
-            if ((!exp.marketing || exp.marketing === 0) && exp.marketingPercent >= 0) {
-                exp.marketing = (tov * exp.marketingPercent) / 100;
-            }
-
-            if ((!exp.contingency || exp.contingency === 0) && exp.contingencyPercent >= 0) {
-                exp.contingency = (tov * exp.contingencyPercent) / 100;
-            }
-
-            // Ensure commonDetails is initialized for TOV editing
-            if (!initialData.commonDetails) initialData.commonDetails = {};
-
-            initialData.expenses = exp;
-
-            // Perform Initial Calculation
-            const calculatedData = recalculateTotals(initialData);
-            setFormData(calculatedData);
-        }
-    }, [opportunity]);
-
-    // Expose handleSave and handleCancel to parent
-    useImperativeHandle(ref, () => ({
-        handleSave: async () => {
-            try {
-                const token = localStorage.getItem('token');
-
-                // Sanitize commonDetails (only need specific fields but sending whole obj is fine if carefully handled)
-                const sanitizedCommonDetails = { ...formData.commonDetails };
-
-                // --- AUTO-FILL VENDOR PAYABLES FROM EXPENSES ---
-                const expenses = formData.expenses || {};
-
-                // Helper to get currency value (parse if string)
-                const getVal = (key) => {
-                    const val = expenses[key];
-                    if (typeof val === 'string') return parseFloat(val.replace(/,/g, '')) || 0;
-                    return parseFloat(val) || 0;
-                };
-
-                // Clone existing financeDetails to preserve other data (like clientReceivables)
-                const existingFinance = opportunity.financeDetails || {};
-                const financeDetails = JSON.parse(JSON.stringify(existingFinance));
-                if (!financeDetails.vendorPayables) financeDetails.vendorPayables = {};
-                if (!financeDetails.vendorPayables.detailed) financeDetails.vendorPayables.detailed = {};
-
-                const vp = financeDetails.vendorPayables;
-                const detailed = vp.detailed;
-
-                // Helper for Tax Calculation
-                const updateCategory = (catKey, expenseVal) => {
-                    if (!detailed[catKey]) detailed[catKey] = {};
-                    const cat = detailed[catKey];
-
-                    cat.invoiceValue = expenseVal; // Auto-fill Invoice Value (Without Tax)
-
-                    // Recalculate based on existing Tax/TDS settings
-                    const gstType = cat.gstType || '';
-                    let gstRate = 0;
-                    if (gstType.includes('18%')) gstRate = 18;
-                    else if (gstType.includes('9%')) gstRate = 9; // Simple check for calc
-
-                    const gstAmount = (expenseVal * gstRate) / 100;
-                    const invoiceValueWithTax = expenseVal + gstAmount;
-
-                    const tdsPercent = parseFloat(cat.tdsPercent) || 0;
-                    const tdsAmount = (expenseVal * tdsPercent) / 100; // TDS on Base Value
-
-                    cat.gstAmount = gstAmount;
-                    cat.invoiceValueWithTax = invoiceValueWithTax;
-                    cat.tdsAmount = tdsAmount;
-                    cat.finalPayable = invoiceValueWithTax - tdsAmount;
-                };
-
-                // Perform Mappings
-                updateCategory('trainer', getVal('trainerCost'));
-                updateCategory('royalty', getVal('gkRoyalty'));
-                updateCategory('courseMaterials', getVal('material'));
-                updateCategory('lab', getVal('labs'));
-                updateCategory('venue', getVal('venue'));
-                updateCategory('travel', getVal('travel'));
-                updateCategory('accommodation', getVal('accommodation'));
-
-                // Marketing: Use calculated amount from Expense Breakdown
-                updateCategory('marketing', getVal('marketing'));
-
-                // Simple Fields
-                if (!vp.perDiem) vp.perDiem = {};
-                vp.perDiem.amount = getVal('perDiem');
-
-                if (!vp.other) vp.other = {};
-                vp.other.amount = getVal('localConveyance'); // Local Conveyance -> Other Expenses
-
-                // Payload includes expenses, commonDetails AND financeDetails
-                const payload = {
-                    expenses: formData.expenses,
-                    commonDetails: sanitizedCommonDetails,
-                    financeDetails: financeDetails
-                };
-
-                await axios.put(
-                    `http://localhost:5000/api/opportunities/${opportunity._id}`,
-                    payload,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-
-                if (pendingProposalFile) {
-                    const proposalData = new FormData();
-                    proposalData.append('proposal', pendingProposalFile);
-                    await axios.post(
-                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`,
-                        proposalData,
-                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-                    );
-                }
-
-                for (const [category, file] of Object.entries(pendingExpenseDocs)) {
-                    if (!file) continue;
-                    const expenseData = new FormData();
-                    expenseData.append('document', file);
-                    expenseData.append('category', category);
-                    await axios.post(
-                        `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`,
-                        expenseData,
-                        { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-                    );
-                }
-
-                setPendingProposalFile(null);
-                setPendingExpenseDocs({});
-
-                addToast('Changes saved successfully', 'success');
-                refreshData();
-                return true;
-            } catch (error) {
-                console.error('Save failed', error);
-                addToast('Failed to save details', 'error');
-                return false;
-            }
-        },
-        handleCancel: () => {
-            setFormData(JSON.parse(JSON.stringify(opportunity)));
-            setPendingProposalFile(null);
-            setPendingExpenseDocs({});
-        }
-    }));
-
-
-
-
-    const handleChange = (section, field, value) => {
-        setFormData(prev => {
-            const newState = { ...prev };
-            // CRITICAL FIX: Create a copy of the nested object to ensure React detects the change
-            // This fixes the issue where FinancialSummary wouldn't update because the 'expenses' reference didn't change
-            newState[section] = { ...(prev[section] || {}) };
-
-            newState[section][field] = value;
-
-            // Trigger Recalculation if modifying calculation inputs
-            const calcFields = ['marketingPercent', 'contingencyPercent', 'targetGpPercent',
-                'trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs',
-                'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance',
-                'tovUnit']; // Also re-calc rate if unit changes
-
-            // Or if modifying days/participants (which are root or commonDetails?)
-            // We can just always recalculate to be safe and simple.
-
-            return recalculateTotals(newState);
-        });
-    };
-
-    // Generic upload handler that associates a document with a specific expense category
-    const handleProposalUpload = async (e, expenseKey) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        if (isEditing) {
-            if (expenseKey === 'proposal') {
-                setPendingProposalFile(file);
-            } else {
-                setPendingExpenseDocs(prev => ({ ...prev, [expenseKey]: file }));
-            }
-            return;
-        }
-
-        setUploading(expenseKey);
-        try {
-            const token = localStorage.getItem('token');
-            const uploadFormData = new FormData();
-
-            let endpoint = '';
-
-            // Differentiate between generic 'expense' docs and the 'proposal' doc
-            if (expenseKey === 'proposal') {
-                endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-proposal`;
-                uploadFormData.append('proposal', file); // Use 'proposal' as field name
-            } else {
-                endpoint = `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`;
-                // Use 'document' as field name matching backend for expenses
-                uploadFormData.append('document', file);
-                uploadFormData.append('category', expenseKey);
-            }
-
-            await axios.post(
-                endpoint,
-                uploadFormData,
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-            );
-
-            addToast(`${expenseKey === 'proposal' ? 'Proposal' : 'Document'} uploaded successfully`, 'success');
-            refreshData();
-        } catch (error) {
-            console.error('Upload failed', error);
-            addToast(`Failed to upload ${expenseKey}`, 'error');
-        } finally {
-            setUploading(null);
-        }
-    };
-
-    const expenseTypes = [
-        { key: 'trainerCost', label: 'Trainer Cost' },
-        { key: 'vouchersCost', label: 'Vouchers Cost' },
-        { key: 'gkRoyalty', label: 'GK Royalty' },
-        { key: 'material', label: 'Material' },
-        { key: 'labs', label: 'Labs' },
-        { key: 'venue', label: 'Venue' },
-        { key: 'travel', label: 'Travel' },
-        { key: 'accommodation', label: 'Accommodation' },
-        { key: 'perDiem', label: 'Per Diem' },
-        { key: 'localConveyance', label: 'Local Conveyance' },
-        // Marketing and Contingency removed from breakdown as requested
-    ];
-
-    // Use formData for calculations if it has expenses, else fallback to opportunity
-    // This MERGE strategy ensures that if formData has updates (from handleChange), they are used regardless of isEditing flag quirks
-    const activeData = {
-        ...opportunity,
-        ...formData,
-        expenses: { ...(opportunity.expenses || {}), ...(formData.expenses || {}) },
-        commonDetails: { ...(opportunity.commonDetails || {}), ...(formData.commonDetails || {}) }
-    };
-
-    // --- FINANCE-BASED CALCULATIONS (Read-Only from Finance Module) ---
-    // TOV: From Finance Client Receivables
-    const financeDetails = opportunity.financeDetails || {};
-    const clientReceivables = financeDetails.clientReceivables || {};
-    const vendorPayables = financeDetails.vendorPayables || {};
-
-    // TOV = Client Invoice Amount (from Finance)
-    const tov = clientReceivables.invoiceAmount || 0;
-    const tovUnit = activeData.commonDetails?.tovUnit || 'Fixed';
-
-    // Total Expenses: Sum of Vendor Payables (from Finance)
-    let totalExpenses = 0;
-
-    // Sum Detailed Categories (Invoice Value Excl Tax)
-    if (vendorPayables.detailed) {
-        Object.values(vendorPayables.detailed).forEach(cat => {
-            totalExpenses += (parseFloat(cat.invoiceValue) || 0);
-        });
+        addToast('Changes saved successfully', 'success');
+        refreshData();
+        return true;
+      } catch (error) {
+        console.error('Save failed', error);
+        addToast('Failed to save details', 'error');
+        return false;
+      }
+    },
+    handleCancel: () => {
+      setFormData(JSON.parse(JSON.stringify(opportunity)));
+      setPendingProposalFile(null);
+      setPendingExpenseDocs({});
     }
   }));
+
   const handleChange = (section, field, value) => {
     setFormData(prev => {
       const newState = {
@@ -1039,3 +759,4 @@ const BillingTab = forwardRef(({
         </div>;
 });
 export default BillingTab;
+
