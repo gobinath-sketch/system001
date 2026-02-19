@@ -1,9 +1,9 @@
-import React from 'react';
 import styled from 'styled-components';
-
-const LogoutButton = ({ onClick, isCollapsed }) => {
-  return (
-    <StyledWrapper $isCollapsed={isCollapsed}>
+const LogoutButton = ({
+  onClick,
+  isCollapsed
+}) => {
+  return <StyledWrapper $isCollapsed={isCollapsed}>
       <button className="Btn" onClick={onClick}>
         <div className="sign">
           <svg viewBox="0 0 512 512">
@@ -12,10 +12,8 @@ const LogoutButton = ({ onClick, isCollapsed }) => {
         </div>
         <div className="text">Logout</div>
       </button>
-    </StyledWrapper>
-  );
-}
-
+    </StyledWrapper>;
+};
 const StyledWrapper = styled.div`
   .Btn {
     display: flex;
@@ -89,5 +87,4 @@ const StyledWrapper = styled.div`
   .Btn:active {
     transform: translate(2px, 2px);
   }`;
-
 export default LogoutButton;

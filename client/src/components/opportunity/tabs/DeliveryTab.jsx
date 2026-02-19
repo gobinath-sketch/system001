@@ -1,6 +1,6 @@
-import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
+import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { Upload, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
 import UploadButton from '../../ui/UploadButton';
@@ -9,288 +9,344 @@ import BillingDetails from '../sections/BillingDetails';
 import OperationalExpensesBreakdown from '../sections/OperationalExpensesBreakdown';
 import DeliveryDocuments from '../sections/DeliveryDocuments';
 import AddSMEModal from '../../sme/AddSMEModal';
+const DeliveryTab = forwardRef(({
+  opportunity,
+  canEdit,
+  isEditing,
+  refreshData
+}, ref) => {
+  const {
+    addToast
+  } = useToast();
+  const {
+    user
+  } = useAuth();
+  // vendors state removed
+  const [smes, setSmes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [expenseUploading, setExpenseUploading] = useState(null);
+  const [pendingInvoiceFile, setPendingInvoiceFile] = useState(null);
+  const [pendingExpenseDocs, setPendingExpenseDocs] = useState({});
+  const [pendingDeliveryDocs, setPendingDeliveryDocs] = useState({});
+  const [isSMEModalOpen, setIsSMEModalOpen] = useState(false);
+  const [formData, setFormData] = useState({});
 
-const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }, ref) => {
-    const { addToast } = useToast();
-    const { user } = useAuth();
-    // vendors state removed
-    const [smes, setSmes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [uploading, setUploading] = useState(false);
-    const [expenseUploading, setExpenseUploading] = useState(null);
-    const [isSMEModalOpen, setIsSMEModalOpen] = useState(false);
+  // Derived state
+  const isDeliveryRole = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
+  const activeData = isEditing ? formData : opportunity;
 
-    const [formData, setFormData] = useState({});
+  // Fetch Vendors and SMEs
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const [smesRes] = await Promise.all([axios.get('http://localhost:5000/api/smes', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        })]);
+        // vendorsRes removed
+        // Populate companyVendor if needed
+        const populatedSMEs = smesRes.data.map(sme => ({
+          ...sme,
+          companyName: sme.companyName || 'N/A'
+        }));
+        setSmes(populatedSMEs);
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching vendors/smes:', error);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-    // Derived state
-    const isDeliveryRole = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
-    const activeData = isEditing ? formData : opportunity;
-
-    // Fetch Vendors and SMEs
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const [smesRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/smes', { headers: { Authorization: `Bearer ${token}` } })
-                ]);
-                // vendorsRes removed
-                // Populate companyVendor if needed
-                const populatedSMEs = smesRes.data.map(sme => ({
-                    ...sme,
-                    companyName: sme.companyName || 'N/A'
-                }));
-                setSmes(populatedSMEs);
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching vendors/smes:', error);
-                setLoading(false);
+  // Initialize formData when opportunity changes or edit mode starts
+  useEffect(() => {
+    if (opportunity) {
+      // Smart Logic for Days and Pax
+      let initialDays = opportunity.days;
+      if (opportunity.typeSpecificDetails?.duration) {
+        const durationStr = opportunity.typeSpecificDetails.duration.toLowerCase();
+        const match = durationStr.match(/(\d+)/);
+        if (match) {
+          const num = parseInt(match[0]);
+          if (durationStr.includes('month')) {
+            const calculatedDays = num * 30;
+            // If stored days is exactly the number of months (e.g. 3) or 0, assume it was wrongly parsed or init, so fix it.
+            if (!initialDays || initialDays === num) {
+              initialDays = calculatedDays;
             }
-        };
-        fetchData();
-    }, []);
-
-    // Initialize formData when opportunity changes or edit mode starts
-    useEffect(() => {
-        if (opportunity) {
-            // Smart Logic for Days and Pax
-            let initialDays = opportunity.days;
-            if (opportunity.typeSpecificDetails?.duration) {
-                const durationStr = opportunity.typeSpecificDetails.duration.toLowerCase();
-                const match = durationStr.match(/(\d+)/);
-                if (match) {
-                    const num = parseInt(match[0]);
-                    if (durationStr.includes('month')) {
-                        const calculatedDays = num * 30;
-                        // If stored days is exactly the number of months (e.g. 3) or 0, assume it was wrongly parsed or init, so fix it.
-                        if (!initialDays || initialDays === num) {
-                            initialDays = calculatedDays;
-                        }
-                    }
-                }
-            }
-
-            let initialPax = opportunity.participants;
-            if (opportunity.type === 'Lab Support' && opportunity.typeSpecificDetails?.numberOfIDs) {
-                initialPax = opportunity.typeSpecificDetails.numberOfIDs;
-            }
-
-            setFormData({
-                ...opportunity,
-                // Ensure nested objects are handled correctly
-                commonDetails: {
-                    ...opportunity.commonDetails,
-                    year: opportunity.commonDetails?.year || new Date().getFullYear()
-                },
-                expenses: { ...opportunity.expenses },
-                // Handle populated fields by taking _id if object, else value
-                // selectedVendor removed
-                selectedSME: typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME?._id : opportunity.selectedSME,
-                days: initialDays,
-                participants: initialPax
-            });
+          }
         }
-    }, [opportunity]);
-
-    // Expose handleSave to parent
-    useImperativeHandle(ref, () => ({
-        handleSave: async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const payload = {
-                    expenses: formData.expenses,
-                    commonDetails: formData.commonDetails,
-                    // selectedVendor removed
-                    selectedSME: formData.selectedSME,
-                    days: formData.days,
-                    participants: formData.participants
-                };
-
-                await axios.put(
-                    `http://localhost:5000/api/opportunities/${opportunity._id}`,
-                    payload,
-                    { headers: { Authorization: `Bearer ${token}` } }
-                );
-
-                addToast('Changes saved successfully', 'success');
-                refreshData();
-                return true;
-            } catch (error) {
-                console.error('Save failed', error);
-                const errorMessage = error.response?.data?.message || error.message || 'Failed to save changes';
-                addToast(errorMessage, 'error');
-                return false;
-            }
+      }
+      let initialPax = opportunity.participants;
+      if (opportunity.type === 'Lab Support' && opportunity.typeSpecificDetails?.numberOfIDs) {
+        initialPax = opportunity.typeSpecificDetails.numberOfIDs;
+      }
+      setFormData({
+        ...opportunity,
+        // Ensure nested objects are handled correctly
+        commonDetails: {
+          ...opportunity.commonDetails,
+          year: opportunity.commonDetails?.year || new Date().getFullYear()
         },
-        handleCancel: () => {
-            setFormData({
-                ...opportunity,
-                commonDetails: {
-                    ...opportunity.commonDetails,
-                    year: opportunity.commonDetails?.year || new Date().getFullYear()
-                },
-                expenses: { ...opportunity.expenses },
-                // selectedVendor removed
-                selectedSME: typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME?._id : opportunity.selectedSME
-            });
-        }
-    }));
+        expenses: {
+          ...opportunity.expenses
+        },
+        // Handle populated fields by taking _id if object, else value
+        // selectedVendor removed
+        selectedSME: typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME?._id : opportunity.selectedSME,
+        days: initialDays,
+        participants: initialPax
+      });
+    }
+  }, [opportunity]);
 
-
-    const handleChange = (section, field, value) => {
-        setFormData(prev => {
-            const newState = { ...prev };
-            if (section === 'root') {
-                newState[field] = value;
-            } else {
-                newState[section] = { ...prev[section], [field]: value };
-            }
-
-            // Auto-calculate end date when start date or days changes
-            if ((section === 'commonDetails' && field === 'startDate') || (section === 'root' && field === 'days')) {
-                const startDate = section === 'commonDetails' && field === 'startDate' ? value : newState.commonDetails?.startDate;
-                const days = section === 'root' && field === 'days' ? value : newState.days;
-
-                if (startDate && days && parseInt(days) > 0) {
-                    const start = new Date(startDate);
-                    const end = new Date(start);
-                    // Add days - 1 (since start date is day 1)
-                    end.setDate(start.getDate() + parseInt(days) - 1);
-
-                    if (!newState.commonDetails) {
-                        newState.commonDetails = {};
-                    }
-                    newState.commonDetails.endDate = end.toISOString().split('T')[0];
-                }
-            }
-
-            return newState;
-        });
-    };
-
-    const handleSMEChange = (e) => {
-        const value = e.target.value;
-        if (value === 'ADD_NEW_SME') {
-            setIsSMEModalOpen(true);
-        } else {
-            handleChange('root', 'selectedSME', value);
-        }
-    };
-
-    const handleSMESuccess = (newSme) => {
-        // Add new SME to list
-        const formattedSme = {
-            ...newSme,
-            companyName: newSme.companyName || 'N/A'
+  // Expose handleSave to parent
+  useImperativeHandle(ref, () => ({
+    handleSave: async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const payload = {
+          expenses: formData.expenses,
+          commonDetails: formData.commonDetails,
+          // selectedVendor removed
+          selectedSME: formData.selectedSME,
+          days: formData.days,
+          participants: formData.participants
         };
-        setSmes(prev => [...prev, formattedSme]);
-
-        // Select the new SME
-        handleChange('root', 'selectedSME', newSme._id);
-        setIsSMEModalOpen(false);
-    };
-
-    // handleVendorChange removed
-
-    const handleInvoiceUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setUploading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const uploadFormData = new FormData();
-            uploadFormData.append('invoice', file);
-
-            await axios.post(
-                `http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`,
-                uploadFormData,
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-            );
-
-            addToast('Invoice uploaded successfully', 'success');
-            refreshData();
-        } catch (error) {
-            console.error('Upload failed', error);
-            const errorMessage = error.response?.data?.message || 'Failed to upload invoice';
-            addToast(errorMessage, 'error');
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    // Generic upload handler for expenses (for Delivery Team view)
-    const handleProposalUpload = async (e, expenseKey) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setExpenseUploading(expenseKey);
-        try {
-            const token = localStorage.getItem('token');
-            const uploadFormData = new FormData();
-
-            // Use 'document' as field name matching backend
-            uploadFormData.append('document', file);
-            uploadFormData.append('category', expenseKey);
-
-            await axios.post(
-                `http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`,
-                uploadFormData,
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-            );
-
-            addToast('Document uploaded successfully', 'success');
-            refreshData();
-        } catch (error) {
-            console.error('Upload failed', error);
-            addToast('Failed to upload proposal', 'error');
-        } finally {
-            setExpenseUploading(null);
-        }
-    };
-
-    const handleDeliveryDocUpload = async (e, type) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        setUploading(true);
-        try {
-            const token = localStorage.getItem('token');
-            const uploadFormData = new FormData();
-            uploadFormData.append('document', file);
-            uploadFormData.append('type', type);
-
-            if (type === 'sme_profile' && formData.selectedSME) {
-                uploadFormData.append('smeId', formData.selectedSME);
+        await axios.put(`http://localhost:5000/api/opportunities/${opportunity._id}`, payload, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        if (pendingInvoiceFile) {
+          const invoiceData = new FormData();
+          invoiceData.append('invoice', pendingInvoiceFile);
+          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`, invoiceData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
             }
-
-            await axios.post(
-                `http://localhost:5000/api/opportunities/${opportunity._id}/upload-delivery-doc`,
-                uploadFormData,
-                { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-            );
-
-            addToast(`${type} uploaded successfully`, 'success');
-            refreshData();
-        } catch (error) {
-            console.error('Upload failed', error);
-            const errorMessage = error.response?.data?.message || `Failed to upload ${type}`;
-            addToast(errorMessage, 'error');
-        } finally {
-            setUploading(false);
+          });
         }
+        for (const [category, file] of Object.entries(pendingExpenseDocs)) {
+          if (!file) continue;
+          const expenseData = new FormData();
+          expenseData.append('document', file);
+          expenseData.append('category', category);
+          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+        }
+        for (const [type, file] of Object.entries(pendingDeliveryDocs)) {
+          if (!file) continue;
+          const deliveryData = new FormData();
+          deliveryData.append('document', file);
+          deliveryData.append('type', type);
+          if (type === 'sme_profile' && formData.selectedSME) {
+            deliveryData.append('smeId', formData.selectedSME);
+          }
+          await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-delivery-doc`, deliveryData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+        }
+        setPendingInvoiceFile(null);
+        setPendingExpenseDocs({});
+        setPendingDeliveryDocs({});
+        addToast('Changes saved successfully', 'success');
+        refreshData();
+        return true;
+      } catch (error) {
+        console.error('Save failed', error);
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to save changes';
+        addToast(errorMessage, 'error');
+        return false;
+      }
+    },
+    handleCancel: () => {
+      setFormData({
+        ...opportunity,
+        commonDetails: {
+          ...opportunity.commonDetails,
+          year: opportunity.commonDetails?.year || new Date().getFullYear()
+        },
+        expenses: {
+          ...opportunity.expenses
+        },
+        // selectedVendor removed
+        selectedSME: typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME?._id : opportunity.selectedSME
+      });
+      setPendingInvoiceFile(null);
+      setPendingExpenseDocs({});
+      setPendingDeliveryDocs({});
+    }
+  }));
+  const handleChange = (section, field, value) => {
+    setFormData(prev => {
+      const newState = {
+        ...prev
+      };
+      if (section === 'root') {
+        newState[field] = value;
+      } else {
+        newState[section] = {
+          ...prev[section],
+          [field]: value
+        };
+      }
+
+      // Auto-calculate end date when start date or days changes
+      if (section === 'commonDetails' && field === 'startDate' || section === 'root' && field === 'days') {
+        const startDate = section === 'commonDetails' && field === 'startDate' ? value : newState.commonDetails?.startDate;
+        const days = section === 'root' && field === 'days' ? value : newState.days;
+        if (startDate && days && parseInt(days) > 0) {
+          const start = new Date(startDate);
+          const end = new Date(start);
+          // Add days - 1 (since start date is day 1)
+          end.setDate(start.getDate() + parseInt(days) - 1);
+          if (!newState.commonDetails) {
+            newState.commonDetails = {};
+          }
+          newState.commonDetails.endDate = end.toISOString().split('T')[0];
+        }
+      }
+      return newState;
+    });
+  };
+  const handleSMEChange = e => {
+    const value = e.target.value;
+    if (value === 'ADD_NEW_SME') {
+      setIsSMEModalOpen(true);
+    } else {
+      handleChange('root', 'selectedSME', value);
+    }
+  };
+  const handleSMESuccess = newSme => {
+    // Add new SME to list
+    const formattedSme = {
+      ...newSme,
+      companyName: newSme.companyName || 'N/A'
     };
+    setSmes(prev => [...prev, formattedSme]);
 
-    const inputClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
-    const selectClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
+    // Select the new SME
+    handleChange('root', 'selectedSME', newSme._id);
+    setIsSMEModalOpen(false);
+  };
 
-    if (loading) return <div>Loading data...</div>;
+  // handleVendorChange removed
+  async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (isEditing) {
+      setPendingInvoiceFile(file);
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const uploadFormData = new FormData();
+      uploadFormData.append('invoice', file);
+      await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-invoice`, uploadFormData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      addToast('Invoice uploaded successfully', 'success');
+      refreshData();
+    } catch (error) {
+      console.error('Upload failed', error);
+      const errorMessage = error.response?.data?.message || 'Failed to upload invoice';
+      addToast(errorMessage, 'error');
+    } finally {
+      setUploading(false);
+    }
+  }; // Generic upload handler for expenses (for Delivery Team view)
+  const handleProposalUpload = async (e, expenseKey) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (isEditing) {
+      setPendingExpenseDocs(prev => ({
+        ...prev,
+        [expenseKey]: file
+      }));
+      return;
+    }
+    setExpenseUploading(expenseKey);
+    try {
+      const token = localStorage.getItem('token');
+      const uploadFormData = new FormData();
 
-    // Show all SMEs (no vendor filtering for delivery team)
-    const filteredSMEs = smes;
+      // Use 'document' as field name matching backend
+      uploadFormData.append('document', file);
+      uploadFormData.append('category', expenseKey);
+      await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-expense-doc`, uploadFormData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      addToast('Document uploaded successfully', 'success');
+      refreshData();
+    } catch (error) {
+      console.error('Upload failed', error);
+      addToast('Failed to upload proposal', 'error');
+    } finally {
+      setExpenseUploading(null);
+    }
+  };
+  const handleDeliveryDocUpload = async (e, type) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (isEditing) {
+      setPendingDeliveryDocs(prev => ({
+        ...prev,
+        [type]: file
+      }));
+      return;
+    }
+    setUploading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const uploadFormData = new FormData();
+      uploadFormData.append('document', file);
+      uploadFormData.append('type', type);
+      if (type === 'sme_profile' && formData.selectedSME) {
+        uploadFormData.append('smeId', formData.selectedSME);
+      }
+      await axios.post(`http://localhost:5000/api/opportunities/${opportunity._id}/upload-delivery-doc`, uploadFormData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      addToast(`${type} uploaded successfully`, 'success');
+      refreshData();
+    } catch (error) {
+      console.error('Upload failed', error);
+      const errorMessage = error.response?.data?.message || `Failed to upload ${type}`;
+      addToast(errorMessage, 'error');
+    } finally {
+      setUploading(false);
+    }
+  };
+  const inputClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
+  const selectClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
+  if (loading) return <div>Loading data...</div>;
 
-    return (
-        <div className="space-y-6">
+  // Show all SMEs (no vendor filtering for delivery team)
+  const filteredSMEs = smes;
+  return <div className="space-y-6">
 
             {/* Trainer Details */}
             <Card className="!bg-white">
@@ -299,12 +355,7 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                     {/* Row 1: Support Type, SME */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Trainer Support</label>
-                        <select
-                            value={formData.commonDetails?.trainingSupporter || 'GKT'}
-                            onChange={(e) => handleChange('commonDetails', 'trainingSupporter', e.target.value)}
-                            disabled={!isEditing}
-                            className={selectClass}
-                        >
+                        <select value={formData.commonDetails?.trainingSupporter || 'GKT'} onChange={e => handleChange('commonDetails', 'trainingSupporter', e.target.value)} disabled={!isEditing} className={selectClass}>
                             <option value="GKT">GKT</option>
                             <option value="GKCS">GKCS</option>
                             <option value="MCT">MCT</option>
@@ -313,134 +364,63 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Select SME</label>
                         <div className={`flex items-center border rounded-lg overflow-hidden ${!isEditing ? 'bg-gray-100 border-gray-200' : 'bg-gray-50 border-gray-200 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-                            <select
-                                value={formData.selectedSME || ''}
-                                onChange={handleSMEChange}
-                                disabled={!isEditing}
-                                className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none ${!isEditing ? 'cursor-not-allowed text-gray-500' : 'text-gray-900'}`}
-                            >
+                            <select value={formData.selectedSME || ''} onChange={handleSMEChange} disabled={!isEditing} className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none ${!isEditing ? 'cursor-not-allowed text-gray-500' : 'text-gray-900'}`}>
                                 <option value="">-- Select SME --</option>
                                 <option value="ADD_NEW_SME" className="text-brand-blue font-bold">+ Add New SME</option>
-                                {filteredSMEs.map((s, index) => (
-                                    <option key={s._id || index} value={s._id}>
+                                {filteredSMEs.map((s, index) => <option key={s._id || index} value={s._id}>
                                         {s.smeType === 'Company' ? `${s.name} – ${s.companyName}` : `${s.name} – Freelancer`}
-                                    </option>
-                                ))}
+                                    </option>)}
                             </select>
 
                             {/* Integrated Upload Trigger */}
                             <div className="flex items-center px-2 border-l border-gray-200 bg-gray-100 h-full">
-                                {opportunity.deliveryDocuments?.sme_profile ? (
-                                    <div className="flex items-center gap-2">
-                                        <a
-                                            href={`http://localhost:5000/${opportunity.deliveryDocuments.sme_profile.replace(/\\/g, '/')}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="flex items-center gap-1 text-xs text-primary-blue hover:text-blue-700 font-medium"
-                                            title="View Profile"
-                                        >
+                                {opportunity.deliveryDocuments?.sme_profile ? <div className="flex items-center gap-2">
+                                        <a href={`http://localhost:5000/${opportunity.deliveryDocuments.sme_profile.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-primary-blue hover:text-blue-700 font-medium" title="View Profile">
                                             <CheckCircle size={14} />
                                             <span> content upload</span>
                                         </a>
-                                        {isEditing && (
-                                            <div className="inline-block">
-                                                <input
-                                                    type="file"
-                                                    id="sme-profile-replace"
-                                                    className="hidden"
-                                                    onChange={(e) => handleDeliveryDocUpload(e, 'sme_profile')}
-                                                    disabled={uploading}
-                                                />
-                                                <UploadButton
-                                                    onClick={() => document.getElementById('sme-profile-replace').click()}
-                                                    disabled={uploading}
-                                                >
+                                        {isEditing && <div className="inline-block">
+                                                <input type="file" id="sme-profile-replace" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'sme_profile')} disabled={uploading} />
+                                                <UploadButton onClick={() => document.getElementById('sme-profile-replace').click()} disabled={uploading}>
                                                     Replace
                                                 </UploadButton>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
-                                    isEditing && (
-                                        <div className="inline-block">
-                                            <input
-                                                type="file"
-                                                id="sme-profile-upload"
-                                                className="hidden"
-                                                onChange={(e) => handleDeliveryDocUpload(e, 'sme_profile')}
-                                                disabled={uploading}
-                                            />
-                                            <UploadButton
-                                                onClick={() => document.getElementById('sme-profile-upload').click()}
-                                                disabled={uploading}
-                                            >
+                                            </div>}
+                                    </div> : isEditing && <div className="inline-block">
+                                            <input type="file" id="sme-profile-upload" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'sme_profile')} disabled={uploading} />
+                                            <UploadButton onClick={() => document.getElementById('sme-profile-upload').click()} disabled={uploading}>
                                                 Upload
                                             </UploadButton>
-                                        </div>
-                                    )
-                                )}
+                                        </div>}
                             </div>
                         </div>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Technology</label>
-                        <input
-                            type="text"
-                            value={opportunity.typeSpecificDetails?.technology || 'N/A'}
-                            disabled
-                            className="w-full border p-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed"
-                            placeholder="Technology from Opportunity"
-                        />
+                        <input type="text" value={opportunity.typeSpecificDetails?.technology || 'N/A'} disabled className="w-full border p-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed" placeholder="Technology from Opportunity" />
                     </div>
 
                     {/* Row 2: Course Details, Year/Month */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
-                        <input
-                            type="text"
-                            value={formData.commonDetails?.courseCode || ''}
-                            onChange={(e) => handleChange('commonDetails', 'courseCode', e.target.value)}
-                            disabled={!isEditing}
-                            className={inputClass}
-                            placeholder="Enter Code"
-                        />
+                        <input type="text" value={formData.commonDetails?.courseCode || ''} onChange={e => handleChange('commonDetails', 'courseCode', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Code" />
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
-                        <input
-                            type="text"
-                            value={formData.commonDetails?.courseName || ''}
-                            onChange={(e) => handleChange('commonDetails', 'courseName', e.target.value)}
-                            disabled={!isEditing}
-                            className={inputClass}
-                            placeholder="Enter Name"
-                        />
+                        <input type="text" value={formData.commonDetails?.courseName || ''} onChange={e => handleChange('commonDetails', 'courseName', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Name" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
-                            <select
-                                value={formData.commonDetails?.year || new Date().getFullYear()}
-                                onChange={(e) => handleChange('commonDetails', 'year', parseInt(e.target.value))}
-                                disabled={!isEditing}
-                                className={selectClass}
-                            >
+                            <select value={formData.commonDetails?.year || new Date().getFullYear()} onChange={e => handleChange('commonDetails', 'year', parseInt(e.target.value))} disabled={!isEditing} className={selectClass}>
                                 <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
                                 <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
                             </select>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
-                            <select
-                                value={formData.commonDetails?.monthOfTraining || ''}
-                                onChange={(e) => handleChange('commonDetails', 'monthOfTraining', e.target.value)}
-                                disabled={!isEditing}
-                                className={selectClass}
-                            >
+                            <select value={formData.commonDetails?.monthOfTraining || ''} onChange={e => handleChange('commonDetails', 'monthOfTraining', e.target.value)} disabled={!isEditing} className={selectClass}>
                                 <option value="">Month</option>
-                                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => (
-                                    <option key={m} value={m}>{m}</option>
-                                ))}
+                                {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                             </select>
                         </div>
                     </div>
@@ -448,99 +428,40 @@ const DeliveryTab = forwardRef(({ opportunity, canEdit, isEditing, refreshData }
                     {/* Row 3: Schedule & Participants */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">No. of Days</label>
-                        <input
-                            type="number"
-                            value={formData.days || ''}
-                            onChange={(e) => handleChange('root', 'days', e.target.value)}
-                            disabled={!isEditing}
-                            className={inputClass}
-                        />
+                        <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', e.target.value)} disabled={!isEditing} className={inputClass} />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                            <input
-                                type="date"
-                                value={formData.commonDetails?.startDate ? formData.commonDetails.startDate.split('T')[0] : ''}
-                                onChange={(e) => handleChange('commonDetails', 'startDate', e.target.value)}
-                                disabled={!isEditing}
-                                className={inputClass}
-                            />
+                            <input type="date" value={formData.commonDetails?.startDate ? formData.commonDetails.startDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'startDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                            <input
-                                type="date"
-                                value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''}
-                                onChange={(e) => handleChange('commonDetails', 'endDate', e.target.value)}
-                                disabled={!isEditing}
-                                className={inputClass}
-                            />
+                            <input type="date" value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'endDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Total Pax</label>
-                            <input
-                                type="number"
-                                value={formData.participants || ''}
-                                onChange={(e) => handleChange('root', 'participants', e.target.value)}
-                                disabled={!isEditing}
-                                className={inputClass}
-                            />
+                            <input type="number" value={formData.participants || ''} onChange={e => handleChange('root', 'participants', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">Attended</label>
-                            <input
-                                type="number"
-                                value={formData.commonDetails?.attendanceParticipants || ''}
-                                onChange={(e) => handleChange('commonDetails', 'attendanceParticipants', e.target.value)}
-                                disabled={!isEditing}
-                                className={inputClass}
-                            />
+                            <input type="number" value={formData.commonDetails?.attendanceParticipants || ''} onChange={e => handleChange('commonDetails', 'attendanceParticipants', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                     </div>
                 </div>
             </Card>
 
             {/* Operational Expenses Breakdown (Only for Delivery Team) */}
-            {isDeliveryRole && (
-                <OperationalExpensesBreakdown
-                    activeData={activeData}
-                    handleChange={handleChange}
-                    handleProposalUpload={handleProposalUpload}
-                    uploading={expenseUploading}
-                    isEditing={isEditing}
-                    canEdit={isEditing}
-                    opportunity={opportunity}
-                />
-            )}
+            {isDeliveryRole && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={expenseUploading} isEditing={isEditing} canEdit={isEditing} opportunity={opportunity} />}
 
             {/* 4. Billing Details (Hidden for Delivery Team, Visible for Sales) */}
-            {!isDeliveryRole && (
-                <BillingDetails
-                    opportunity={opportunity}
-                    formData={formData}
-                    handleChange={handleChange}
-                    isEditing={isEditing}
-                    inputClass={inputClass}
-                />
-            )}
+            {!isDeliveryRole && <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass={inputClass} />}
 
-            <DeliveryDocuments
-                opportunity={opportunity}
-                canEdit={canEdit && isEditing}
-                handleUpload={handleDeliveryDocUpload}
-                uploading={uploading}
-            />
+            <DeliveryDocuments opportunity={opportunity} canEdit={canEdit && isEditing} handleUpload={handleDeliveryDocUpload} uploading={uploading} />
 
-            <AddSMEModal
-                isOpen={isSMEModalOpen}
-                onClose={() => setIsSMEModalOpen(false)}
-                onSuccess={handleSMESuccess}
-            />
-        </div>
-    );
+            <AddSMEModal isOpen={isSMEModalOpen} onClose={() => setIsSMEModalOpen(false)} onSuccess={handleSMESuccess} />
+        </div>;
 });
-
 export default DeliveryTab;

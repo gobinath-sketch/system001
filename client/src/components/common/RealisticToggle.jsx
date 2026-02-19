@@ -1,21 +1,14 @@
-
-import React from 'react';
-
 /* 
   Custom 3D Toggle Switch 
   Adapted from user-provided styled-components logic to work with pure CSS/Tailwind
 */
-const RealisticToggle = ({ checked, onChange }) => {
-    return (
-        <div className="realistic-toggle-wrapper">
+const RealisticToggle = ({
+  checked,
+  onChange
+}) => {
+  return <div className="realistic-toggle-wrapper">
             <div className="container">
-                <input
-                    type="checkbox"
-                    name="currency-checkbox"
-                    id="currency-checkbox"
-                    checked={checked}
-                    onChange={(e) => onChange(e.target.checked)}
-                />
+                <input type="checkbox" name="currency-checkbox" id="currency-checkbox" checked={checked} onChange={e => onChange(e.target.checked)} />
                 <label htmlFor="currency-checkbox" className="label">
                     {/* The pseudo-elements handle the visual knob */}
                 </label>
@@ -92,8 +85,6 @@ const RealisticToggle = ({ checked, onChange }) => {
             background-image: linear-gradient(315deg, #000000 0%, #414141 70%);
         }
       `}</style>
-        </div >
-    );
+        </div>;
 };
-
 export default RealisticToggle;
