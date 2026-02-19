@@ -226,6 +226,15 @@ const FinanceDetails = () => {
     if (type.includes('9%')) return 9;
     return 0;
   };
+  const normalizeDate = value => {
+    if (!value) return null;
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+  const startDate = normalizeDate(opportunity?.commonDetails?.startDate);
+  const endDate = normalizeDate(opportunity?.commonDetails?.endDate);
 
   // Client Calculations Effect
   useEffect(() => {
@@ -266,6 +275,23 @@ const FinanceDetails = () => {
       name,
       value
     } = e.target;
+
+    if (name === 'clientPODate' || name === 'clientInvoiceDate') {
+      if (!startDate || !endDate) {
+        addToast('Please fill Start Date and End Date first.', 'warning');
+        return;
+      }
+      const selectedDate = normalizeDate(value);
+      if (name === 'clientPODate' && selectedDate && selectedDate >= startDate) {
+        addToast('PO Date must be less than Start Date.', 'warning');
+        return;
+      }
+      if (name === 'clientInvoiceDate' && selectedDate && selectedDate <= endDate) {
+        addToast('Invoice Date must be greater than End Date.', 'warning');
+        return;
+      }
+    }
+
     setClientData(prev => ({
       ...prev,
       [name]: value
@@ -369,6 +395,24 @@ const FinanceDetails = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      const poDate = normalizeDate(clientData.clientPODate);
+      const invoiceDate = normalizeDate(clientData.clientInvoiceDate);
+      if ((poDate || invoiceDate) && (!startDate || !endDate)) {
+        addToast('Please fill Start Date and End Date first.', 'warning');
+        setSaving(false);
+        return;
+      }
+      if (poDate && startDate && poDate >= startDate) {
+        addToast('PO Date must be less than Start Date.', 'warning');
+        setSaving(false);
+        return;
+      }
+      if (invoiceDate && endDate && invoiceDate <= endDate) {
+        addToast('Invoice Date must be greater than End Date.', 'warning');
+        setSaving(false);
+        return;
+      }
+
       const token = localStorage.getItem('token');
       const payload = {
         'commonDetails.clientPONumber': clientData.clientPONumber,

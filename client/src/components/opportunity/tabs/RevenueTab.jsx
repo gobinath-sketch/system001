@@ -40,6 +40,15 @@ const RevenueTab = forwardRef(({
         poNumber: '',
         poDate: ''
     });
+    const normalizeDate = value => {
+        if (!value) return null;
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return null;
+        d.setHours(0, 0, 0, 0);
+        return d;
+    };
+    const startDate = normalizeDate(opportunity?.commonDetails?.startDate);
+    const endDate = normalizeDate(opportunity?.commonDetails?.endDate);
 
     // Helper to recalculate derived TOV from expense model.
     const recalculateTotals = data => {
@@ -114,6 +123,21 @@ const RevenueTab = forwardRef(({
         handleSave: async () => {
             try {
                 const token = localStorage.getItem('token');
+                const poDateToCheck = normalizeDate(formData.poDate);
+                const invoiceDateToCheck = normalizeDate(opportunity?.commonDetails?.clientInvoiceDate);
+
+                if ((poDateToCheck || invoiceDateToCheck) && (!startDate || !endDate)) {
+                    addToast('Please fill Start Date and End Date first.', 'warning');
+                    return false;
+                }
+                if (poDateToCheck && startDate && poDateToCheck >= startDate) {
+                    addToast('PO Date must be less than Start Date.', 'warning');
+                    return false;
+                }
+                if (invoiceDateToCheck && endDate && invoiceDateToCheck <= endDate) {
+                    addToast('Invoice Date must be greater than End Date.', 'warning');
+                    return false;
+                }
 
                 // 1. Update Opportunity Core Fields (poValue, invoiceValue)
                 await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, {
@@ -165,6 +189,17 @@ const RevenueTab = forwardRef(({
         }
     }));
     const handleChange = e => {
+        if (e.target.name === 'poDate') {
+            if (!startDate || !endDate) {
+                addToast('Please fill Start Date and End Date first.', 'warning');
+                return;
+            }
+            const poDate = normalizeDate(e.target.value);
+            if (poDate && poDate >= startDate) {
+                addToast('PO Date must be less than Start Date.', 'warning');
+                return;
+            }
+        }
         setFormData({
             ...formData,
             [e.target.name]: e.target.value

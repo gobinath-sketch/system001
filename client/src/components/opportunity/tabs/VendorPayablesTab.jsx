@@ -10,7 +10,6 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
     const { addToast } = useToast();
     const { currency } = useCurrency();
     const [uploading, setUploading] = useState(false);
-    const [pendingUploads, setPendingUploads] = useState({});
 
     // Initial State Helpers
     const defaultDetailed = {
@@ -204,8 +203,44 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
         if (!canEdit) return;
         const file = e.target.files[0];
         if (!file) return;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const formData = new FormData();
+            formData.append('document', file);
+            formData.append('category', category);
+            formData.append('docType', docType);
 
-        setPendingUploads(prev => ({ ...prev, [`${category}:${docType}`]: file }));
+            const res = await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-finance-doc`, formData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            const updatedVP = res.data?.vendorPayables;
+            if (updatedVP) {
+                setVendorData(prev => ({
+                    ...prev,
+                    detailed: {
+                        ...prev.detailed,
+                        ...(updatedVP.detailed || {})
+                    },
+                    perDiem: {
+                        ...prev.perDiem,
+                        ...(updatedVP.perDiem || {})
+                    },
+                    other: {
+                        ...prev.other,
+                        ...(updatedVP.other || {})
+                    }
+                }));
+            }
+
+            addToast('Document uploaded successfully', 'success');
+        } catch (err) {
+            console.error('Error uploading vendor payable doc:', err);
+            addToast(err.response?.data?.message || 'Failed to upload document', 'error');
+        } finally {
+            setUploading(false);
+        }
     };
 
     // Expose handleSave to parent
@@ -225,23 +260,6 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
-                const uploadEntries = Object.entries(pendingUploads);
-                if (uploadEntries.length > 0) {
-                    setUploading(true);
-                    for (const [key, file] of uploadEntries) {
-                        if (!file) continue;
-                        const [category, docType] = key.split(':');
-                        const formData = new FormData();
-                        formData.append('document', file);
-                        formData.append('category', category);
-                        formData.append('docType', docType);
-                        await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-finance-doc`, formData, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                    }
-                    setPendingUploads({});
-                }
-
                 addToast('Changes saved successfully', 'success');
                 if (refreshData) refreshData();
                 return true;
@@ -255,7 +273,6 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
         },
         handleCancel: () => {
             // Reset logic if needed, or just do nothing as page reload/fetch handles it
-            setPendingUploads({});
             if (refreshData) refreshData();
         }
     }));
@@ -296,7 +313,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Amount</label>
                             <input
                                 type="number"
-                                value={vendorData.perDiem.amount}
+                                value={vendorData.perDiem.amount ?? ''}
                                 onChange={(e) => handleSimpleChange('perDiem', 'amount', e.target.value)}
                                 className={readOnlyClass} // CHANGED to readOnlyClass
                                 disabled={true}            // ALWAYS DISABLED
@@ -338,7 +355,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                             <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Amount</label>
                             <input
                                 type="number"
-                                value={vendorData.other.amount}
+                                value={vendorData.other.amount ?? ''}
                                 onChange={(e) => handleSimpleChange('other', 'amount', e.target.value)}
                                 className={readOnlyClass} // CHANGED to readOnlyClass
                                 disabled={true}            // ALWAYS DISABLED
@@ -392,7 +409,7 @@ const ExpenseRow = ({
     canEdit,
     currency
 }) => {
-    const data = vendorData.detailed[category];
+    const data = vendorData.detailed[category] || {};
     const isExpanded = expandedCategories[category];
     return <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
         <div className="bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100" onClick={() => toggleAccordion(category)}>
@@ -410,19 +427,19 @@ const ExpenseRow = ({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Vendor Name</label>
-                    <input type="text" value={data.vendorName} onChange={e => handleDetailedChange(category, 'vendorName', e.target.value)} className={inputClass} placeholder="Vendor Name" disabled={!canEdit} />
+                    <input type="text" value={data.vendorName ?? ''} onChange={e => handleDetailedChange(category, 'vendorName', e.target.value)} className={inputClass} placeholder="Vendor Name" disabled={!canEdit} />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Number</label>
-                    <input type="text" value={data.poNumber} onChange={e => handleDetailedChange(category, 'poNumber', e.target.value)} className={inputClass} disabled={!canEdit} />
+                    <input type="text" value={data.poNumber ?? ''} onChange={e => handleDetailedChange(category, 'poNumber', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Date</label>
-                    <input type="date" value={data.poDate} onChange={e => handleDetailedChange(category, 'poDate', e.target.value)} className={inputClass} disabled={!canEdit} />
+                    <input type="date" value={data.poDate ?? ''} onChange={e => handleDetailedChange(category, 'poDate', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Value</label>
-                    <input type="number" value={data.poValue} onChange={e => handleDetailedChange(category, 'poValue', e.target.value)} className={inputClass} disabled={!canEdit} />
+                    <input type="number" value={data.poValue ?? ''} onChange={e => handleDetailedChange(category, 'poValue', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
             </div>
 
@@ -448,21 +465,21 @@ const ExpenseRow = ({
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Number</label>
-                    <input type="text" value={data.invoiceNumber} onChange={e => handleDetailedChange(category, 'invoiceNumber', e.target.value)} className={inputClass} disabled={!canEdit} />
+                    <input type="text" value={data.invoiceNumber ?? ''} onChange={e => handleDetailedChange(category, 'invoiceNumber', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Date</label>
-                    <input type="date" value={data.invoiceDate} onChange={e => handleDetailedChange(category, 'invoiceDate', e.target.value)} className={inputClass} disabled={!canEdit} />
+                    <input type="date" value={data.invoiceDate ?? ''} onChange={e => handleDetailedChange(category, 'invoiceDate', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Value (Without Tax)</label>
-                    <input type="number" value={data.invoiceValue} onChange={e => handleDetailedChange(category, 'invoiceValue', e.target.value)} className={readOnlyClass} // Read-only styling
+                    <input type="number" value={data.invoiceValue ?? ''} onChange={e => handleDetailedChange(category, 'invoiceValue', e.target.value)} className={readOnlyClass} // Read-only styling
                         placeholder="Auto-filled" disabled={true} // Always disabled as it's auto-filled
                     />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Value(Incl. GST)</label>
-                    <input type="number" value={data.invoiceValueWithTax} readOnly className={readOnlyClass} />
+                    <input type="number" value={data.invoiceValueWithTax ?? ''} readOnly className={readOnlyClass} />
                 </div>
             </div>
 
@@ -488,7 +505,7 @@ const ExpenseRow = ({
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">GST (%)</label>
-                    <select value={data.gstType} onChange={e => handleDetailedChange(category, 'gstType', e.target.value)} className={inputClass} disabled={!canEdit}>
+                    <select value={data.gstType ?? ''} onChange={e => handleDetailedChange(category, 'gstType', e.target.value)} className={inputClass} disabled={!canEdit}>
                         <option value="">Select</option>
                         <option value="No GST">No GST</option>
                         <option value="IGST-18%">IGST-18%</option>
@@ -499,11 +516,11 @@ const ExpenseRow = ({
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">GST Amt</label>
-                    <input type="number" value={data.gstAmount} readOnly className={readOnlyClass} />
+                    <input type="number" value={data.gstAmount ?? ''} readOnly className={readOnlyClass} />
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">TDS (%)</label>
-                    <select value={data.tdsPercent} onChange={e => handleDetailedChange(category, 'tdsPercent', e.target.value)} className={inputClass} disabled={!canEdit}>
+                    <select value={data.tdsPercent ?? 0} onChange={e => handleDetailedChange(category, 'tdsPercent', e.target.value)} className={inputClass} disabled={!canEdit}>
                         <option value="0">0%</option>
                         {Array.from({
                             length: 15
@@ -512,11 +529,11 @@ const ExpenseRow = ({
                 </div>
                 <div>
                     <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">TDS Amt</label>
-                    <input type="number" value={data.tdsAmount} readOnly className={readOnlyClass} />
+                    <input type="number" value={data.tdsAmount ?? ''} readOnly className={readOnlyClass} />
                 </div>
                 <div>
                     <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Final Payable</label>
-                    <input type="number" value={data.finalPayable} readOnly className="w-full p-2 border border-brand-blue rounded bg-blue-50 text-blue-900 font-bold" />
+                    <input type="number" value={data.finalPayable ?? ''} readOnly className="w-full p-2 border border-brand-blue rounded bg-blue-50 text-blue-900 font-bold" />
                 </div>
             </div>
         </div>}
