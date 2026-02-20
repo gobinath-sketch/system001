@@ -50,39 +50,39 @@ const FinancialSummary = ({ opportunity, poValue }) => {
 
     return (
         <React.Fragment>
-            <h3 className="text-lg font-bold text-primary-blue mb-4">Financial Summary</h3>
+            <h3 className="text-xl font-bold text-primary-blue mb-4">Financial Summary</h3>
             <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO Amount</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Overall Expenses</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marketing</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GK Revenue (Profit)</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PO to Proposal Variance</th>
-                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GP %</th>
+                            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">PO Amount</th>
+                            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Overall Expenses</th>
+                            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Marketing</th>
+                            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">GK Revenue (Profit)</th>
+                            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">PO to Proposal Variance</th>
+                            <th className="px-3 py-2 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">GP %</th>
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         <tr>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm font-bold text-gray-900">
+                            <td className="px-3 py-2 whitespace-nowrap text-base font-bold text-gray-900">
                                 {formatCurrency(poAmount)}
                             </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-3 py-2 whitespace-nowrap text-base text-gray-900">
                                 {formatCurrency(calculatedTotalExpense)}
                             </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                            <td className="px-3 py-2 whitespace-nowrap text-base text-gray-900">
                                 {formatCurrency(marketing)}
                             </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm font-bold text-green-600">
+                            <td className="px-3 py-2 whitespace-nowrap text-base font-bold text-green-600">
                                 {formatCurrency(profit)}
                             </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm font-bold">
+                            <td className="px-3 py-2 whitespace-nowrap text-base font-bold">
                                 <span className={isPositiveVariance ? "text-green-600" : "text-red-500"}>
                                     {formatCurrency(variance)}
                                 </span>
                             </td>
-                            <td className="px-3 py-2 whitespace-nowrap text-sm font-bold text-blue-600">
+                            <td className="px-3 py-2 whitespace-nowrap text-base font-bold text-blue-600">
                                 {gpPercent}%
                             </td>
                         </tr>
