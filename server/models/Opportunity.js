@@ -513,6 +513,7 @@ OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
         'commonDetails',
         'selectedVendor', 'selectedSME',
         'financeDetails', // ALLOW DELIVERY TO EDIT FINANCE (Generalized to fix full object update issue)
+        'invoiceValue',
         'days', 'participants' // Added permissions for Delivery Team
     ];
 
@@ -528,7 +529,7 @@ OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
     let allowed = false;
     if (userRole === 'Sales Executive' || userRole === 'Sales Manager' || userRole === 'Business Head') {
         allowed = salesEditableFields.some(field => fieldPath.startsWith(field));
-    } else if (userRole === 'Delivery Team') {
+    } else if (userRole === 'Delivery Team' || userRole === 'Delivery Head' || userRole === 'Delivery Manager') {
         // Delivery can edit expenses BUT NOT marketing/contingency which are Sales decisions
         if (fieldPath === 'expenses.marketingPercent' || fieldPath === 'expenses.contingencyPercent') {
             allowed = false;

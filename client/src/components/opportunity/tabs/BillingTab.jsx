@@ -228,6 +228,7 @@ const BillingTab = forwardRef(({
 
   // Operational Expenses Breakdown: Editable by Delivery, Admin (NOT Sales)
   const canEditOpExpenses = isEditing && (isDelivery || isAdmin);
+  const canEditInvoiceDetails = isEditing && (isDelivery || isAdmin);
 
   // Initialize formData
   useEffect(() => {
@@ -341,7 +342,8 @@ const BillingTab = forwardRef(({
         const payload = {
           expenses: formData.expenses,
           commonDetails: sanitizedCommonDetails,
-          financeDetails: financeDetails
+          financeDetails: financeDetails,
+          invoiceValue: parseFloat(formData.invoiceValue) || 0
         };
         await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
@@ -378,7 +380,9 @@ const BillingTab = forwardRef(({
         return true;
       } catch (error) {
         console.error('Save failed', error);
-        addToast('Failed to save details', 'error');
+        const serverMessage = error.response?.data?.message || '';
+        const errorMessage = serverMessage === 'Invoice Date must be greater than End Date.' ? 'Invoice date should be after end date of training.' : serverMessage || error.message || 'Failed to save details';
+        addToast(errorMessage, 'error');
         return false;
       }
     },
@@ -394,12 +398,16 @@ const BillingTab = forwardRef(({
       const newState = {
         ...prev
       };
-      // CRITICAL FIX: Create a copy of the nested object to ensure React detects the change
-      // This fixes the issue where FinancialSummary wouldn't update because the 'expenses' reference didn't change
-      newState[section] = {
-        ...(prev[section] || {})
-      };
-      newState[section][field] = value;
+      if (section === 'root') {
+        newState[field] = value;
+      } else {
+        // CRITICAL FIX: Create a copy of the nested object to ensure React detects the change
+        // This fixes the issue where FinancialSummary wouldn't update because the 'expenses' reference didn't change
+        newState[section] = {
+          ...(prev[section] || {})
+        };
+        newState[section][field] = value;
+      }
 
       // Trigger Recalculation if modifying calculation inputs
       ['marketingPercent', 'contingencyPercent', 'targetGpPercent', 'trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs', 'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance', 'tovUnit']; // Also re-calc rate if unit changes
@@ -451,6 +459,29 @@ const BillingTab = forwardRef(({
     } catch (error) {
       console.error('Upload failed', error);
       addToast(`Failed to upload ${expenseKey}`, 'error');
+    } finally {
+      setUploading(null);
+    }
+  };
+  const handleInvoiceUploadFromBilling = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading('invoice');
+    try {
+      const token = localStorage.getItem('token');
+      const uploadFormData = new FormData();
+      uploadFormData.append('invoice', file);
+      await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, uploadFormData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      addToast('Invoice uploaded successfully', 'success');
+      refreshData();
+    } catch (error) {
+      console.error('Upload failed', error);
+      addToast(error.response?.data?.message || 'Failed to upload invoice', 'error');
     } finally {
       setUploading(null);
     }
@@ -556,7 +587,7 @@ const BillingTab = forwardRef(({
 
                     {/* Delivery View: Billing Details (Moved from Requirements) */}
                     {isDelivery && <div className="flex flex-col gap-6">
-                            <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass="" />
+                            <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass="" canUploadInvoice={isEditing && isDelivery} onInvoiceUpload={handleInvoiceUploadFromBilling} uploadingInvoice={uploading === 'invoice'} canEditInvoiceDetails={canEditInvoiceDetails} />
                             <Card>
                                 <FinancialSummary opportunity={activeData} poValue={activeData.poValue} />
                             </Card>
@@ -580,7 +611,17 @@ const BillingTab = forwardRef(({
                                 </div>
                                 {/* Proposal Document Action */}
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
+                                    {isEditing && pendingProposalFile ? <div className="flex flex-col items-end gap-1">
+                                            <span className="text-[10px] font-semibold text-emerald-700 bg-white/80 border border-emerald-200 rounded px-2 py-0.5 max-w-[130px] truncate" title={pendingProposalFile.name}>
+                                                Uploaded
+                                            </span>
+                                            {canEditExecution && <div>
+                                                    <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
+                                                    <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap">
+                                                        Replace
+                                                    </button>
+                                                </div>}
+                                        </div> : opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
                                             <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900 p-1.5 bg-white/80 rounded-full shadow-sm border border-emerald-200 transition-all hover:scale-110" title="View Proposal">
                                                 <FileText size={18} />
                                             </a>
@@ -760,4 +801,3 @@ const BillingTab = forwardRef(({
         </div>;
 });
 export default BillingTab;
-

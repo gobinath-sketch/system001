@@ -36,6 +36,28 @@ const upload = multer({
     }
 });
 
+const toUploadRelativePath = (filePath) => {
+    if (!filePath) return filePath;
+    const normalized = String(filePath).replace(/\\/g, '/');
+
+    const uploadsIndex = normalized.toLowerCase().indexOf('/uploads/');
+    if (uploadsIndex >= 0) {
+        return normalized.slice(uploadsIndex + 1); // "uploads/..."
+    }
+
+    if (normalized.toLowerCase().startsWith('uploads/')) {
+        return normalized;
+    }
+
+    const serverRoot = path.join(__dirname, '..');
+    const relative = path.relative(serverRoot, filePath).replace(/\\/g, '/');
+    if (relative && !relative.startsWith('..')) {
+        return relative;
+    }
+
+    return normalized.replace(/^\/+/, '');
+};
+
 const uploadMiddleware = (req, res, next) => {
     upload.fields([
         { name: 'sowDocument', maxCount: 1 },
@@ -77,12 +99,12 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Directo
 
         // Handle file uploads
         if (req.files) {
-            if (req.files.sowDocument) smeData.sowDocument = req.files.sowDocument[0].path;
-            if (req.files.ndaDocument) smeData.ndaDocument = req.files.ndaDocument[0].path;
-            if (req.files.sme_profile) smeData.sme_profile = req.files.sme_profile[0].path;
-            if (req.files.idProof) smeData.idProof = req.files.idProof[0].path;
-            if (req.files.panDocument) smeData.panDocument = req.files.panDocument[0].path;
-            if (req.files.gstDocument) smeData.gstDocument = req.files.gstDocument[0].path;
+            if (req.files.sowDocument) smeData.sowDocument = toUploadRelativePath(req.files.sowDocument[0].path);
+            if (req.files.ndaDocument) smeData.ndaDocument = toUploadRelativePath(req.files.ndaDocument[0].path);
+            if (req.files.sme_profile) smeData.sme_profile = toUploadRelativePath(req.files.sme_profile[0].path);
+            if (req.files.idProof) smeData.idProof = toUploadRelativePath(req.files.idProof[0].path);
+            if (req.files.panDocument) smeData.panDocument = toUploadRelativePath(req.files.panDocument[0].path);
+            if (req.files.gstDocument) smeData.gstDocument = toUploadRelativePath(req.files.gstDocument[0].path);
         }
 
         // Validate required documents (Manual check for safety, though schema handles it)
@@ -192,20 +214,20 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Direc
 
         // Handle file uploads - only update if new file provided
         if (req.files) {
-            if (req.files.sowDocument) updateData.sowDocument = req.files.sowDocument[0].path;
-            if (req.files.ndaDocument) updateData.ndaDocument = req.files.ndaDocument[0].path;
-            if (req.files.sme_profile) updateData.sme_profile = req.files.sme_profile[0].path;
-            if (req.files.idProof) updateData.idProof = req.files.idProof[0].path;
-            if (req.files.panDocument) updateData.panDocument = req.files.panDocument[0].path;
-            if (req.files.gstDocument) updateData.gstDocument = req.files.gstDocument[0].path;
+            if (req.files.sowDocument) updateData.sowDocument = toUploadRelativePath(req.files.sowDocument[0].path);
+            if (req.files.ndaDocument) updateData.ndaDocument = toUploadRelativePath(req.files.ndaDocument[0].path);
+            if (req.files.sme_profile) updateData.sme_profile = toUploadRelativePath(req.files.sme_profile[0].path);
+            if (req.files.idProof) updateData.idProof = toUploadRelativePath(req.files.idProof[0].path);
+            if (req.files.panDocument) updateData.panDocument = toUploadRelativePath(req.files.panDocument[0].path);
+            if (req.files.gstDocument) updateData.gstDocument = toUploadRelativePath(req.files.gstDocument[0].path);
         }
 
         // Backward compatibility for older records that stored profile as `contentUpload`.
         if (!updateData.sme_profile) {
             if (typeof updateData.contentUpload === 'string' && updateData.contentUpload.trim()) {
-                updateData.sme_profile = updateData.contentUpload.trim();
+                updateData.sme_profile = toUploadRelativePath(updateData.contentUpload.trim());
             } else if (typeof sme.get === 'function' && sme.get('contentUpload')) {
-                updateData.sme_profile = sme.get('contentUpload');
+                updateData.sme_profile = toUploadRelativePath(sme.get('contentUpload'));
             }
         }
 

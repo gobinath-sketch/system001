@@ -21,6 +21,14 @@ const ViewSMEModal = ({
   sme
 }) => {
   if (!isOpen || !sme) return null;
+  const toPublicPath = p => {
+    const normalized = String(p || '').replace(/\\/g, '/');
+    const uploadsIndex = normalized.toLowerCase().indexOf('/uploads/');
+    if (uploadsIndex >= 0) {
+      return normalized.slice(uploadsIndex + 1);
+    }
+    return normalized.replace(/^\/+/, '');
+  };
   const renderDocumentLink = (path, label) => {
     const isUploaded = !!path;
     return <div className={`p-3 rounded-lg border flex items-center gap-3 transition-all ${isUploaded ? 'bg-blue-50 border-blue-200 hover:shadow-md' : 'bg-red-50 border-red-200'}`}>
@@ -29,7 +37,7 @@ const ViewSMEModal = ({
                 </div>
                 <div className="flex flex-col">
                     <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
-                    {isUploaded ? <a href={`${API_BASE}/${path}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">
+                    {isUploaded ? <a href={`${API_BASE}/${toPublicPath(path)}`} target="_blank" rel="noopener noreferrer" className="text-sm font-bold text-blue-700 hover:text-blue-900 hover:underline">
                             View Document
                         </a> : <span className="text-sm font-bold text-red-600">Not Uploaded</span>}
                 </div>
@@ -108,7 +116,7 @@ const ViewSMEModal = ({
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             {renderDocumentLink(sme.sowDocument, 'SOW Document')}
                             {renderDocumentLink(sme.ndaDocument, 'NDA Document')}
-                            {renderDocumentLink(sme.contentUpload, 'Profile')}
+                            {renderDocumentLink(sme.sme_profile || sme.contentUpload, 'Profile')}
                             {renderDocumentLink(sme.idProof, 'ID Proof')}
                             {renderDocumentLink(sme.gstDocument, 'GST Certificate')}
                             {renderDocumentLink(sme.panDocument, 'PAN Card')}

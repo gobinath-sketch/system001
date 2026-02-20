@@ -1,12 +1,17 @@
 import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
+import UploadButton from '../../ui/UploadButton';
 import { API_BASE } from '../../../config/api';
 const BillingDetails = ({
   opportunity,
   formData,
   handleChange,
   isEditing,
-  inputClass
+  inputClass,
+  canUploadInvoice = false,
+  onInvoiceUpload = () => {},
+  uploadingInvoice = false,
+  canEditInvoiceDetails = false
 }) => {
   // Default input class if not provided
   const defaultInputClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-700 cursor-not-allowed text-sm' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue text-sm'}`;
@@ -51,25 +56,31 @@ const BillingDetails = ({
                     <div className="space-y-3">
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Number</label>
-                            <input type="text" value={formData.commonDetails?.clientInvoiceNumber || ''} disabled className="w-full border p-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed text-sm" placeholder="N/A" />
+                            <input type="text" value={formData.commonDetails?.clientInvoiceNumber || ''} onChange={e => handleChange('commonDetails', 'clientInvoiceNumber', e.target.value)} disabled={!canEditInvoiceDetails} className={`${safeInputClass} ${!canEditInvoiceDetails ? 'bg-gray-100 text-gray-700 cursor-not-allowed' : ''}`} placeholder="Enter Invoice Number" />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Date</label>
-                            <input type="text" value={formData.commonDetails?.clientInvoiceDate ? new Date(formData.commonDetails.clientInvoiceDate).toLocaleDateString() : ''} disabled className="w-full border p-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed text-sm" placeholder="N/A" />
+                            <input type={canEditInvoiceDetails ? "date" : "text"} value={canEditInvoiceDetails ? formData.commonDetails?.clientInvoiceDate ? new Date(formData.commonDetails.clientInvoiceDate).toISOString().split('T')[0] : '' : formData.commonDetails?.clientInvoiceDate ? new Date(formData.commonDetails.clientInvoiceDate).toLocaleDateString() : ''} onChange={e => handleChange('commonDetails', 'clientInvoiceDate', e.target.value)} disabled={!canEditInvoiceDetails} className={`${safeInputClass} ${!canEditInvoiceDetails ? 'bg-gray-100 text-gray-700 cursor-not-allowed' : ''}`} placeholder={canEditInvoiceDetails ? "Select Invoice Date" : "N/A"} />
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Amount</label>
                             <div className="relative">
                                 <span className="absolute left-3 top-2 text-gray-500 text-sm">₹</span>
-                                <input type="text" value={opportunity.invoiceValue ? opportunity.invoiceValue.toLocaleString() : '0'} disabled className="w-full border p-2 pl-6 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed text-sm" />
+                                <input type="number" value={formData.invoiceValue ?? 0} onChange={e => handleChange('root', 'invoiceValue', e.target.value)} disabled={!canEditInvoiceDetails} className={`${safeInputClass} pl-6 ${!canEditInvoiceDetails ? 'bg-gray-100 text-gray-700 cursor-not-allowed' : ''}`} />
                             </div>
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Document</label>
-                            <div className="flex items-center space-x-2 h-[38px]">
+                            <div className="flex items-center space-x-2 min-h-[38px]">
                                 {opportunity.invoiceDocument ? <a href={`${API_BASE}/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 text-xs font-bold flex items-center hover:underline">
                                         <CheckCircle size={14} className="mr-1" /> View Invoice
                                     </a> : <span className="text-xs text-gray-400 italic">No File</span>}
+                                {canUploadInvoice && <div className="inline-block">
+                                        <input type="file" id="billing-invoice-upload" className="hidden" onChange={onInvoiceUpload} accept=".pdf,.doc,.docx,.jpg,.png" disabled={uploadingInvoice} />
+                                        <UploadButton onClick={() => document.getElementById('billing-invoice-upload').click()} disabled={uploadingInvoice}>
+                                            {opportunity.invoiceDocument ? 'Replace' : 'Upload'}
+                                        </UploadButton>
+                                    </div>}
                             </div>
                         </div>
                     </div>

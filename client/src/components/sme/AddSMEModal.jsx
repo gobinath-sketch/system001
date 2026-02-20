@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { X } from 'lucide-react';
+import { Eye, X } from 'lucide-react';
 import UploadButton from '../ui/UploadButton';
 import { useToast } from '../../context/ToastContext';
 import { validateMobile, validateEmail, validatePAN, validateGST, validateBankAccount, validateIFSC } from '../../utils/validation';
@@ -49,6 +49,19 @@ const AddSMEModal = ({
   };
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
+  const toPublicPath = p => {
+    const normalized = String(p || '').replace(/\\/g, '/');
+    const uploadsIndex = normalized.toLowerCase().indexOf('/uploads/');
+    if (uploadsIndex >= 0) {
+      return normalized.slice(uploadsIndex + 1);
+    }
+    return normalized.replace(/^\/+/, '');
+  };
+  const getExistingDocPath = docName => {
+    if (!smeToEdit) return '';
+    if (docName === 'sme_profile') return smeToEdit?.sme_profile || smeToEdit?.contentUpload || '';
+    return smeToEdit?.[docName] || '';
+  };
   useEffect(() => {
     if (isOpen) {
       if (smeToEdit) {
@@ -374,6 +387,9 @@ const AddSMEModal = ({
                                                     <UploadButton onClick={() => document.getElementById('upload-gst').click()} type="button" size="sm">
                                                         {files.gstDocument ? 'Selected' : smeToEdit?.gstDocument ? 'Replace' : 'Upload'}
                                                     </UploadButton>
+                                                    {!!smeToEdit?.gstDocument && <a href={`${API_BASE}/${toPublicPath(smeToEdit.gstDocument)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View GST Document">
+                                                        <Eye size={16} />
+                                                    </a>}
                                                     {files.gstDocument && <span className="text-xs text-green-600 truncate max-w-[150px]">{files.gstDocument.name}</span>}
                                                 </div>
                                             </div>
@@ -390,6 +406,9 @@ const AddSMEModal = ({
                                                     <UploadButton onClick={() => document.getElementById('upload-pan').click()} type="button" size="sm">
                                                         {files.panDocument ? 'Selected' : smeToEdit?.panDocument ? 'Replace' : 'Upload'}
                                                     </UploadButton>
+                                                    {!!smeToEdit?.panDocument && <a href={`${API_BASE}/${toPublicPath(smeToEdit.panDocument)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View PAN Document">
+                                                        <Eye size={16} />
+                                                    </a>}
                                                     {files.panDocument && <span className="text-xs text-green-600 truncate max-w-[150px]">{files.panDocument.name}</span>}
                                                 </div>
                                             </div>
@@ -434,6 +453,9 @@ const AddSMEModal = ({
                     ? 'Replace'
                     : 'Upload'}
                                                     </UploadButton>
+                                                    {!!getExistingDocPath(doc.name) && <a href={`${API_BASE}/${toPublicPath(getExistingDocPath(doc.name))}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title={`View ${doc.label}`}>
+                                                        <Eye size={16} />
+                                                    </a>}
                                                     {files[doc.name] && <span className="text-xs text-green-600 truncate max-w-[100px]">{files[doc.name].name}</span>}
                                                 </div>
                                             </div>

@@ -4,7 +4,6 @@ const Opportunity = require('../models/Opportunity');
 const Client = require('../models/Client');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
-const SME = require('../models/SME');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { calculateOpportunityProgress } = require('../utils/progressCalculator');
 const multer = require('multer');
@@ -413,6 +412,13 @@ router.put('/:id', protect, async (req, res) => {
         }
 
         const updates = req.body;
+        const toDateOnly = (value) => {
+            if (!value) return null;
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return null;
+            d.setHours(0, 0, 0, 0);
+            return d;
+        };
 
         // Validate field-level permissions
         console.log(`User ${req.user.name} (${req.user.role}) attempting to update opportunity ${req.params.id}`);
@@ -428,6 +434,39 @@ router.put('/:id', protect, async (req, res) => {
                     message: `You do not have permission to edit field: ${fieldPath}`
                 });
             }
+        }
+
+        // Validate PO/Invoice date constraints against training window
+        const startDateCandidate =
+            updates['commonDetails.startDate'] ||
+            (updates.commonDetails && updates.commonDetails.startDate) ||
+            opportunity.commonDetails?.startDate;
+        const endDateCandidate =
+            updates['commonDetails.endDate'] ||
+            (updates.commonDetails && updates.commonDetails.endDate) ||
+            opportunity.commonDetails?.endDate;
+        const poDateCandidate =
+            updates['commonDetails.clientPODate'] ||
+            (updates.commonDetails && updates.commonDetails.clientPODate) ||
+            null;
+        const invoiceDateCandidate =
+            updates['commonDetails.clientInvoiceDate'] ||
+            (updates.commonDetails && updates.commonDetails.clientInvoiceDate) ||
+            null;
+
+        const startDate = toDateOnly(startDateCandidate);
+        const endDate = toDateOnly(endDateCandidate);
+        const poDate = toDateOnly(poDateCandidate);
+        const invoiceDate = toDateOnly(invoiceDateCandidate);
+
+        if ((poDate || invoiceDate) && (!startDate || !endDate)) {
+            return res.status(400).json({ message: 'Please fill Start Date and End Date first.' });
+        }
+        if (poDate && startDate && poDate >= startDate) {
+            return res.status(400).json({ message: 'PO Date must be less than Start Date.' });
+        }
+        if (invoiceDate && endDate && invoiceDate <= endDate) {
+            return res.status(400).json({ message: 'Invoice date should be after end date of training.' });
         }
 
         // Special Handling for Status Changes (Delivery Team Only)
@@ -909,6 +948,27 @@ router.post('/:id/upload-po', protect, authorize('Sales Executive', 'Sales Manag
             return res.status(400).json({ message: 'PO value and date are required' });
         }
 
+        const toDateOnly = (value) => {
+            if (!value) return null;
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return null;
+            d.setHours(0, 0, 0, 0);
+            return d;
+        };
+        const startDate = toDateOnly(opportunity.commonDetails?.startDate);
+        const endDate = toDateOnly(opportunity.commonDetails?.endDate);
+        const poDateOnly = toDateOnly(poDate);
+
+        if (!startDate || !endDate) {
+            return res.status(400).json({ message: 'Please fill Start Date and End Date first.' });
+        }
+        if (!poDateOnly) {
+            return res.status(400).json({ message: 'Invalid PO Date.' });
+        }
+        if (poDateOnly >= startDate) {
+            return res.status(400).json({ message: 'PO Date must be less than Start Date.' });
+        }
+
         opportunity.poDocument = req.file.path;
         opportunity.poValue = Number(poValue);
         opportunity.poDate = new Date(poDate);
@@ -1051,6 +1111,12 @@ router.post('/:id/upload-finance-doc', protect, authorize('Sales Executive', 'Sa
                 });
             }
         }
+
+        return res.json({
+            message: 'Finance document uploaded successfully',
+            filePath: req.file.path,
+            vendorPayables: finance.vendorPayables
+        });
     } catch (err) {
         console.error('Upload Error:', err);
         res.status(500).json({ message: err.message });
@@ -1062,8 +1128,8 @@ router.post('/:id/upload-finance-doc', protect, authorize('Sales Executive', 'Sa
 
 // @route   POST /api/opportunities/:id/upload-invoice
 // @desc    Upload Invoice Document
-// @access  Private (Delivery Team, Sales Manager)
-router.post('/:id/upload-invoice', protect, authorize('Delivery Team', 'Sales Manager'), upload.single('invoice'), async (req, res) => {
+// @access  Private (Delivery Team, Delivery Head, Delivery Manager, Sales Manager, Super Admin)
+router.post('/:id/upload-invoice', protect, authorize('Delivery Team', 'Delivery Head', 'Delivery Manager', 'Sales Manager', 'Super Admin'), upload.single('invoice'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -1164,16 +1230,6 @@ router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sal
         // Save Opportunity ONCE
         await opportunity.save();
 
-        // Update SME record if applicable
-        if (type === 'contentDocument' && req.body.smeId) {
-            const sme = await SME.findById(req.body.smeId);
-            if (sme) {
-                sme.sme_profile = req.file.path;
-                await sme.save({ validateBeforeSave: false });
-                console.log(`Updated SME ${sme.name} contentUpload`);
-            }
-        }
-
         // IMMEDIATE NOTIFICATION LOGIC (Buffer Removed)
         try {
             const opportunityCreator = opportunity.createdBy;
@@ -1269,4 +1325,3 @@ router.post('/:id/upload-expense-doc', protect, authorize('Delivery Team', 'Deli
 });
 
 module.exports = router;
-
