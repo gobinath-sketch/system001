@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { Upload, FileText } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
 import { useAuth } from '../../../context/AuthContext';
@@ -26,6 +26,7 @@ const BillingTab = forwardRef(({
   } = useCurrency();
   const [uploading, setUploading] = useState(null);
   const [pendingProposalFile, setPendingProposalFile] = useState(null);
+  const [pendingInvoiceFile, setPendingInvoiceFile] = useState(null);
   const [pendingExpenseDocs, setPendingExpenseDocs] = useState({});
   const [escalating, setEscalating] = useState(false);
   const [formData, setFormData] = useState({});
@@ -36,8 +37,27 @@ const BillingTab = forwardRef(({
     title: '',
     message: '',
     type: 'info',
-    onConfirm: null
+    onConfirm: null,
+    confirmText: 'Send for Approval'
   });
+
+  const normalizeDateOnly = value => {
+    if (!value) return null;
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return new Date(parsed.getFullYear(), parsed.getMonth(), parsed.getDate());
+  };
+
+  const isInvoiceDateBeforeOrEqualEndDate = draft => {
+    const invoiceDate = normalizeDateOnly(draft?.commonDetails?.clientInvoiceDate);
+    const endDate = normalizeDateOnly(draft?.commonDetails?.endDate);
+    if (!invoiceDate || !endDate) return false;
+    return invoiceDate <= endDate;
+  };
+
+  const showInvoiceDateValidationToast = () => {
+    addToast('Invoice date should be after end date of training.', 'warning');
+  };
 
   // Currency Constants
   const CONVERSION_RATE = currency === 'USD' ? 84 : 1;
@@ -345,11 +365,27 @@ const BillingTab = forwardRef(({
           financeDetails: financeDetails,
           invoiceValue: parseFloat(formData.invoiceValue) || 0
         };
+
+        if (isInvoiceDateBeforeOrEqualEndDate(formData)) {
+          showInvoiceDateValidationToast();
+          return false;
+        }
+
         await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
             Authorization: `Bearer ${token}`
           }
         });
+        if (pendingInvoiceFile) {
+          const invoiceData = new FormData();
+          invoiceData.append('invoice', pendingInvoiceFile);
+          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, invoiceData, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+        }
         if (pendingProposalFile) {
           const proposalData = new FormData();
           proposalData.append('proposal', pendingProposalFile);
@@ -372,6 +408,7 @@ const BillingTab = forwardRef(({
             }
           });
         }
+        setPendingInvoiceFile(null);
         setPendingProposalFile(null);
         setPendingExpenseDocs({});
 
@@ -388,6 +425,7 @@ const BillingTab = forwardRef(({
     },
     handleCancel: () => {
       setFormData(JSON.parse(JSON.stringify(opportunity)));
+      setPendingInvoiceFile(null);
       setPendingProposalFile(null);
       setPendingExpenseDocs({});
     }
@@ -466,6 +504,10 @@ const BillingTab = forwardRef(({
   const handleInvoiceUploadFromBilling = async e => {
     const file = e.target.files[0];
     if (!file) return;
+    if (isEditing) {
+      setPendingInvoiceFile(file);
+      return;
+    }
     setUploading('invoice');
     try {
       const token = localStorage.getItem('token');
@@ -583,11 +625,11 @@ const BillingTab = forwardRef(({
                 {/* Left/Main Column: Operational Expenses (Sales) OR Billing Details (Delivery) */}
                 <div className={`${!isDelivery ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
                     {/* Sales View: Operational Expenses */}
-                    {!isDelivery && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={uploading} isEditing={isEditing} canEdit={canEditOpExpenses} opportunity={opportunity} />}
+                    {!isDelivery && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={uploading} isEditing={isEditing} canEdit={canEditOpExpenses} opportunity={opportunity} pendingDocs={pendingExpenseDocs} />}
 
                     {/* Delivery View: Billing Details (Moved from Requirements) */}
                     {isDelivery && <div className="flex flex-col gap-6">
-                            <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass="" canUploadInvoice={isEditing && isDelivery} onInvoiceUpload={handleInvoiceUploadFromBilling} uploadingInvoice={uploading === 'invoice'} canEditInvoiceDetails={canEditInvoiceDetails} />
+                            <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass="" canUploadInvoice={isEditing && isDelivery} onInvoiceUpload={handleInvoiceUploadFromBilling} uploadingInvoice={uploading === 'invoice'} canEditInvoiceDetails={canEditInvoiceDetails} pendingInvoiceFile={pendingInvoiceFile} onInvoiceDateInvalid={showInvoiceDateValidationToast} />
                             <Card>
                                 <FinancialSummary opportunity={activeData} poValue={activeData.poValue} />
                             </Card>
@@ -612,8 +654,8 @@ const BillingTab = forwardRef(({
                                 {/* Proposal Document Action */}
                                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
                                     {isEditing && pendingProposalFile ? <div className="flex flex-col items-end gap-1">
-                                            <span className="text-[10px] font-semibold text-emerald-700 bg-white/80 border border-emerald-200 rounded px-2 py-0.5 max-w-[130px] truncate" title={pendingProposalFile.name}>
-                                                Uploaded
+                                            <span className="inline-flex items-center text-[10px] font-semibold text-blue-600 bg-white/80 border border-blue-200 rounded px-2 py-0.5">
+                                                <CheckCircle size={12} className="mr-1" /> Uploaded
                                             </span>
                                             {canEditExecution && <div>
                                                     <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
@@ -622,8 +664,8 @@ const BillingTab = forwardRef(({
                                                     </button>
                                                 </div>}
                                         </div> : opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
-                                            <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 hover:text-emerald-900 p-1.5 bg-white/80 rounded-full shadow-sm border border-emerald-200 transition-all hover:scale-110" title="View Proposal">
-                                                <FileText size={18} />
+                                            <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-semibold text-blue-600 hover:underline bg-white/80 rounded px-2 py-1 border border-blue-200" title="View Proposal">
+                                                <CheckCircle size={12} className="mr-1" /> View
                                             </a>
                                             {canEditExecution && <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
@@ -633,8 +675,8 @@ const BillingTab = forwardRef(({
                                                 </div>}
                                         </div> : canEditExecution && <div>
                                                 <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
-                                                <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-emerald-700 hover:text-emerald-900 p-1.5 bg-white/80 rounded-full shadow-sm border border-emerald-200 border-dashed hover:border-solid transition-all hover:scale-110" title="Upload Proposal">
-                                                    <Upload size={18} />
+                                                <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap" title="Upload Proposal">
+                                                    Upload
                                                 </button>
                                             </div>}
                                 </div>
@@ -797,7 +839,7 @@ const BillingTab = forwardRef(({
         ...prev,
         isOpen: false
       }));
-    }} title={alertConfig.title} message={alertConfig.message} onConfirm={alertConfig.onConfirm} type={alertConfig.type} confirmText="Send for Approval" />
+    }} title={alertConfig.title} message={alertConfig.message} onConfirm={alertConfig.onConfirm} type={alertConfig.type} confirmText={alertConfig.confirmText || 'Send for Approval'} />
         </div>;
 });
 export default BillingTab;

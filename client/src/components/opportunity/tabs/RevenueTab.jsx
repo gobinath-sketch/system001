@@ -267,7 +267,7 @@ const RevenueTab = forwardRef(({
     const cardClass = "bg-white border border-gray-200 rounded-xl p-6 shadow-sm flex flex-col items-center justify-center text-center h-full";
     const labelClass = "text-sm text-gray-500 font-medium uppercase tracking-wider mb-2";
     const valueClass = "text-2xl font-bold text-gray-800";
-    const inputClass = "w-full border p-2 rounded-lg text-sm bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue";
+    const inputClass = "w-full border p-2 rounded-lg text-base bg-gray-50 border-gray-500 focus:ring-2 focus:ring-primary-blue";
     return <div className="space-y-8 animate-fadeIn">
 
 
@@ -275,35 +275,35 @@ const RevenueTab = forwardRef(({
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* PO Details */}
             <Card className="!bg-white">
-                <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">PO Details</h3>
-                <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-base font-bold text-gray-900 mb-3 border-b border-gray-500 pb-2">PO Details</h3>
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">PO Number</label>
-                            {isEditing ? <input type="text" name="poNumber" value={formData.poNumber} onChange={handleChange} className="w-full border p-2 rounded text-sm bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue" placeholder="Enter PO Number" /> : <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px] flex items-center">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">PO Number</label>
+                            {isEditing ? <input type="text" name="poNumber" value={formData.poNumber} onChange={handleChange} className="w-full border p-2 rounded-lg text-base bg-gray-50 border-gray-500 focus:ring-2 focus:ring-primary-blue" placeholder="Enter PO Number" /> : <div className="text-base font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-500 min-h-[42px] flex items-center">
                                 {opportunity.commonDetails?.clientPONumber || 'N/A'}
                             </div>}
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">PO Date</label>
-                            {isEditing ? <input type="date" name="poDate" value={formData.poDate} onChange={handleChange} className="w-full border p-2 rounded text-sm bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue" /> : <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px] flex items-center">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">PO Date</label>
+                            {isEditing ? <input type="date" name="poDate" value={formData.poDate} onChange={handleChange} className="w-full border p-2 rounded-lg text-base bg-gray-50 border-gray-500 focus:ring-2 focus:ring-primary-blue" /> : <div className="text-base font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-500 min-h-[42px] flex items-center">
                                 {opportunity.commonDetails?.clientPODate ? new Date(opportunity.commonDetails.clientPODate).toLocaleDateString() : 'N/A'}
                             </div>}
                         </div>
                     </div>
                     {/* Row 2: PO Amount and Document */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">PO Amount</label>
-                            {isEditing ? <input type="number" name="poValue" value={formData.poValue === 0 ? '' : formData.poValue} onChange={handleChange} onWheel={e => e.target.blur()} className={`${inputClass} no-arrows`} placeholder="Enter Amount" /> : <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px] flex items-center">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">PO Amount</label>
+                            {isEditing ? <input type="number" name="poValue" value={formData.poValue === 0 ? '' : formData.poValue} onChange={handleChange} onWheel={e => e.target.blur()} className={`${inputClass} no-arrows`} placeholder="Enter Amount" /> : <div className="text-base font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-500 min-h-[42px] flex items-center">
                                 {formatCurrency(formData.poValue)}
                             </div>}
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">PO Document</label>
-                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px]">
-                                {opportunity.poDocument ? <a href={`${API_BASE}/${opportunity.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs flex items-center font-medium truncate max-w-[100px]" title="View Document">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">PO Document</label>
+                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded-lg border border-gray-500 min-h-[42px]">
+                                {opportunity.poDocument ? <a href={`${API_BASE}/${opportunity.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm flex items-center font-medium truncate max-w-[120px]" title="View Document">
                                     <CheckCircle size={14} className="mr-1 flex-shrink-0" /> View
                                 </a> : <span className="text-xs text-gray-400 italic">No Doc</span>}
 
@@ -321,36 +321,36 @@ const RevenueTab = forwardRef(({
 
             {/* Invoice Details */}
             <Card className="!bg-white">
-                <h3 className="text-sm font-bold text-gray-800 mb-3 border-b pb-2">Invoice Details</h3>
-                <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4">
+                <h3 className="text-base font-bold text-gray-900 mb-3 border-b border-gray-500 pb-2">Invoice Details</h3>
+                <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Number</label>
-                            <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px] flex items-center">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Invoice Number</label>
+                            <div className="text-base font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-500 min-h-[42px] flex items-center">
                                 {opportunity.commonDetails?.clientInvoiceNumber || 'Pending'}
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Date</label>
-                            <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded border border-gray-100 min-h-[38px] flex items-center">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Invoice Date</label>
+                            <div className="text-base font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-500 min-h-[42px] flex items-center">
                                 {opportunity.commonDetails?.clientInvoiceDate ? new Date(opportunity.commonDetails.clientInvoiceDate).toLocaleDateString() : 'N/A'}
                             </div>
                         </div>
                     </div>
 
                     {/* Row 2: Invoice Amount and Document */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-2 gap-6">
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Amount</label>
-                            {isEditing && !isSales ? <input type="number" name="invoiceValue" value={formData.invoiceValue} onChange={handleChange} className={inputClass} placeholder="Enter Amount" /> : <div className={`text-sm font-medium p-2 rounded border min-h-[38px] flex items-center ${isSales ? 'bg-gray-200 text-gray-500 cursor-not-allowed' : 'bg-gray-50 text-gray-800 border-gray-100'}`}>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Invoice Amount</label>
+                            {isEditing && !isSales ? <input type="number" name="invoiceValue" value={formData.invoiceValue} onChange={handleChange} className={inputClass} placeholder="Enter Amount" /> : <div className={`text-base font-medium p-2 rounded-lg border border-gray-500 min-h-[42px] flex items-center ${isSales ? 'bg-gray-200 text-gray-600 cursor-not-allowed' : 'bg-gray-50 text-gray-800'}`}>
                                 {formatCurrency(formData.invoiceValue)}
                             </div>}
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Invoice Doc</label>
-                            <div className="bg-gray-50 p-2 rounded border border-gray-100 flex items-center justify-between min-h-[38px]">
-                                {opportunity.invoiceDocument ? <a href={`${API_BASE}/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-green-600 hover:underline text-xs flex items-center font-bold truncate max-w-[100px]" title="View Document">
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Invoice Doc</label>
+                            <div className="bg-gray-50 p-2 rounded-lg border border-gray-500 flex items-center justify-between min-h-[42px]">
+                                {opportunity.invoiceDocument ? <a href={`${API_BASE}/${opportunity.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-sm flex items-center font-bold truncate max-w-[120px]" title="View Document">
                                     <CheckCircle size={14} className="mr-1 flex-shrink-0" /> View
                                 </a> : <span className="text-xs text-gray-400 italic">No Doc</span>}
 

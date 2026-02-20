@@ -198,28 +198,28 @@ const SalesTab = forwardRef(({
       setUploading(false);
     }
   };
-  const inputClass = `w-full border p-2 rounded-lg text-sm ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
-  const selectClass = `w-full border p-2 rounded-lg text-sm ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
+  const inputClass = `w-full border p-2 rounded-lg text-base border-gray-500 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue'}`;
+  const selectClass = `w-full border p-2 rounded-lg text-base border-gray-500 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue'}`;
   return <div className="space-y-6">
             {/* Basic Details Section - Dynamic based on Opportunity Type */}
             <Card className="!bg-white">
-                <h3 className="text-lg font-bold text-primary-blue mb-4">Basic Details</h3>
+                <h3 className="text-xl font-bold text-primary-blue mb-4">Basic Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Common Fields for All Types */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Client Name</label>
-                        <input type="text" value={opportunity.client?.companyName || 'N/A'} disabled className="w-full border p-2 rounded-lg text-sm bg-gray-100 text-gray-700 cursor-not-allowed" />
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Client Name</label>
+                        <input type="text" value={opportunity.client?.companyName || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Opportunity Type</label>
-                        <input type="text" value={opportunity.type || 'N/A'} disabled className="w-full border p-2 rounded-lg text-sm bg-gray-100 text-gray-700 cursor-not-allowed" />
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Opportunity Type</label>
+                        <input type="text" value={opportunity.type || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
                     </div>
 
                     {/* Training-Specific Fields */}
                     {opportunity.type === 'Training' && <>
                             <div className={formData.typeSpecificDetails?.technology?.startsWith('Emerging technologies') || formData.typeSpecificDetails?.technology?.startsWith('Other technologies') ? "col-span-1 grid grid-cols-2 gap-2" : ""}>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Technology *</label>
+                                    <label className="block text-base font-semibold text-gray-800 mb-1">Technology *</label>
                                     <SearchableSelect value={formData.typeSpecificDetails?.technology?.includes('Emerging technologies') ? 'Emerging technologies' : formData.typeSpecificDetails?.technology?.includes('Other technologies') ? 'Other technologies' : formData.typeSpecificDetails?.technology || ''} onChange={e => {
                 const selected = e.target.value;
                 if (selected === 'Emerging technologies' || selected === 'Other technologies') {
@@ -234,7 +234,7 @@ const SalesTab = forwardRef(({
                                 </div>
 
                                 {(formData.typeSpecificDetails?.technology?.startsWith('Emerging technologies') || formData.typeSpecificDetails?.technology?.startsWith('Other technologies')) && <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            <label className="block text-base font-semibold text-gray-800 mb-1">
                                                 {formData.typeSpecificDetails?.technology?.startsWith('Emerging') ? 'Specific Emerging' : 'Specific Technology'}
                                             </label>
                                             <input type="text" value={formData.typeSpecificDetails?.technology?.split(' - ')[1] || ''} onChange={e => {
@@ -244,11 +244,11 @@ const SalesTab = forwardRef(({
                                         </div>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Training Name/Requirement *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Training Name/Requirement *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.trainingName || ''} onChange={e => handleChange('typeSpecificDetails', 'trainingName', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Training Name/Requirement" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Mode of Training *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Mode of Training *</label>
                                 <select value={formData.typeSpecificDetails?.modeOfTraining || ''} onChange={e => handleChange('typeSpecificDetails', 'modeOfTraining', e.target.value)} disabled={!isEditing} className={selectClass}>
                                     <option value="">-- Select Mode --</option>
                                     <option value="Virtual">Virtual</option>
@@ -257,15 +257,15 @@ const SalesTab = forwardRef(({
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Number of Participants *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Number of Participants *</label>
                                 <input type="number" value={formData.participants || ''} onChange={e => handleChange('root', 'participants', parseInt(e.target.value) || 0)} onWheel={e => e.target.blur()} disabled={!isEditing} className={`${inputClass} no-arrows`} placeholder="0" />
                             </div>
                             {(formData.typeSpecificDetails?.modeOfTraining === 'Classroom' || formData.typeSpecificDetails?.modeOfTraining === 'Hybrid') && <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Training Location *</label>
+                                    <label className="block text-base font-semibold text-gray-800 mb-1">Training Location *</label>
                                     <input type="text" value={formData.typeSpecificDetails?.trainingLocation || ''} onChange={e => handleChange('typeSpecificDetails', 'trainingLocation', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Location" />
                                 </div>}
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
                             </div>
                         </>}
@@ -273,19 +273,19 @@ const SalesTab = forwardRef(({
                     {/* Vouchers-Specific Fields */}
                     {opportunity.type === 'Vouchers' && <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Technology *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Technology *</label>
                                 <SearchableSelect value={formData.typeSpecificDetails?.technology || ''} onChange={e => handleChange('typeSpecificDetails', 'technology', e.target.value)} options={getTechnologyOptions()} placeholder="Select or type technology" disabled={!isEditing} className={selectClass} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Details *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Exam Details *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.examDetails || ''} onChange={e => handleChange('typeSpecificDetails', 'examDetails', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Exam Details" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">No of Vouchers *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">No of Vouchers *</label>
                                 <input type="number" value={formData.typeSpecificDetails?.numberOfVouchers || ''} onChange={e => handleChange('typeSpecificDetails', 'numberOfVouchers', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} placeholder="0" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Exam Location *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Exam Location *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.examLocation || ''} onChange={e => handleChange('typeSpecificDetails', 'examLocation', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Exam Location" />
                             </div>
                         </>}
@@ -293,23 +293,23 @@ const SalesTab = forwardRef(({
                     {/* Lab Support-Specific Fields */}
                     {opportunity.type === 'Lab Support' && <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Technology *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Technology *</label>
                                 <SearchableSelect value={formData.typeSpecificDetails?.technology || ''} onChange={e => handleChange('typeSpecificDetails', 'technology', e.target.value)} options={getTechnologyOptions()} placeholder="Select or type technology" disabled={!isEditing} className={selectClass} />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.labRequirement || ''} onChange={e => handleChange('typeSpecificDetails', 'labRequirement', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Requirement" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">No of IDs *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">No of IDs *</label>
                                 <input type="number" value={formData.typeSpecificDetails?.numberOfIDs || ''} onChange={e => handleChange('typeSpecificDetails', 'numberOfIDs', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} placeholder="0" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Duration *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Duration *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.duration || ''} onChange={e => handleChange('typeSpecificDetails', 'duration', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="e.g., 30 days, 6 months" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Region *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Region *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.region || ''} onChange={e => handleChange('typeSpecificDetails', 'region', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Region" />
                             </div>
                         </>}
@@ -317,15 +317,15 @@ const SalesTab = forwardRef(({
                     {/* Resource Support-Specific Fields */}
                     {opportunity.type === 'Resource Support' && <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Resource Type *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Resource Type *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.resourceType || ''} onChange={e => handleChange('typeSpecificDetails', 'resourceType', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="e.g., Trainer, Consultant" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Resource Count *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Resource Count *</label>
                                 <input type="number" value={formData.typeSpecificDetails?.resourceCount || ''} onChange={e => handleChange('typeSpecificDetails', 'resourceCount', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} placeholder="0" />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
                             </div>
                         </>}
@@ -333,15 +333,15 @@ const SalesTab = forwardRef(({
                     {/* Content Development-Specific Fields */}
                     {opportunity.type === 'Content Development' && <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Content Type *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Content Type *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.contentType || ''} onChange={e => handleChange('typeSpecificDetails', 'contentType', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="e.g., Course Material" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Format *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Delivery Format *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.deliveryFormat || ''} onChange={e => handleChange('typeSpecificDetails', 'deliveryFormat', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="e.g., PDF, Video" />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
                             </div>
                         </>}
@@ -349,23 +349,23 @@ const SalesTab = forwardRef(({
                     {/* Product Support-Specific Fields */}
                     {opportunity.type === 'Product Support' && <>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Project Scope *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Project Scope *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.projectScope || ''} onChange={e => handleChange('typeSpecificDetails', 'projectScope', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="e.g., Full Stack Development" />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Team Size *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Team Size *</label>
                                 <input type="number" value={formData.typeSpecificDetails?.teamSize || ''} onChange={e => handleChange('typeSpecificDetails', 'teamSize', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} placeholder="0" />
                             </div>
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Summary *</label>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
                             </div>
                         </>}
 
                     {/* Requirement/Job Description Document - Common for All */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Requirement Document</label>
-                        {opportunity.requirementDocument ? <a href={`${API_BASE}/${opportunity.requirementDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Requirement Document">
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                        {opportunity.requirementDocument ? <a href={`${API_BASE}/${opportunity.requirementDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-500 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Requirement Document">
                                 <FileText size={14} /> View Document
                             </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Uploaded</span>}
                     </div>
@@ -374,10 +374,10 @@ const SalesTab = forwardRef(({
 
             {/* Trainer Details Section */}
             <Card className="!bg-white">
-                <h3 className="text-lg font-bold text-primary-blue mb-4">Training Details</h3>
+                <h3 className="text-xl font-bold text-primary-blue mb-4">Training Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Trainer Support</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Trainer Support</label>
                         <select value={formData.commonDetails?.trainingSupporter || 'GKT'} onChange={e => handleChange('commonDetails', 'trainingSupporter', e.target.value)} disabled={!isEditing} className={selectClass}>
                             <option value="GKT">GKT</option>
                             <option value="GKCS">GKCS</option>
@@ -385,25 +385,25 @@ const SalesTab = forwardRef(({
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Course Code</label>
                         <input type="text" value={formData.commonDetails?.courseCode || ''} onChange={e => handleChange('commonDetails', 'courseCode', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Code" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Course Name</label>
                         <input type="text" value={formData.commonDetails?.courseName || ''} onChange={e => handleChange('commonDetails', 'courseName', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Name" />
                     </div>
 
                     {/* Month/Year Selection */}
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Year</label>
                             <select value={formData.commonDetails?.year || new Date().getFullYear()} onChange={e => handleChange('commonDetails', 'year', parseInt(e.target.value))} disabled={!isEditing} className={selectClass}>
                                 <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
                                 <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Month</label>
                             <select value={formData.commonDetails?.monthOfTraining || ''} onChange={e => handleChange('commonDetails', 'monthOfTraining', e.target.value)} disabled={!isEditing} className={selectClass}>
                                 <option value="">Month</option>
                                 {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
@@ -413,40 +413,40 @@ const SalesTab = forwardRef(({
 
                     {/* No. of Days - Smaller visual width (w-1/2) */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Days</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">No. of Days</label>
                         <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', parseInt(e.target.value) || 0)} disabled={!isEditing} className={`${inputClass} w-2/3`} placeholder="0" />
                     </div>
 
                     {/* Start and End Date Side-by-Side */}
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Start Date</label>
                             <input type="date" value={formData.commonDetails?.startDate ? formData.commonDetails.startDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'startDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">End Date</label>
                             <input type="date" value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'endDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                     </div>
                     {/* SME Details Merged into Trainer Details */}
                     {(formData.selectedSME || formData.commonDetails?.trainingSupporter) && <React.Fragment>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Assigned SME</label>
-                                <div className="p-2 bg-gray-50 rounded border border-gray-200 text-sm font-medium text-gray-800">
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Assigned SME</label>
+                                <div className="p-2 bg-gray-50 rounded border border-gray-200 text-base font-semibold text-gray-800">
                                     {typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME.name : 'Not Assigned'}
                                 </div>
                             </div>
 
                             {/* Profile Document (from SME Details) */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">SME Profile</label>
-                                {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-purple-600 hover:text-purple-800 hover:border-purple-300 transition-colors" title="View SME Profile">
+                                <label className="block text-base font-semibold text-gray-800 mb-1">SME Profile</label>
+                                {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-500 rounded-lg text-sm text-purple-600 hover:text-purple-800 hover:border-purple-300 transition-colors" title="View SME Profile">
                                         <CheckCircle size={14} /> View Profile
                                     </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Available</span>}
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Content Document</label>
-                                {opportunity.deliveryDocuments?.contentDocument ? <a href={`${API_BASE}/${toPublicPath(opportunity.deliveryDocuments.contentDocument)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Content Document">
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
+                                {opportunity.deliveryDocuments?.contentDocument ? <a href={`${API_BASE}/${toPublicPath(opportunity.deliveryDocuments.contentDocument)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-500 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Content Document">
                                         <FileText size={14} /> View Document
                                     </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Uploaded</span>}
                             </div>
@@ -460,3 +460,4 @@ const SalesTab = forwardRef(({
         </div>;
 });
 export default SalesTab;
+

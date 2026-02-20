@@ -341,8 +341,8 @@ const DeliveryTab = forwardRef(({
       setUploading(false);
     }
   };
-  const inputClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
-  const selectClass = `w-full border p-2 rounded-lg ${!isEditing ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-gray-50 border-gray-200 focus:ring-2 focus:ring-primary-blue'}`;
+  const inputClass = `w-full border p-2 rounded-lg text-base border-gray-500 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue'}`;
+  const selectClass = `w-full border p-2 rounded-lg text-base border-gray-500 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue'}`;
   if (loading) return <div>Loading data...</div>;
   const hasPendingContentDoc = Boolean(isEditing && pendingDeliveryDocs.contentDocument);
   const hasUploadedContentDoc = Boolean(opportunity?.deliveryDocuments?.contentDocument);
@@ -353,11 +353,11 @@ const DeliveryTab = forwardRef(({
 
             {/* Trainer Details */}
             <Card className="!bg-white">
-                <h3 className="text-lg font-bold text-primary-blue mb-4">Training Details</h3>
+                <h3 className="text-xl font-bold text-primary-blue mb-4">Training Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {/* Row 1: Support Type, SME */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Trainer Support</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Trainer Support</label>
                         <select value={formData.commonDetails?.trainingSupporter || 'GKT'} onChange={e => handleChange('commonDetails', 'trainingSupporter', e.target.value)} disabled={!isEditing} className={selectClass}>
                             <option value="GKT">GKT</option>
                             <option value="GKCS">GKCS</option>
@@ -365,9 +365,9 @@ const DeliveryTab = forwardRef(({
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Select SME</label>
-                        <div className={`flex items-center border rounded-lg overflow-hidden ${!isEditing ? 'bg-gray-100 border-gray-200' : 'bg-gray-50 border-gray-200 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-                            <select value={formData.selectedSME || ''} onChange={handleSMEChange} disabled={!isEditing} className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none ${!isEditing ? 'cursor-not-allowed text-gray-500' : 'text-gray-900'}`}>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Select SME</label>
+                        <div className={`flex items-center border border-gray-500 rounded-lg overflow-hidden ${!isEditing ? 'bg-gray-100' : 'bg-gray-50 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                            <select value={formData.selectedSME || ''} onChange={handleSMEChange} disabled={!isEditing} className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none text-base ${!isEditing ? 'cursor-not-allowed text-gray-800' : 'text-gray-900'}`}>
                                 <option value="">-- Select SME --</option>
                                 <option value="ADD_NEW_SME" className="text-brand-blue font-bold">+ Add New SME</option>
                                 {filteredSMEs.map((s, index) => <option key={s._id || index} value={s._id}>
@@ -378,19 +378,16 @@ const DeliveryTab = forwardRef(({
                         </div>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Technology</label>
-                        <input type="text" value={opportunity.typeSpecificDetails?.technology || 'N/A'} disabled className="w-full border p-2 rounded-lg bg-gray-100 text-gray-700 cursor-not-allowed" placeholder="Technology from Opportunity" />
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Technology</label>
+                        <input type="text" value={opportunity.typeSpecificDetails?.technology || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" placeholder="Technology from Opportunity" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Content Document</label>
-                        <div className="w-full border p-2 rounded-lg bg-gray-50 border-gray-200 flex items-center justify-between gap-2">
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
+                        <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
                             <div className="min-w-0">
-                                {hasPendingContentDoc ? <div className="text-sm text-green-700 font-semibold">
-                                        Uploaded
-                                        <div className="text-[11px] text-gray-500 font-normal truncate" title={pendingDeliveryDocs.contentDocument.name}>
-                                            {pendingDeliveryDocs.contentDocument.name}
-                                        </div>
-                                    </div> : hasUploadedContentDoc ? <a href={`${API_BASE}/${opportunity.deliveryDocuments.contentDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-medium text-green-600 hover:underline">
+                                {hasPendingContentDoc ? <div className="inline-flex items-center text-sm font-medium text-blue-600">
+                                        <CheckCircle size={14} className="mr-1" /> Uploaded
+                                    </div> : hasUploadedContentDoc ? <a href={`${API_BASE}/${opportunity.deliveryDocuments.contentDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-medium text-blue-600 hover:underline">
                                         <CheckCircle size={14} className="mr-1" /> View
                                     </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
                             </div>
@@ -405,23 +402,23 @@ const DeliveryTab = forwardRef(({
 
                     {/* Row 2: Course Details, Year/Month */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Course Code</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Course Code</label>
                         <input type="text" value={formData.commonDetails?.courseCode || ''} onChange={e => handleChange('commonDetails', 'courseCode', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Code" />
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Course Name</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Course Name</label>
                         <input type="text" value={formData.commonDetails?.courseName || ''} onChange={e => handleChange('commonDetails', 'courseName', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Name" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Year</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Year</label>
                             <select value={formData.commonDetails?.year || new Date().getFullYear()} onChange={e => handleChange('commonDetails', 'year', parseInt(e.target.value))} disabled={!isEditing} className={selectClass}>
                                 <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
                                 <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Month</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Month</label>
                             <select value={formData.commonDetails?.monthOfTraining || ''} onChange={e => handleChange('commonDetails', 'monthOfTraining', e.target.value)} disabled={!isEditing} className={selectClass}>
                                 <option value="">Month</option>
                                 {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
@@ -431,26 +428,26 @@ const DeliveryTab = forwardRef(({
 
                     {/* Row 3: Schedule & Participants */}
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">No. of Days</label>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">No. of Days</label>
                         <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', e.target.value)} disabled={!isEditing} className={inputClass} />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Start Date</label>
                             <input type="date" value={formData.commonDetails?.startDate ? formData.commonDetails.startDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'startDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">End Date</label>
                             <input type="date" value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'endDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Total Pax</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Total Pax</label>
                             <input type="number" value={formData.participants || ''} onChange={e => handleChange('root', 'participants', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Attended</label>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Attended</label>
                             <input type="number" value={formData.commonDetails?.attendanceParticipants || ''} onChange={e => handleChange('commonDetails', 'attendanceParticipants', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                     </div>
@@ -458,7 +455,7 @@ const DeliveryTab = forwardRef(({
             </Card>
 
             {/* Operational Expenses Breakdown (Only for Delivery Team) */}
-            {isDeliveryRole && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={expenseUploading} isEditing={isEditing} canEdit={isEditing} opportunity={opportunity} />}
+            {isDeliveryRole && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={expenseUploading} isEditing={isEditing} canEdit={isEditing} opportunity={opportunity} pendingDocs={pendingExpenseDocs} />}
 
             {/* 4. Billing Details (Hidden for Delivery Team, Visible for Sales) */}
             {!isDeliveryRole && <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass={inputClass} />}

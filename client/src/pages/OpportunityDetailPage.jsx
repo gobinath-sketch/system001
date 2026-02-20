@@ -353,22 +353,22 @@ const OpportunityDetailPage = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden flex-1 min-h-0 flex flex-col">
                 <div className="flex border-b border-gray-200 justify-between items-start sm:items-center bg-white px-2 gap-2">
                     <div className="flex space-x-1 overflow-x-auto min-w-0">
-                        {showOverviewTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'overview' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('overview')}>
+                        {showOverviewTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-base font-semibold focus:outline-none transition-all whitespace-nowrap ${activeTab === 'overview' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('overview')}>
                                 Overview
                             </button>}
-                        {showSalesTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'sales' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('sales')}>
+                        {showSalesTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-base font-semibold focus:outline-none transition-all whitespace-nowrap ${activeTab === 'sales' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('sales')}>
                                 Requirements
                             </button>}
-                        {showDeliveryTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'delivery' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('delivery')}>
+                        {showDeliveryTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-base font-semibold focus:outline-none transition-all whitespace-nowrap ${activeTab === 'delivery' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('delivery')}>
                                 Requirements
                             </button>}
-                        <button className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'billing' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('billing')}>
+                        <button className={`px-4 sm:px-6 py-3 sm:py-4 text-base font-semibold focus:outline-none transition-all whitespace-nowrap ${activeTab === 'billing' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('billing')}>
                             {isDeliveryRole ? 'Billing' : 'Proposal Calculations'}
                         </button>
-                        {showVendorPayablesTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'vendor' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('vendor')}>
+                        {showVendorPayablesTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-base font-semibold focus:outline-none transition-all whitespace-nowrap ${activeTab === 'vendor' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('vendor')}>
                                 Vendor Payables
                             </button>}
-                        {showSalesTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-sm font-medium focus:outline-none transition-all whitespace-nowrap ${activeTab === 'revenue' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-600 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('revenue')}>
+                        {showSalesTab && <button className={`px-4 sm:px-6 py-3 sm:py-4 text-base font-semibold focus:outline-none transition-all whitespace-nowrap ${activeTab === 'revenue' ? 'bg-white text-blue-700 border-b-2 border-blue-600 font-bold' : 'text-gray-700 border-b-2 border-transparent hover:text-gray-900 hover:bg-gray-50'}`} onClick={() => handleTabChange('revenue')}>
                                 PO/Invoice
                             </button>}
                     </div>
@@ -377,15 +377,15 @@ const OpportunityDetailPage = () => {
                     {isCurrentTabEditable() && activeTab !== 'overview' && <div className="flex items-center gap-2 pr-2 sm:pr-4 flex-wrap justify-end">
                             {/* Currency Toggle moved to global header */}
 
-                            {!isEditing ? <button onClick={handleEdit} className="flex items-center gap-1.5 bg-brand-blue text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-medium text-sm shadow-sm">
+                            {!isEditing ? <button onClick={handleEdit} className="flex items-center gap-1.5 bg-brand-blue text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition font-semibold text-base shadow-sm">
                                     <Edit size={16} />
                                     Edit Details
                                 </button> : <>
-                                    <button onClick={handleCancel} className="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition font-medium text-sm" disabled={tabLoading}>
+                                    <button onClick={handleCancel} className="flex items-center gap-1.5 bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition font-semibold text-base" disabled={tabLoading}>
                                         <X size={16} />
                                         Cancel
                                     </button>
-                                    <button onClick={handleSave} className="flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-medium text-sm shadow-sm" disabled={tabLoading}>
+                                    <button onClick={handleSave} className="flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition font-semibold text-base shadow-sm" disabled={tabLoading}>
                                         <Save size={16} />
                                         {tabLoading ? 'Saving...' : 'Save Changes'}
                                     </button>

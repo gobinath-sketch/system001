@@ -1,6 +1,6 @@
 import { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, CheckCircle } from 'lucide-react';
 import { useToast } from '../../../context/ToastContext';
 import { useCurrency } from '../../../context/CurrencyContext';
 import UploadButton from '../../ui/UploadButton';
@@ -277,12 +277,12 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
         }
     }));
 
-    const inputClass = "w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-brand-blue bg-white disabled:bg-gray-100 disabled:text-gray-500";
-    const readOnlyClass = "w-full p-2 border border-gray-200 rounded bg-gray-100 text-gray-700 font-medium";
+    const inputClass = "w-full p-2 border border-gray-500 rounded focus:outline-none focus:border-brand-blue bg-white disabled:bg-gray-100 disabled:text-gray-500";
+    const readOnlyClass = "w-full p-2 border border-gray-500 rounded bg-gray-100 text-gray-800 font-medium";
 
     return (
         <div className="space-y-6 animate-fadeIn pb-10">
-            <h2 className="text-xl font-bold text-gray-800 mb-6">Vendor Expenses Breakdown</h2>
+            <h2 className="text-xl font-bold text-primary-blue mb-4">Vendor Expenses Breakdown</h2>
 
             {/* Detailed Categories */}
             {Object.entries(categoryLabels).map(([key, label]) => (
@@ -310,7 +310,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                     <h3 className="font-bold text-gray-800 mb-4">Per Diem</h3>
                     <div className="flex gap-4">
                         <div className="flex-1">
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Amount</label>
+                            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Amount</label>
                             <input
                                 type="number"
                                 value={vendorData.perDiem.amount ?? ''}
@@ -320,10 +320,10 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                             />
                         </div>
                         <div className="flex-1">
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
+                            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Document</label>
                             <div className="flex items-center gap-2 mt-2">
                                 {vendorData.perDiem.document ? (
-                                    <a href={`${API_BASE}/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
+                                    <a href={`${API_BASE}/${vendorData.perDiem.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs font-medium"><CheckCircle size={14} className="mr-1" />View</a>
                                 ) : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                 {canEdit && (
                                     <div className="inline-block">
@@ -352,7 +352,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                     <h3 className="font-bold text-gray-800 mb-4">Other Expenses</h3>
                     <div className="flex gap-4">
                         <div className="flex-1">
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Amount</label>
+                            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Amount</label>
                             <input
                                 type="number"
                                 value={vendorData.other.amount ?? ''}
@@ -363,10 +363,10 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
                         </div>
 
                         <div className="flex-1">
-                            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Document</label>
+                            <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Document</label>
                             <div className="flex items-center gap-2 mt-2">
                                 {vendorData.other.document ? (
-                                    <a href={`${API_BASE}/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Doc</a>
+                                    <a href={`${API_BASE}/${vendorData.other.document.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs font-medium"><CheckCircle size={14} className="mr-1" />View</a>
                                 ) : <span className="text-gray-400 text-xs italic">No Doc</span>}
                                 {canEdit && (
                                     <div className="inline-block">
@@ -413,9 +413,9 @@ const ExpenseRow = ({
     const isExpanded = expandedCategories[category];
     return <div className="border border-gray-200 rounded-lg overflow-hidden mb-4">
         <div className="bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100" onClick={() => toggleAccordion(category)}>
-            <h3 className="font-bold text-gray-800">{label}</h3>
+            <h3 className="font-bold text-gray-900">{label}</h3>
             <div className="flex items-center gap-4">
-                <span className="text-sm text-gray-600">Final Payable: <span className="font-bold text-gray-900">{currency === 'USD' ? '$' : '₹'} {(currency === 'USD' ? data.finalPayable / 84 : data.finalPayable)?.toLocaleString(undefined, {
+                <span className="text-sm text-gray-800">Final Payable: <span className="font-bold text-gray-900">{currency === 'USD' ? '$' : '₹'} {(currency === 'USD' ? data.finalPayable / 84 : data.finalPayable)?.toLocaleString(undefined, {
                     maximumFractionDigits: 0
                 }) || 0}</span></span>
                 {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -426,19 +426,19 @@ const ExpenseRow = ({
             {/* Vendor & PO */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Vendor Name</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Vendor Name</label>
                     <input type="text" value={data.vendorName ?? ''} onChange={e => handleDetailedChange(category, 'vendorName', e.target.value)} className={inputClass} placeholder="Vendor Name" disabled={!canEdit} />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Number</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">PO Number</label>
                     <input type="text" value={data.poNumber ?? ''} onChange={e => handleDetailedChange(category, 'poNumber', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Date</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">PO Date</label>
                     <input type="date" value={data.poDate ?? ''} onChange={e => handleDetailedChange(category, 'poDate', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Value</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">PO Value</label>
                     <input type="number" value={data.poValue ?? ''} onChange={e => handleDetailedChange(category, 'poValue', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
             </div>
@@ -447,9 +447,9 @@ const ExpenseRow = ({
             <div className="mb-4 pb-4 border-b border-gray-100">
                 <div className="flex items-center space-x-4">
                     <div className="flex-1">
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">PO Document</label>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">PO Document</label>
                         <div className="flex items-center gap-2">
-                            {data.poDocument ? <a href={`${API_BASE}/${data.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded PO</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
+                            {data.poDocument ? <a href={`${API_BASE}/${data.poDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs font-medium"><CheckCircle size={14} className="mr-1" />View</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
                             {canEdit && <div className="inline-block">
                                 <input type="file" id={`upload-po-${category}`} className="hidden" onChange={e => handleFileUpload(e, category, 'poDocument')} disabled={uploading} />
                                 <UploadButton onClick={() => document.getElementById(`upload-po-${category}`).click()} disabled={uploading}>
@@ -464,21 +464,21 @@ const ExpenseRow = ({
             {/* Invoice Details */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Number</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Number</label>
                     <input type="text" value={data.invoiceNumber ?? ''} onChange={e => handleDetailedChange(category, 'invoiceNumber', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Date</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Date</label>
                     <input type="date" value={data.invoiceDate ?? ''} onChange={e => handleDetailedChange(category, 'invoiceDate', e.target.value)} className={inputClass} disabled={!canEdit} />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Value (Without Tax)</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Value (Without Tax)</label>
                     <input type="number" value={data.invoiceValue ?? ''} onChange={e => handleDetailedChange(category, 'invoiceValue', e.target.value)} className={readOnlyClass} // Read-only styling
                         placeholder="Auto-filled" disabled={true} // Always disabled as it's auto-filled
                     />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Value(Incl. GST)</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Value(Incl. GST)</label>
                     <input type="number" value={data.invoiceValueWithTax ?? ''} readOnly className={readOnlyClass} />
                 </div>
             </div>
@@ -487,9 +487,9 @@ const ExpenseRow = ({
             <div className="mb-4 pb-4 border-b border-gray-100">
                 <div className="flex items-center space-x-4">
                     <div className="flex-1">
-                        <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Invoice Document</label>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Invoice Document</label>
                         <div className="flex items-center gap-2">
-                            {data.invoiceDocument ? <a href={`${API_BASE}/${data.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline text-xs">View Uploaded Invoice</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
+                            {data.invoiceDocument ? <a href={`${API_BASE}/${data.invoiceDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-xs font-medium"><CheckCircle size={14} className="mr-1" />View</a> : <span className="text-gray-400 text-xs italic">No Document</span>}
                             {canEdit && <div className="inline-block">
                                 <input type="file" id={`upload-invoice-${category}`} className="hidden" onChange={e => handleFileUpload(e, category, 'invoiceDocument')} disabled={uploading} />
                                 <UploadButton onClick={() => document.getElementById(`upload-invoice-${category}`).click()} disabled={uploading}>
@@ -504,7 +504,7 @@ const ExpenseRow = ({
             {/* Tax & Final */}
             <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">GST (%)</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">GST (%)</label>
                     <select value={data.gstType ?? ''} onChange={e => handleDetailedChange(category, 'gstType', e.target.value)} className={inputClass} disabled={!canEdit}>
                         <option value="">Select</option>
                         <option value="No GST">No GST</option>
@@ -515,11 +515,11 @@ const ExpenseRow = ({
                     </select>
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">GST Amt</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">GST Amt</label>
                     <input type="number" value={data.gstAmount ?? ''} readOnly className={readOnlyClass} />
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">TDS (%)</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">TDS (%)</label>
                     <select value={data.tdsPercent ?? 0} onChange={e => handleDetailedChange(category, 'tdsPercent', e.target.value)} className={inputClass} disabled={!canEdit}>
                         <option value="0">0%</option>
                         {Array.from({
@@ -528,7 +528,7 @@ const ExpenseRow = ({
                     </select>
                 </div>
                 <div>
-                    <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">TDS Amt</label>
+                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">TDS Amt</label>
                     <input type="number" value={data.tdsAmount ?? ''} readOnly className={readOnlyClass} />
                 </div>
                 <div>
