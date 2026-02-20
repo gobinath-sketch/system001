@@ -136,9 +136,9 @@ const OpportunityPage = () => {
                     </button>
                     <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue truncate">Opportunity Management</h1>
                 </div>
-                {!isDeliveryRole && <button onClick={() => setShowForm(true)} className="bg-primary-blue text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-opacity-90 shadow-md w-full sm:w-auto">
+                {!isDeliveryRole && <button onClick={() => setShowForm(true)} className="bg-primary-blue text-white px-5 sm:px-7 py-3 sm:py-3.5 rounded-lg flex items-center justify-center space-x-2 hover:bg-opacity-90 shadow-md w-full sm:w-auto">
                         <Plus size={18} />
-                        <span className="font-bold">Create Opportunity</span>
+                        <span className="font-bold text-[15px]">Create Opportunity</span>
                     </button>}
             </div>
 
@@ -155,7 +155,7 @@ const OpportunityPage = () => {
                 {/* Table Header with Search & Count */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
                     {/* Left: Count */}
-                    <h2 className="text-lg font-semibold text-gray-900">
+                    <h2 className="text-[18px] font-semibold text-gray-900">
                         All Opportunities ({filteredOpportunities.length})
                     </h2>
 
@@ -163,20 +163,20 @@ const OpportunityPage = () => {
                     <div className="flex flex-1 items-center justify-end gap-2 w-full md:w-auto flex-wrap">
                         {/* Creator Filter - Sales Manager & Business Head */}
                         {['Sales Manager', 'Business Head'].includes(user?.role) && <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50 max-w-[150px]">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-base cursor-pointer hover:bg-gray-50 max-w-[170px]">
                                     <option value="">All Creators</option>
                                     {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
                                 </select>
                             </div>}
                         <div className="relative w-full sm:w-64 md:max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                            <input type="text" placeholder={isDeliveryRole ? "Search by Opp ID..." : "Search by Opp ID or Client..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm" />
+                            <input type="text" placeholder={isDeliveryRole ? "Search by Opp ID..." : "Opp ID or Client..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px]" />
                         </div>
                         <div className="flex gap-2 flex-wrap w-full sm:w-auto">
                             <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                <select value={filterType} onChange={e => setFilterType(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                <select value={filterType} onChange={e => setFilterType(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px] cursor-pointer hover:bg-gray-50">
                                     <option value="">All Types</option>
                                     <option value="Training">Training</option>
                                     <option value="Vouchers">Vouchers</option>
@@ -187,22 +187,22 @@ const OpportunityPage = () => {
                                 </select>
                             </div>
                             <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                <select value={filterMonth} onChange={e => setFilterMonth(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px] cursor-pointer hover:bg-gray-50">
                                     <option value="">All Months</option>
                                     {['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'].map(m => <option key={m} value={m}>{m}</option>)}
                                 </select>
                             </div>
                             <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50">
+                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px] cursor-pointer hover:bg-gray-50">
                                     <option value="">All Years</option>
                                     {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
                                 </select>
                             </div>
                             {(user?.role === 'Sales Manager' || isDeliveryRole) && <div className="relative">
-                                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                                    <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50">
+                                    <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                                    <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-base cursor-pointer hover:bg-gray-50">
                                         <option value="">All Creators</option>
                                         {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
                                     </select>
@@ -212,7 +212,7 @@ const OpportunityPage = () => {
                 </div>
 
                 <div className="overflow-auto h-[calc(100vh-240px)]">
-                    <table className="min-w-full text-left text-sm relative">
+                    <table className="min-w-full text-left text-[16px] relative">
                         <thead className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
                             <tr>
                                 <th className="px-6 py-2 font-semibold text-gray-900">Opp ID</th>
@@ -243,24 +243,24 @@ const OpportunityPage = () => {
               let statusBadge = null;
               const appStatus = opp.approvalStatus;
               if (!appStatus || appStatus === 'Draft' || appStatus === 'No Approval Required' || appStatus === 'Not Required') {
-                statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 border border-blue-200 cursor-help" title="No approval required. Within approved limits.">
+                statusBadge = <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 border border-blue-200 cursor-help" title="No approval required. Within approved limits.">
                                                 Pre-Approved
                                             </span>;
               } else if (appStatus === 'Approved') {
-                statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                statusBadge = <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 border border-green-200">
                                                 Approved
                                             </span>;
               } else if (appStatus === 'Rejected') {
-                statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                statusBadge = <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 border border-red-200">
                                                 Rejected
                                             </span>;
               } else if (['Pending Manager', 'Pending Director', 'Pending'].includes(appStatus) || appStatus?.toLowerCase().includes('pending')) {
-                statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                statusBadge = <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-amber-100 text-amber-800 border border-amber-200">
                                                 Pending
                                             </span>;
               } else {
                 // Fallback for unknown status
-                statusBadge = <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                statusBadge = <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800 border border-gray-200">
                                                 {appStatus}
                                             </span>;
               }
@@ -270,7 +270,7 @@ const OpportunityPage = () => {
                                             </td>
                                             <td className="px-6 py-2">
                                                 <div className="font-medium text-gray-900">{opp.client?.companyName || opp.clientName || 'N/A'}</div>
-                                                <div className="text-xs text-gray-500">{opp.client?.sector}</div>
+                                                <div className="text-sm text-gray-700">{opp.client?.sector}</div>
                                             </td>
 
                                             {isDeliveryRole ? <td className="px-6 py-2">
@@ -279,7 +279,7 @@ const OpportunityPage = () => {
                                                     <td className="px-6 py-2">
                                                         {contactDetails ? <div className="flex flex-col">
                                                                 <div className="font-medium text-gray-900">{contactDetails.name}</div>
-                                                                <div className="text-xs text-gray-500">{contactDetails.designation}</div>
+                                                                <div className="text-sm text-gray-700">{contactDetails.designation}</div>
                                                             </div> : <div className="text-gray-500 italic">{opp.selectedContactPerson || 'N/A'}</div>}
                                                     </td>
                                                     {['Sales Manager', 'Business Head'].includes(user?.role) && <td className="px-6 py-2">
@@ -290,19 +290,19 @@ const OpportunityPage = () => {
 
                                             {/* Progress Column */}
                                             <td className="px-6 py-2">
-                                                <div className="flex flex-col space-y-2 max-w-[140px]">
+                                                <div className="flex flex-col space-y-2 max-w-[170px]">
                                                     <div className="flex items-center space-x-2">
-                                                        <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                                            <div className="h-1.5 rounded-full bg-gradient-to-r from-blue-500 to-green-500" style={{
+                                                        <div className="w-20 bg-gray-200 rounded-full h-2">
+                                                            <div className="h-2 rounded-full bg-gradient-to-r from-blue-500 to-green-500" style={{
                           width: `${opp.progressPercentage || 0}%`
                         }}></div>
                                                         </div>
-                                                        <span className="text-xs font-semibold text-gray-600">{opp.progressPercentage || 0}%</span>
+                                                        <span className="text-sm font-semibold text-gray-700">{opp.progressPercentage || 0}%</span>
                                                     </div>
 
                                                     {/* Manual Status Override */}
                                                     <div onClick={e => e.stopPropagation()}>
-                                                        <select className="text-xs border border-gray-200 rounded p-1 bg-gray-50 hover:bg-white focus:ring-1 focus:ring-brand-blue" value={opp.commonDetails?.status || 'Active'} onChange={e => {
+                                                        <select className="text-sm border border-gray-200 rounded px-2 py-1.5 bg-gray-50 hover:bg-white focus:ring-1 focus:ring-brand-blue" value={opp.commonDetails?.status || 'Active'} onChange={e => {
                         setStatusModal({
                           isOpen: true,
                           oppId: opp._id,
@@ -347,3 +347,6 @@ const OpportunityPage = () => {
         </div>;
 };
 export default OpportunityPage;
+
+
+
