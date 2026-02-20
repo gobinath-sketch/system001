@@ -331,8 +331,8 @@ const ClientPage = () => {
 
   // --- Render Views ---
 
-  const renderForm = title => <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]">
+  const renderForm = title => <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setShowFormModal(false)}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
                     <h2 className="text-2xl font-bold text-brand-blue">{title}</h2>
                     <button onClick={() => setShowFormModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -512,7 +512,7 @@ const ClientPage = () => {
         </div>;
   return <div className="p-3 sm:p-5 relative">
             {/* Contact Detail Modal */}
-            {selectedContact && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelectedContact(null)}>
+            {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
                     <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-start mb-6">
                             <div>
@@ -730,6 +730,8 @@ const ClientPage = () => {
         </div>;
 };
 export default ClientPage;
+
+
 
 
 

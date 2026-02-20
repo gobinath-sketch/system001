@@ -203,10 +203,8 @@ const CreateOpportunityModal = ({
     }
   };
   if (!isOpen) return null;
-  return <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
-  }}>
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative">
+  return <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={onClose}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto relative" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center p-4 sm:p-6 border-b sticky top-0 bg-white z-10">
                     <h2 className="text-2xl font-bold text-gray-900">Create New Opportunity</h2>
                     <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -420,3 +418,5 @@ const CreateOpportunityModal = ({
         </div>;
 };
 export default CreateOpportunityModal;
+
+

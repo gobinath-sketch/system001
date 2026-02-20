@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import { Check, FileText, DollarSign, Briefcase, X, ArrowLeft, Search, Bell as BellIcon, CheckCheck, CircleCheck } from 'lucide-react';
 import NotificationBellIcon from '../common/NotificationBellIcon';
@@ -22,6 +22,8 @@ const NotificationDropdown = () => {
     const [selectedNotification, setSelectedNotification] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
+    const [isNavigating, setIsNavigating] = useState(false);
+    const navigationTimerRef = useRef(null);
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -158,6 +160,14 @@ const NotificationDropdown = () => {
         };
     }, [loadNotifications]);
 
+    useEffect(() => {
+        return () => {
+            if (navigationTimerRef.current) {
+                clearTimeout(navigationTimerRef.current);
+            }
+        };
+    }, []);
+
     // Real-time listener: Listen for NEW notifications from Socket.io
     useEffect(() => {
         if (!socket) return;
@@ -226,6 +236,7 @@ const NotificationDropdown = () => {
 
     // CLICK ON LIST ITEM -> NAVIGATE DIRECTLY (no details preview screen)
     const handleNotificationClick = async (notification) => {
+        if (isNavigating) return;
         if (!notification.isRead) {
             handleMarkAsRead(notification._id);
         }
@@ -234,17 +245,23 @@ const NotificationDropdown = () => {
 
     // 2. CLICK "VIEW PAGE" IN PREVIEW -> NAVIGATE
     const handlePreviewNavigate = (notification) => {
+        if (isNavigating) return;
+        setIsNavigating(true);
         setIsOpen(false);
         setSelectedNotification(null);
 
-        // User requirement: open opportunity Requirements page immediately.
-        if (notification.opportunityId) {
-            navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
-        } else if (notification.type === 'gp_approval_request' || notification.type === 'approval_status_change') {
-            navigate('/approvals');
-        } else {
-            navigate('/dashboard');
-        }
+        // Show a short transition loader so each click is visually distinct.
+        navigationTimerRef.current = setTimeout(() => {
+            if (notification.opportunityId) {
+                navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
+            } else if (notification.type === 'gp_approval_request' || notification.type === 'approval_status_change') {
+                navigate('/approvals');
+            } else {
+                navigate('/dashboard');
+            }
+            setIsNavigating(false);
+            navigationTimerRef.current = null;
+        }, 1000);
     };
 
     const filterOptions = getFilterOptions();
@@ -477,6 +494,14 @@ const NotificationDropdown = () => {
                                 </div>
                             </>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {isNavigating && (
+                <div className="fixed inset-0 z-[120] bg-black/50 backdrop-blur-sm flex items-center justify-center">
+                    <div className="bg-white rounded-xl shadow-xl border border-blue-100 px-6 py-5 flex items-center gap-3">
+                        <span className="w-5 h-5 border-2 border-blue-200 border-t-primary-blue rounded-full animate-spin" />
                     </div>
                 </div>
             )}
