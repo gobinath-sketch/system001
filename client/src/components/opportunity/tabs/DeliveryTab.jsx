@@ -82,10 +82,7 @@ const DeliveryTab = forwardRef(({
           }
         }
       }
-      let initialPax = opportunity.participants;
-      if (opportunity.type === 'Lab Support' && opportunity.typeSpecificDetails?.numberOfIDs) {
-        initialPax = opportunity.typeSpecificDetails.numberOfIDs;
-      }
+      const initialPax = opportunity.participants;
       setFormData({
         ...opportunity,
         // Ensure nested objects are handled correctly
@@ -346,10 +343,131 @@ const DeliveryTab = forwardRef(({
   if (loading) return <div>Loading data...</div>;
   const hasPendingContentDoc = Boolean(isEditing && pendingDeliveryDocs.contentDocument);
   const hasUploadedContentDoc = Boolean(opportunity?.deliveryDocuments?.contentDocument);
+  const shouldShowRequirementSummary = opportunity.type !== 'Lab Support';
+  const showSummaryWithDocumentRow = ['Product Support', 'Content Development', 'Resource Support'].includes(opportunity.type);
 
   // Show all SMEs (no vendor filtering for delivery team)
   const filteredSMEs = smes;
   return <div className="space-y-6">
+            {/* Basic Details */}
+            <Card className="!bg-white">
+                <h3 className="text-xl font-bold text-primary-blue mb-4">Basic Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Client Name</label>
+                        <input type="text" value={opportunity.client?.companyName || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                    </div>
+                    <div>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Opportunity Type</label>
+                        <input type="text" value={opportunity.type || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                    </div>
+                    {/* Type-specific fields (match Sales Basic Details) */}
+                    {opportunity.type === 'Training' && <>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Technology *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.technology || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Training Name/Requirement *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.trainingName || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Mode of Training *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.modeOfTraining || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Number of Participants *</label>
+                            <input type="number" value={formData.participants || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        {(opportunity.typeSpecificDetails?.modeOfTraining === 'Classroom' || opportunity.typeSpecificDetails?.modeOfTraining === 'Hybrid') && <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Training Location *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.trainingLocation || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>}
+                    </>}
+                    {opportunity.type === 'Vouchers' && <>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Technology *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.technology || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Exam Details *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.examDetails || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">No of Vouchers *</label>
+                            <input type="number" value={opportunity.typeSpecificDetails?.numberOfVouchers || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Exam Location *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.examLocation || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                    </>}
+                    {opportunity.type === 'Lab Support' && <>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Technology *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.technology || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.labRequirement || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">No of IDs *</label>
+                            <input type="number" value={opportunity.typeSpecificDetails?.numberOfIDs || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Duration *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.duration || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Region *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.region || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                    </>}
+                    {opportunity.type === 'Resource Support' && <>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Resource Type *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.resourceType || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Resource Count *</label>
+                            <input type="number" value={opportunity.typeSpecificDetails?.resourceCount || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                    </>}
+                    {opportunity.type === 'Content Development' && <>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Content Type *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.contentType || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Delivery Format *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.deliveryFormat || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                    </>}
+                    {opportunity.type === 'Product Support' && <>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Project Scope *</label>
+                            <input type="text" value={opportunity.typeSpecificDetails?.projectScope || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Team Size *</label>
+                            <input type="number" value={opportunity.typeSpecificDetails?.teamSize || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                        </div>
+                    </>}
+                    {shouldShowRequirementSummary && <div className={showSummaryWithDocumentRow ? '' : 'md:col-span-2'}>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
+                        <input type="text" value={opportunity.requirementSummary || ''} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
+                    </div>}
+                    <div>
+                        <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                        <div className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 min-h-[42px] flex items-center">
+                            {opportunity.requirementDocument ? <a href={`${API_BASE}/${opportunity.requirementDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline">
+                                <CheckCircle size={14} /> View
+                            </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                        </div>
+                    </div>
+                </div>
+            </Card>
 
             {/* Trainer Details */}
             <Card className="!bg-white">
@@ -376,10 +494,6 @@ const DeliveryTab = forwardRef(({
                             </select>
 
                         </div>
-                    </div>
-                    <div>
-                        <label className="block text-base font-semibold text-gray-800 mb-1">Technology</label>
-                        <input type="text" value={opportunity.typeSpecificDetails?.technology || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" placeholder="Technology from Opportunity" />
                     </div>
                     <div>
                         <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
@@ -429,7 +543,7 @@ const DeliveryTab = forwardRef(({
                     {/* Row 3: Schedule & Participants */}
                     <div>
                         <label className="block text-base font-semibold text-gray-800 mb-1">No. of Days</label>
-                        <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', e.target.value)} disabled={!isEditing} className={inputClass} />
+                        <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', parseInt(e.target.value) || 0)} disabled={!isEditing} className={`${inputClass} w-2/3`} />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                         <div>
@@ -441,16 +555,16 @@ const DeliveryTab = forwardRef(({
                             <input type="date" value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'endDate', e.target.value)} disabled={!isEditing} className={inputClass} />
                         </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
+                    {opportunity.type === 'Training' && <div className="grid grid-cols-2 gap-2">
                         <div>
                             <label className="block text-base font-semibold text-gray-800 mb-1">Total Pax</label>
-                            <input type="number" value={formData.participants || ''} onChange={e => handleChange('root', 'participants', e.target.value)} disabled={!isEditing} className={inputClass} />
+                            <input type="number" value={formData.participants || ''} onChange={e => handleChange('root', 'participants', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} />
                         </div>
                         <div>
-                            <label className="block text-base font-semibold text-gray-800 mb-1">Attended</label>
-                            <input type="number" value={formData.commonDetails?.attendanceParticipants || ''} onChange={e => handleChange('commonDetails', 'attendanceParticipants', e.target.value)} disabled={!isEditing} className={inputClass} />
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Attended Pax</label>
+                            <input type="number" value={formData.commonDetails?.attendanceParticipants || ''} onChange={e => handleChange('commonDetails', 'attendanceParticipants', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} />
                         </div>
-                    </div>
+                    </div>}
                 </div>
             </Card>
 
