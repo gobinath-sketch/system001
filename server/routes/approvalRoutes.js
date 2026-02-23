@@ -347,11 +347,11 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
             createdAt: Date.now()
         });
 
-        res.status(201).json({ message: `Escalation sent to ${approvalLevel}`, approval });
+        res.status(201).json({ message: `Approval sent ${approvalLevel}`, approval });
     } catch (error) {
-        console.error('Escalation error:', error);
+        console.error('Approval error:', error);
         res.status(500).json({ message: error.message });
-    }
+    
 });
 
 // @route   PUT /api/approvals/:id/read
