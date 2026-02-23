@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MoreHorizontal, ChevronRight, ChevronLeft, X, Check } from 'lucide-react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 import { useToast } from '../../context/ToastContext';
 import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
 const shiftColor = (hex, amount) => {
@@ -124,9 +124,9 @@ const RevenueAnalyticsRow = ({
   const [savedSuccessId, setSavedSuccessId] = useState(null);
   const [activeSectorIndex, setActiveSectorIndex] = useState(-1);
   const SECTOR_COLORS = {
-    'Enterprise': '#2563eb',
-    'Academics': '#16a34a',
-    'School': '#f59e0b'
+    'Enterprise': '#0F3D75',
+    'Academics': '#FBBF24',
+    'School': '#4ADE80'
   };
   const FALLBACK_COLORS = ['#cbd5e1', '#94a3b8', '#64748b'];
   const renderActiveSectorShape = props => {
@@ -440,48 +440,70 @@ const RevenueAnalyticsRow = ({
                     </div>}
             </div>
 
-            {/* 3. Revenue by Sector (PIE CHART) */}
+            {/* 3. Revenue by Sector (DETAILS + PIE) */}
             <div style={glassCardStyle} className="p-4 flex flex-col min-h-[350px]">
                 <h3 className="text-sm font-bold text-black mb-2">Revenue by Sector</h3>
                 <div className="flex-1 min-h-[240px]">
                     {loading ? <div className="h-full flex flex-col items-center justify-center text-black font-bold">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue mb-2"></div>
                             <p>Loading revenue data...</p>
-                        </div> : filteredData.sectorData.length > 0 ? <SafeResponsiveContainer minHeight={240}>
-                            <PieChart accessibilityLayer={false}>
-                                <defs>
-                                    <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="180%">
-                                        <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.2" />
-                                    </filter>
-                                    {filteredData.sectorData.map((entry, index) => {
-                const baseColor = SECTOR_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
-                return <linearGradient key={`type-grad-${index}`} id={`typeGrad-${index}`} x1="0" y1="0" x2="1" y2="1">
-                                                <stop offset="0%" stopColor={shiftColor(baseColor, 22)} />
-                                                <stop offset="55%" stopColor={baseColor} />
-                                                <stop offset="100%" stopColor={shiftColor(baseColor, -22)} />
-                                            </linearGradient>;
-              })}
-                                </defs>
-
-                                <Pie data={filteredData.sectorData} cx="50%" cy="50%" innerRadius={0} outerRadius={95} paddingAngle={1} dataKey="value" stroke="none" style={{
-              filter: 'url(#donutShadow)'
-            }} activeIndex={activeSectorIndex} activeShape={renderActiveSectorShape} onMouseEnter={(_, index) => setActiveSectorIndex(index)} onMouseLeave={() => setActiveSectorIndex(-1)}>
-                                    {filteredData.sectorData.map((entry, index) => <Cell key={`cell-${index}`} fill={`url(#typeGrad-${index})`} />)}
-                                </Pie>
-                                <Tooltip cursor={false} content={<CustomTooltip formatMoney={formatMoney} />} />
-                                <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{
-              fontSize: '11px',
-              paddingTop: '10px'
-            }} formatter={(value, entry) => {
-              const {
-                payload
-              } = entry;
+                        </div> : filteredData.sectorData.length > 0 ? (() => {
               const sectorTotal = filteredData.sectorData.reduce((sum, item) => sum + (item.value || 0), 0);
-              const percentage = sectorTotal > 0 ? (payload.value / sectorTotal * 100).toFixed(0) : 0;
-              return <span className="text-black font-semibold">{value} <span className="text-black font-normal">({percentage}%)</span></span>;
-            }} />
-                            </PieChart>
-                        </SafeResponsiveContainer> : <div className="h-full flex flex-col items-center justify-center text-black font-bold">
+              const sortedSectors = [...filteredData.sectorData].sort((a, b) => (b.value || 0) - (a.value || 0));
+              return <div className="h-full grid grid-cols-1 md:grid-cols-[46%_54%] gap-3 items-center">
+                                <div className="h-full flex flex-col gap-2 justify-center">
+                                    {sortedSectors.map((sector, index) => {
+                    const pct = sectorTotal > 0 ? (sector.value / sectorTotal * 100).toFixed(0) : 0;
+                    const color = SECTOR_COLORS[sector.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+                    return <div key={sector.name} className="rounded-xl border border-blue-100 bg-gradient-to-r from-white to-blue-50/60 px-3 py-2 shadow-sm">
+                                                <div className="flex items-center justify-between gap-2">
+                                                    <div className="flex items-center gap-2 min-w-0">
+                                                        <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{
+                            backgroundColor: color
+                          }} />
+                                                        <span className="text-[13px] font-semibold text-gray-800 truncate">{sector.name}</span>
+                                                    </div>
+                                                    <span className="text-[11px] font-semibold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">{pct}%</span>
+                                                </div>
+                                                <p className="text-[15px] font-bold text-gray-900 mt-1">{formatMoney(sector.value)}</p>
+                                            </div>;
+                  })}
+                                    <div className="rounded-xl border border-gray-200 bg-white/80 px-3 py-2 mt-1">
+                                        <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Total Revenue</p>
+                                        <p className="text-[16px] font-bold text-primary-blue">{formatMoney(sectorTotal)}</p>
+                                    </div>
+                                </div>
+                                <div className="h-full min-h-[240px] relative">
+                                    <div className="absolute inset-0 pointer-events-none">
+                                        <div className="absolute left-1/2 top-1/2 w-40 h-40 -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-200/25 blur-2xl"></div>
+                                    </div>
+                                    <SafeResponsiveContainer minHeight={240}>
+                                        <PieChart accessibilityLayer={false}>
+                                            <defs>
+                                                <filter id="donutShadow" x="-40%" y="-40%" width="180%" height="220%">
+                                                    <feDropShadow dx="0" dy="6" stdDeviation="4" floodColor="#0f172a" floodOpacity="0.24" />
+                                                </filter>
+                                                {sortedSectors.map((entry, index) => {
+                        const baseColor = SECTOR_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+                        return <linearGradient key={`type-grad-${index}`} id={`typeGrad-${index}`} x1="0" y1="0" x2="1" y2="1">
+                                                            <stop offset="0%" stopColor={shiftColor(baseColor, 18)} />
+                                                            <stop offset="58%" stopColor={baseColor} />
+                                                            <stop offset="100%" stopColor={shiftColor(baseColor, -18)} />
+                                                        </linearGradient>;
+                      })}
+                                            </defs>
+
+                                            <Pie data={sortedSectors} cx="50%" cy="50%" innerRadius={0} outerRadius={102} paddingAngle={2} dataKey="value" stroke="none" style={{
+                      filter: 'url(#donutShadow)'
+                    }} activeIndex={activeSectorIndex} activeShape={renderActiveSectorShape} onMouseEnter={(_, index) => setActiveSectorIndex(index)} onMouseLeave={() => setActiveSectorIndex(-1)} isAnimationActive animationDuration={900} animationEasing="ease-out">
+                                                {sortedSectors.map((entry, index) => <Cell key={`cell-${index}`} fill={`url(#typeGrad-${index})`} />)}
+                                            </Pie>
+                                            <Tooltip cursor={false} content={<CustomTooltip formatMoney={formatMoney} />} />
+                                        </PieChart>
+                                    </SafeResponsiveContainer>
+                                </div>
+                            </div>;
+            })() : <div className="h-full flex flex-col items-center justify-center text-black font-bold">
                             <p>No revenue data available</p>
                         </div>}
                 </div>

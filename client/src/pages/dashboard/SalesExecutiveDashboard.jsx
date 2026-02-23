@@ -44,6 +44,13 @@ const SalesExecutiveDashboard = ({
     stage: '',
     data: []
   });
+  const [segmentTooltip, setSegmentTooltip] = useState({
+    visible: false,
+    text: '',
+    color: '#1d4ed8',
+    x: 0,
+    y: 0
+  });
   const openProgressModal = (stage, data) => {
     setProgressModal({
       isOpen: true,
@@ -52,6 +59,22 @@ const SalesExecutiveDashboard = ({
     });
   };
   const EXCHANGE_RATE = 85; // Fixed rate for now
+  const showSegmentTooltip = (event, text, color) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    setSegmentTooltip({
+      visible: true,
+      text,
+      color,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 8
+    });
+  };
+  const hideSegmentTooltip = () => {
+    setSegmentTooltip(prev => ({
+      ...prev,
+      visible: false
+    }));
+  };
 
   const fetchDashboardData = useCallback(async () => {
     try {
@@ -398,8 +421,60 @@ const SalesExecutiveDashboard = ({
                     .tech-chevron {
                         animation: techChevronFlow 1.15s ease-in-out infinite;
                     }
+                    .progress-stage-group {
+                        position: relative;
+                    }
+                    .progress-stage-tip {
+                        position: absolute;
+                        top: 6px;
+                        left: 50%;
+                        transform: translate(-50%, -4px);
+                        opacity: 0;
+                        pointer-events: none;
+                        background: #1d4ed8;
+                        color: #fff;
+                        font-size: 11px;
+                        font-weight: 600;
+                        line-height: 1;
+                        padding: 7px 10px;
+                        border-radius: 8px;
+                        box-shadow: 0 10px 22px rgba(29, 78, 216, 0.35);
+                        white-space: nowrap;
+                        transition: opacity 0.18s ease, transform 0.18s ease;
+                        z-index: 20;
+                    }
+                    .progress-stage-tip::after {
+                        content: '';
+                        position: absolute;
+                        left: 50%;
+                        bottom: -5px;
+                        transform: translateX(-50%);
+                        width: 0;
+                        height: 0;
+                        border-left: 5px solid transparent;
+                        border-right: 5px solid transparent;
+                        border-top: 5px solid #1d4ed8;
+                    }
+                    .progress-stage-group:hover .progress-stage-tip {
+                        opacity: 1;
+                        transform: translate(-50%, -10px);
+                    }
                 `}
             </style>
+            {segmentTooltip.visible && <div className="fixed z-[120] pointer-events-none" style={{
+      left: `${segmentTooltip.x}px`,
+      top: `${segmentTooltip.y}px`,
+      transform: 'translate(-50%, -100%)'
+    }}>
+                    <div className="relative px-2.5 py-1.5 rounded-md text-[11px] font-semibold text-white shadow-lg" style={{
+          backgroundColor: segmentTooltip.color
+        }}>
+                        {segmentTooltip.text}
+                        <span className="absolute left-1/2 -bottom-[5px] -translate-x-1/2 w-0 h-0 border-l-[5px] border-r-[5px] border-t-[5px] border-l-transparent border-r-transparent" style={{
+            borderTopColor: segmentTooltip.color
+          }} />
+                    </div>
+                </div>}
 
             {/* 1. KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -437,7 +512,8 @@ const SalesExecutiveDashboard = ({
                         <span className="text-base text-black font-bold">Opportunities (Total: {filteredStats.totalOpportunities})</span>
                     </div>
                     <div className="grid grid-cols-4 gap-1 text-center">
-                        <div onClick={() => openProgressModal('30%', filteredOpps.filter(o => o.progressPercentage < 50))} className="group flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors">
+                        <div onClick={() => openProgressModal('30%', filteredOpps.filter(o => o.progressPercentage < 50))} className="progress-stage-group group flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors">
+                            <span className="progress-stage-tip">Opportunity created</span>
                             <p className="text-3xl font-bold text-red-600">{filteredStats.progress30}</p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 30%
@@ -452,7 +528,8 @@ const SalesExecutiveDashboard = ({
                                 </span>
                             </p>
                         </div>
-                        <div onClick={() => openProgressModal('50%', filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))} className="group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
+                        <div onClick={() => openProgressModal('50%', filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
+                            <span className="progress-stage-tip">Expenses filled</span>
                             <p className="text-3xl font-bold text-yellow-500">{filteredStats.progress50}</p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 50%
@@ -467,7 +544,8 @@ const SalesExecutiveDashboard = ({
                                 </span>
                             </p>
                         </div>
-                        <div onClick={() => openProgressModal('80%', filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))} className="group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
+                        <div onClick={() => openProgressModal('80%', filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
+                            <span className="progress-stage-tip">Client Proposal uploaded</span>
                             <p className="text-3xl font-bold text-indigo-600">{filteredStats.progress80}</p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 80%
@@ -482,7 +560,8 @@ const SalesExecutiveDashboard = ({
                                 </span>
                             </p>
                         </div>
-                        <div onClick={() => openProgressModal('100%', filteredOpps.filter(o => o.progressPercentage === 100))} className="group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
+                        <div onClick={() => openProgressModal('100%', filteredOpps.filter(o => o.progressPercentage === 100))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
+                            <span className="progress-stage-tip">Completed</span>
                             <p className="text-3xl font-bold text-emerald-600">{filteredStats.progress100}</p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 100%
@@ -610,10 +689,12 @@ const SalesExecutiveDashboard = ({
                                                                     <div className="h-full" style={{
                             width: item.count > 0 ? `${item.ongoingCount / item.count * 100}%` : '0%',
                             backgroundColor: item.fill
-                          }} title={`Ongoing: ${item.ongoingCount}`} />
+                          }} onMouseEnter={e => showSegmentTooltip(e, `Ongoing: ${item.ongoingCount}`, item.fill)} onMouseLeave={hideSegmentTooltip}>
+                                                                    </div>
                                                                     <div className="h-full bg-green-500" style={{
                             width: item.count > 0 ? `${item.completedCount / item.count * 100}%` : '0%'
-                          }} title={`Completed: ${item.completedCount}`} />
+                          }} onMouseEnter={e => showSegmentTooltip(e, `Completed: ${item.completedCount}`, '#22c55e')} onMouseLeave={hideSegmentTooltip}>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
