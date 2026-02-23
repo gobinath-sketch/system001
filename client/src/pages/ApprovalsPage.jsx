@@ -225,7 +225,7 @@ const ApprovalsPage = () => {
 
             <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <p className="text-sm text-gray-700">
-                    <strong>Note:</strong> Opportunities with Gross Profit (GP) below 10% require specific approval before proceeding.
+                    <strong>Note:</strong> Sales Profit and Contingency thresholds drive approval routing (Manager, Business Head, Director) based on configured bands.
                 </p>
             </div>
 

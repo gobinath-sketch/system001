@@ -506,6 +506,32 @@ router.put('/:id', protect, async (req, res) => {
             }
         }
 
+        // While approval is pending, lock Sales Profit% and Contingency% edits.
+        const isApprovalPending = typeof opportunity.approvalStatus === 'string' && opportunity.approvalStatus.includes('Pending');
+        if (isApprovalPending) {
+            const incomingExpenses = updates.expenses || {};
+            const currentTargetGp = Number(opportunity.expenses?.targetGpPercent ?? 30);
+            const currentContingency = Number(opportunity.expenses?.contingencyPercent ?? 15);
+
+            const hasTargetInObject = Object.prototype.hasOwnProperty.call(incomingExpenses, 'targetGpPercent');
+            const hasContInObject = Object.prototype.hasOwnProperty.call(incomingExpenses, 'contingencyPercent');
+            const hasTargetFlat = updates['expenses.targetGpPercent'] !== undefined;
+            const hasContFlat = updates['expenses.contingencyPercent'] !== undefined;
+
+            const nextTargetGp = hasTargetInObject
+                ? Number(incomingExpenses.targetGpPercent)
+                : hasTargetFlat ? Number(updates['expenses.targetGpPercent']) : currentTargetGp;
+            const nextContingency = hasContInObject
+                ? Number(incomingExpenses.contingencyPercent)
+                : hasContFlat ? Number(updates['expenses.contingencyPercent']) : currentContingency;
+
+            if (nextTargetGp !== currentTargetGp || nextContingency !== currentContingency) {
+                return res.status(403).json({
+                    message: 'Sales Profit% and Contingency% cannot be edited while approval is pending.'
+                });
+            }
+        }
+
         // Capture original state before updates for notification comparison
         const originalExpenses = JSON.parse(JSON.stringify(opportunity.expenses || {}));
         const originalCommonDetails = JSON.parse(JSON.stringify(opportunity.commonDetails || {}));

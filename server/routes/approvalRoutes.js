@@ -14,11 +14,13 @@ router.get('/', protect, authorize('Director', 'Sales Manager', 'Business Head')
         let filter = { status: 'Pending' };
 
         if (req.user.role === 'Director') {
-            // Director sees only GP < 10% approvals
             filter.approvalLevel = 'Director';
-        } else if (req.user.role === 'Sales Manager' || req.user.role === 'Business Head') {
-            // Manager/Head sees only GP 10-15% approvals assigned to them
+            filter.assignedTo = req.user._id;
+        } else if (req.user.role === 'Sales Manager') {
             filter.approvalLevel = 'Manager';
+            filter.assignedTo = req.user._id;
+        } else if (req.user.role === 'Business Head') {
+            filter.approvalLevel = 'Business Head';
             filter.assignedTo = req.user._id;
         }
 
@@ -53,13 +55,18 @@ router.post('/:id/approve', protect, authorize('Director', 'Sales Manager', 'Bus
             return res.status(400).json({ message: 'Approval already processed' });
         }
 
-        // Verify user has permission to approve this level
-        if (approval.approvalLevel === 'Director' && req.user.role !== 'Director') {
-            return res.status(403).json({ message: 'Only Director can approve GP < 10%' });
+        // Verify user has permission to approve this level and assignment
+        if (approval.assignedTo && approval.assignedTo.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to approve this request' });
         }
-
-        if (approval.approvalLevel === 'Manager' && !['Sales Manager', 'Business Head'].includes(req.user.role)) {
-            return res.status(403).json({ message: 'Only Sales Manager or Business Head can approve GP 10-15%' });
+        if (approval.approvalLevel === 'Director' && req.user.role !== 'Director') {
+            return res.status(403).json({ message: 'Only Director can approve this request' });
+        }
+        if (approval.approvalLevel === 'Business Head' && req.user.role !== 'Business Head') {
+            return res.status(403).json({ message: 'Only Business Head can approve this request' });
+        }
+        if (approval.approvalLevel === 'Manager' && req.user.role !== 'Sales Manager') {
+            return res.status(403).json({ message: 'Only Sales Manager can approve this request' });
         }
 
         // Update approval
@@ -68,10 +75,25 @@ router.post('/:id/approve', protect, authorize('Director', 'Sales Manager', 'Bus
         approval.approvedAt = new Date();
         await approval.save();
 
+        // Close any other pending requests for the same opportunity.
+        await Approval.updateMany({
+            opportunity: approval.opportunity,
+            status: 'Pending',
+            _id: { $ne: approval._id }
+        }, {
+            $set: {
+                status: 'Rejected',
+                rejectedBy: req.user._id,
+                rejectedAt: new Date(),
+                rejectionReason: 'Superseded by another processed approval request'
+            }
+        });
+
         // Update Opportunity Status
         const opportunity = await Opportunity.findById(approval.opportunity);
         if (opportunity) {
             opportunity.approvalStatus = 'Approved';
+            opportunity.approvalRequired = false;
             opportunity.approvedBy = req.user._id;
             opportunity.approvedAt = new Date();
             await opportunity.save();
@@ -115,6 +137,19 @@ router.post('/:id/reject', protect, authorize('Director', 'Sales Manager', 'Busi
             return res.status(400).json({ message: 'Approval already processed' });
         }
 
+        if (approval.assignedTo && approval.assignedTo.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to reject this request' });
+        }
+        if (approval.approvalLevel === 'Director' && req.user.role !== 'Director') {
+            return res.status(403).json({ message: 'Only Director can reject this request' });
+        }
+        if (approval.approvalLevel === 'Business Head' && req.user.role !== 'Business Head') {
+            return res.status(403).json({ message: 'Only Business Head can reject this request' });
+        }
+        if (approval.approvalLevel === 'Manager' && req.user.role !== 'Sales Manager') {
+            return res.status(403).json({ message: 'Only Sales Manager can reject this request' });
+        }
+
         // Update approval
         approval.status = 'Rejected';
         approval.rejectedBy = req.user._id;
@@ -122,10 +157,25 @@ router.post('/:id/reject', protect, authorize('Director', 'Sales Manager', 'Busi
         approval.rejectionReason = reason || 'No reason provided';
         await approval.save();
 
+        // Close any other pending requests for the same opportunity.
+        await Approval.updateMany({
+            opportunity: approval.opportunity,
+            status: 'Pending',
+            _id: { $ne: approval._id }
+        }, {
+            $set: {
+                status: 'Rejected',
+                rejectedBy: req.user._id,
+                rejectedAt: new Date(),
+                rejectionReason: 'Superseded by another processed approval request'
+            }
+        });
+
         // Update Opportunity Status
         const opportunity = await Opportunity.findById(approval.opportunity);
         if (opportunity) {
             opportunity.approvalStatus = 'Rejected';
+            opportunity.approvalRequired = false;
             opportunity.rejectedBy = req.user._id;
             opportunity.rejectedAt = new Date();
             opportunity.rejectionReason = reason || 'No reason provided';
@@ -157,7 +207,7 @@ router.post('/:id/reject', protect, authorize('Director', 'Sales Manager', 'Busi
 
 
 // @route   POST /api/approvals/escalate
-// @desc    Escalate opportunity with low GP or Low Contingency to Manager (called by Sales Executive)
+// @desc    Escalate opportunity based on Sales Profit% or Contingency%
 // @access  Private (Sales Executive)
 router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
@@ -172,31 +222,92 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        // Identify Approval Level & Assignee
+        const existingPendingApproval = await Approval.findOne({
+            opportunity: opportunityId,
+            status: 'Pending'
+        });
+        const opportunityIsPending = typeof opportunity.approvalStatus === 'string' && opportunity.approvalStatus.includes('Pending');
+        if (existingPendingApproval && opportunityIsPending) {
+            return res.status(200).json({
+                message: 'Approval already pending for this opportunity',
+                approval: existingPendingApproval
+            });
+        }
+        if (existingPendingApproval && !opportunityIsPending) {
+            await Approval.updateMany({
+                opportunity: opportunityId,
+                status: 'Pending'
+            }, {
+                $set: {
+                    status: 'Rejected',
+                    rejectedBy: req.user._id,
+                    rejectedAt: new Date(),
+                    rejectionReason: `Auto-closed after opportunity moved to ${opportunity.approvalStatus || 'non-pending'}`
+                }
+            });
+        }
+
+        const requester = await User.findById(req.user._id).populate('reportingManager');
+        if (!requester?.reportingManager) {
+            return res.status(400).json({ message: 'No reporting manager assigned' });
+        }
+        const manager = requester.reportingManager?.role === 'Sales Manager' ? requester.reportingManager : null;
+        if (!manager) {
+            return res.status(400).json({ message: 'No Sales Manager assigned in reporting chain' });
+        }
+        let businessHead = null;
+        if (manager.reportingManager) {
+            const managerHead = await User.findById(manager.reportingManager);
+            if (managerHead?.role === 'Business Head') {
+                businessHead = managerHead;
+            }
+        }
+        const director = await User.findOne({ role: 'Director' });
+
+        // Identify Approval Level & Assignee from requested trigger.
+        const mode = triggerReason === 'contingency' ? 'contingency' : 'gp';
         let approvalLevel = 'Manager';
         let assignedTo = null;
         let nextStatus = 'Pending Manager';
-        let approvalReason = 'Low GP';
+        let approvalReason = '';
 
-        // Check Director Condition (Strict checking for GP < 10)
-        if (gpPercent < 10) {
-            approvalLevel = 'Director';
-            nextStatus = 'Pending Director';
-            approvalReason = 'GP < 10%';
-            const director = await User.findOne({ role: 'Director' });
-            assignedTo = director?._id;
-        } else {
-            // Manager Cases:
-            // 1. GP 10-15%
-            // 2. Contingency < 10%
-            approvalReason = gpPercent < 15 ? 'GP 10-15%' : 'Contingency < 10%';
-
-            // Manager Approval
-            const user = await User.findById(req.user._id);
-            if (!user.reportingManager) {
-                return res.status(400).json({ message: 'No reporting manager assigned' });
+        if (mode === 'contingency') {
+            if (contingencyPercent < 5) {
+                approvalLevel = 'Business Head';
+                nextStatus = 'Pending Business Head';
+                approvalReason = 'Contingency < 5%';
+                assignedTo = businessHead?._id;
+            } else if (contingencyPercent < 10) {
+                approvalLevel = 'Manager';
+                nextStatus = 'Pending Manager';
+                approvalReason = 'Contingency 5-9%';
+                assignedTo = manager?._id;
+            } else {
+                return res.status(400).json({ message: 'Contingency is within allowed range. Approval not required.' });
             }
-            assignedTo = user.reportingManager;
+        } else {
+            if (gpPercent < 5) {
+                approvalLevel = 'Director';
+                nextStatus = 'Pending Director';
+                approvalReason = 'Sales Profit < 5%';
+                assignedTo = director?._id;
+            } else if (gpPercent < 10) {
+                approvalLevel = 'Business Head';
+                nextStatus = 'Pending Business Head';
+                approvalReason = 'Sales Profit 5-9%';
+                assignedTo = businessHead?._id;
+            } else if (gpPercent < 15) {
+                approvalLevel = 'Manager';
+                nextStatus = 'Pending Manager';
+                approvalReason = 'Sales Profit 10-14%';
+                assignedTo = manager?._id;
+            } else {
+                return res.status(400).json({ message: 'Sales Profit is within allowed range. Approval not required.' });
+            }
+        }
+
+        if (!assignedTo) {
+            return res.status(400).json({ message: `No approver found for ${approvalLevel}` });
         }
 
         // Create approval request
@@ -229,7 +340,7 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
             triggeredBy: req.user._id,
             triggeredByName: req.user.name,
             type: 'approval_request',
-            message: `Approval Request: Opportunity ${opportunity.opportunityNumber} by ${req.user.name} (${approvalReason}, GP: ${gpPercent.toFixed(1)}%)`,
+            message: `Approval Request: Opportunity ${opportunity.opportunityNumber} by ${req.user.name} (${approvalReason})`,
             opportunityId: opportunity._id,
             opportunityNumber: opportunity.opportunityNumber,
             isRead: false,
@@ -253,17 +364,9 @@ router.put('/:id/read', protect, authorize('Director', 'Sales Manager', 'Busines
             return res.status(404).json({ message: 'Approval not found' });
         }
 
-        // Authorization: Only assigned approver can mark as read
+        // Authorization: Only assigned approver can mark as read.
         if (approval.assignedTo && approval.assignedTo.toString() !== req.user._id.toString()) {
-            // Managers might view team approvals, but "Mark as read" implies handling it. 
-            // Let's strictly allow only assigned user or Director (if level is Director).
-            if (req.user.role === 'Director' && approval.approvalLevel !== 'Director') {
-                // Director viewing manager's approval? Maybe. For now stick to strict assignment.
-            }
-            // For simplicity, if you can see it (via GET), you can mark it read? 
-            // Let's stick to: if it's assigned to you.
-            if (approval.approvalLevel === 'Director' && req.user.role !== 'Director') return res.status(403).json({ message: 'Not authorized' });
-            if (approval.approvalLevel === 'Manager' && approval.assignedTo.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Not authorized' });
+            return res.status(403).json({ message: 'Not authorized' });
         }
 
         approval.isRead = true;
