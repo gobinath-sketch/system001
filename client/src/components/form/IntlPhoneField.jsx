@@ -1,5 +1,5 @@
 import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
+import 'react-phone-input-2/lib/high-res.css';
 import { validatePhoneNumberLength } from 'libphonenumber-js/max';
 import mobileExamples from 'libphonenumber-js/mobile/examples';
 

@@ -231,4 +231,11 @@ input[type="number"] {
 .intl-phone-field .selected-flag {
   height: 100% !important;
   padding: 0 0 0 10px !important;
+  background: #ffffff !important;
+}
+
+.intl-phone-field .selected-flag .flag {
+  transform: none !important;
+  filter: none !important;
+  image-rendering: auto !important;
 }
