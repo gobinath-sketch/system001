@@ -3,6 +3,7 @@ const router = express.Router();
 const Client = require('../models/Client');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { normalizeSector } = require('../utils/sector');
 
 // Helper to get accessible user IDs
 const getAccessibleUserIds = async (user) => {
@@ -35,10 +36,11 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
         console.log('👤 User:', req.user?.name, req.user?.role);
 
         const { companyName, sector, contactPersons } = req.body;
+        const normalizedSector = normalizeSector(sector);
 
         const client = new Client({
             companyName,
-            sector,
+            sector: normalizedSector,
             contactPersons: contactPersons || [],
             createdBy: req.user._id
         });
@@ -129,9 +131,10 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Busin
         // Or strictly strictly only creator? Let's assume team members can edit.
 
         const { companyName, sector, contactPersons } = req.body;
+        const normalizedSector = normalizeSector(sector);
 
         client.companyName = companyName || client.companyName;
-        client.sector = sector || client.sector;
+        client.sector = normalizedSector || client.sector;
         client.contactPersons = contactPersons || client.contactPersons;
 
         await client.save();

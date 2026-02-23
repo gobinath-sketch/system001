@@ -172,9 +172,10 @@ const AddClientModal = ({
                                 </label>
                                 <select name="sector" value={formData.sector} onChange={handleChange} className="w-full border p-2 rounded" required>
                                     <option value="Enterprise">Enterprise</option>
-                                    <option value="Academics">Academics</option>
-                                    <option value="University">University</option>
-                                    <option value="College">College</option>
+                                    <optgroup label="Academics">
+                                        <option value="Academics - College">College</option>
+                                        <option value="Academics - Universities">Universities</option>
+                                    </optgroup>
                                     <option value="School">School</option>
                                 </select>
                             </div>

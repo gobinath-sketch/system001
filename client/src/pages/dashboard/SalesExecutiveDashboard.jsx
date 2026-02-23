@@ -113,75 +113,83 @@ const SalesExecutiveDashboard = ({
     }
   };
 
-  // --- Global Time Filter State ---
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  // --- Global Time Filter State (Financial Year) ---
+  const getFinancialYearStart = date => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+    const y = date.getFullYear();
+    const m = date.getMonth();
+    return m >= 3 ? y : y - 1; // FY starts in April
+  };
+  const toFinancialYearLabel = fyStart => `${fyStart}-${fyStart + 1}`;
+  const getCurrentFinancialYearLabel = () => {
+    const now = new Date();
+    const fyStart = getFinancialYearStart(now);
+    return toFinancialYearLabel(fyStart);
+  };
+  const [selectedYear, setSelectedYear] = useState(getCurrentFinancialYearLabel());
   const [timeFilter, setTimeFilter] = useState('Yearly');
 
-  // Helper: Get available years - STRICTLY from 'year' field or 'startDate' (No createdAt)
+  const getOpportunityDate = opp => {
+    if (opp.commonDetails?.startDate) {
+      const startDate = new Date(opp.commonDetails.startDate);
+      if (!Number.isNaN(startDate.getTime())) return startDate;
+    }
+
+    const monthField = opp.commonDetails?.monthOfTraining;
+    let monthIdxFromField = -1;
+    if (typeof monthField === 'number') {
+      monthIdxFromField = monthField - 1;
+    } else if (monthField && /^\d+$/.test(monthField.toString().trim())) {
+      monthIdxFromField = Number(monthField) - 1;
+    } else if (monthField) {
+      const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+      monthIdxFromField = months.indexOf(monthField.toString().toLowerCase().substring(0, 3));
+    }
+    const yearFromField = Number(opp.commonDetails?.year);
+    if (!Number.isNaN(yearFromField) && yearFromField > 1900 && monthIdxFromField >= 0) {
+      return new Date(yearFromField, monthIdxFromField, 1);
+    }
+
+    if (opp.createdAt) {
+      const createdDate = new Date(opp.createdAt);
+      if (!Number.isNaN(createdDate.getTime())) return createdDate;
+    }
+
+    return null;
+  };
+
+  // Helper: Get available financial years from opportunity dates
   const availableYears = React.useMemo(() => {
-    const years = allOpps.map(opp => {
-      // Priority 1: Explicit Year Field
-      const y = opp.commonDetails?.year;
-      if (y && !isNaN(Number(y)) && Number(y) > 0) return Number(y);
-
-      // Priority 2: Training Start Date Year
-      if (opp.commonDetails?.startDate) {
-        const dateYear = new Date(opp.commonDetails.startDate).getFullYear();
-        if (!isNaN(dateYear) && dateYear > 1900) return dateYear;
-      }
-
-      // Priority 3: Created At
-      if (opp.createdAt) {
-        const createdYear = new Date(opp.createdAt).getFullYear();
-        if (!isNaN(createdYear) && createdYear > 1900) return createdYear;
-      }
-      return null;
+    const fyStarts = allOpps.map(opp => {
+      const oppDate = getOpportunityDate(opp);
+      return oppDate ? getFinancialYearStart(oppDate) : null;
     });
-    return [...new Set([...years, new Date().getFullYear()])].filter(year => year !== null && year > 1900).sort((a, b) => b - a);
+    const currentFyStart = getFinancialYearStart(new Date());
+    return [...new Set([...fyStarts, currentFyStart])].filter(fy => fy !== null && fy > 1900).sort((a, b) => b - a).map(toFinancialYearLabel);
   }, [allOpps]);
 
   // Initialize Year once data is loaded
   // Initialize Year removed (defaulted to current year above)
 
-  // Helper: Month Index
-  const getMonthIndex = month => {
-    if (!month) return -1;
-    if (typeof month === 'number') return month - 1;
-    const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
-    const normalized = month.toString().toLowerCase().substring(0, 3);
-    return months.indexOf(normalized);
-  };
-
   // --- Filter Logic ---
   const filteredOpps = React.useMemo(() => {
     if (!selectedYear) return allOpps;
     return allOpps.filter(opp => {
-      // Determine Opp Year (Logic matching availableYears)
-      let oppYear = Number(opp.commonDetails?.year);
-      if (!oppYear || isNaN(oppYear) || oppYear <= 0) {
-        if (opp.commonDetails?.startDate) {
-          oppYear = new Date(opp.commonDetails.startDate).getFullYear();
-        } else if (opp.createdAt) {
-          // Fallback to Created At if no explicit year or start date
-          oppYear = new Date(opp.createdAt).getFullYear();
-        }
-      }
-
-      // If still no valid year, ignore this opp for year filtering? 
-      // Or treat as "Unassigned"? But filter requires match.
-      if (!oppYear || oppYear !== selectedYear) return false;
+      const oppDate = getOpportunityDate(opp);
+      if (!oppDate) return false;
+      const oppFyStart = getFinancialYearStart(oppDate);
+      if (toFinancialYearLabel(oppFyStart) !== selectedYear) return false;
       if (timeFilter === 'Yearly') return true;
-      let monthIdx = getMonthIndex(opp.commonDetails?.monthOfTraining);
-      if (monthIdx === -1) {
-        const createdDate = new Date(opp.createdAt);
-        monthIdx = createdDate.getMonth();
-      }
-      if (timeFilter === 'H1') return monthIdx >= 0 && monthIdx <= 5;
-      if (timeFilter === 'H2') return monthIdx >= 6 && monthIdx <= 11;
-      if (timeFilter === 'Q1') return monthIdx >= 0 && monthIdx <= 2;
-      if (timeFilter === 'Q2') return monthIdx >= 3 && monthIdx <= 5;
-      if (timeFilter === 'Q3') return monthIdx >= 6 && monthIdx <= 8;
-      if (timeFilter === 'Q4') return monthIdx >= 9 && monthIdx <= 11;
+      const monthIdx = oppDate.getMonth();
+
+      // Financial Year month mapping
+      // H1: Apr-Sep, H2: Oct-Mar, Q1: Apr-Jun, Q2: Jul-Sep, Q3: Oct-Dec, Q4: Jan-Mar
+      if (timeFilter === 'H1') return monthIdx >= 3 && monthIdx <= 8;
+      if (timeFilter === 'H2') return monthIdx >= 9 || monthIdx <= 2;
+      if (timeFilter === 'Q1') return monthIdx >= 3 && monthIdx <= 5;
+      if (timeFilter === 'Q2') return monthIdx >= 6 && monthIdx <= 8;
+      if (timeFilter === 'Q3') return monthIdx >= 9 && monthIdx <= 11;
+      if (timeFilter === 'Q4') return monthIdx >= 0 && monthIdx <= 2;
       return true;
     });
   }, [allOpps, selectedYear, timeFilter]);
@@ -200,11 +208,19 @@ const SalesExecutiveDashboard = ({
   // --- Recalculate Type Distribution for Chart ---
   const filteredTypeDist = React.useMemo(() => {
     const dist = OPPORTUNITY_TYPES.map(type => {
-      const count = filteredOpps.filter(o => o.type === type).length;
-      const revenue = filteredOpps.filter(o => o.type === type).reduce((sum, o) => sum + (o.poValue || 0), 0);
+      const typeOpps = filteredOpps.filter(o => o.type === type);
+      const count = typeOpps.length;
+      const completedCount = typeOpps.filter(o => {
+        const status = (o?.commonDetails?.status || o?.statusLabel || '').toString().toLowerCase();
+        return o?.progressPercentage >= 100 || status === 'completed';
+      }).length;
+      const ongoingCount = Math.max(0, count - completedCount);
+      const revenue = typeOpps.reduce((sum, o) => sum + (o.poValue || 0), 0);
       return {
         type,
         count,
+        ongoingCount,
+        completedCount,
         revenue
       };
     });
@@ -350,7 +366,7 @@ const SalesExecutiveDashboard = ({
                     </div>}
 
                 {/* Year Filter */}
-                <select value={selectedYear || ''} onChange={e => setSelectedYear(Number(e.target.value))} className="h-8 pl-2 pr-6 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
+                <select value={selectedYear || ''} onChange={e => setSelectedYear(e.target.value)} className="h-8 pl-2 pr-6 border border-gray-300 rounded-md text-sm font-medium bg-white focus:outline-none focus:ring-1 focus:ring-blue-500">
                     {availableYears.map(year => <option key={year} value={year}>{year}</option>)}
                 </select>
 
@@ -545,6 +561,9 @@ const SalesExecutiveDashboard = ({
                 radarValue: item.count > 0 ? Math.sqrt(item.count) : null
               }));
               const maxRadarValue = Math.max(...radarData.map(d => d.radarValue), 1);
+              // Force 3 polygon rings and ensure the outer ring is exactly the max value,
+              // so radial lines terminate at the hexagon edge without protruding.
+              const radarTicks = [maxRadarValue / 3, maxRadarValue * 2 / 3, maxRadarValue];
               const typeColorMap = Object.fromEntries(radarData.map(d => [d.type, d.fill]));
               return <div className="h-full grid grid-cols-1 md:grid-cols-[47%_53%] gap-2 md:gap-3 items-center">
                                             <div className="h-full min-h-[195px] pr-1">
@@ -563,8 +582,8 @@ const SalesExecutiveDashboard = ({
                         textAnchor
                       }) => <text x={x} y={y} textAnchor={textAnchor} fill={typeColorMap[payload?.value] || '#374151'} fontSize={10} fontWeight={700}>
                                                                     {payload?.value}
-                                                                </text>} />
-                                                        <PolarRadiusAxis domain={[0, maxRadarValue]} tick={false} axisLine={false} />
+                                                                </text>} axisLine={false} tickLine={false} />
+                                                        <PolarRadiusAxis domain={[0, maxRadarValue]} ticks={radarTicks} tick={false} axisLine={false} />
                                                         <Radar name="Opportunities" dataKey="radarValue" stroke="#003D7A" fill="#1D6FD1" fillOpacity={0.35} strokeWidth={2.4} dot={false} activeDot={false} />
                                                     </RadarChart>
                                                 </SafeResponsiveContainer>
@@ -585,10 +604,17 @@ const SalesExecutiveDashboard = ({
                                                                 <span className="text-[11px] md:text-[12px] font-medium text-gray-500">{item.share}%</span>
                                                             </div>
                                                             <div className="mt-1 h-1.5 rounded-full bg-gray-200 overflow-hidden">
-                                                                <div className="h-full rounded-full" style={{
-                          width: item.share > 0 ? `${Math.max(6, item.share)}%` : '0%',
-                          backgroundColor: item.fill
-                        }} />
+                                                                <div className="h-full rounded-full overflow-hidden flex" style={{
+                          width: item.share > 0 ? `${Math.max(6, item.share)}%` : '0%'
+                        }}>
+                                                                    <div className="h-full" style={{
+                            width: item.count > 0 ? `${item.ongoingCount / item.count * 100}%` : '0%',
+                            backgroundColor: item.fill
+                          }} title={`Ongoing: ${item.ongoingCount}`} />
+                                                                    <div className="h-full bg-green-500" style={{
+                            width: item.count > 0 ? `${item.completedCount / item.count * 100}%` : '0%'
+                          }} title={`Completed: ${item.completedCount}`} />
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>)}
