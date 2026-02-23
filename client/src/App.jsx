@@ -24,6 +24,13 @@ import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { SocketProvider } from './context/SocketContext';
 function App() {
+  const allRoles = ['Sales Executive', 'Sales Manager', 'Delivery Team', 'Finance', 'Business Head', 'Director', 'Super Admin'];
+  const salesRoles = ['Sales Executive', 'Sales Manager', 'Business Head', 'Director', 'Super Admin'];
+  const opportunityRoles = ['Sales Executive', 'Sales Manager', 'Business Head', 'Director', 'Delivery Team', 'Super Admin'];
+  const approvalRoles = ['Sales Manager', 'Business Head', 'Director', 'Super Admin'];
+  const deliveryRoles = ['Delivery Team', 'Delivery Manager', 'Delivery Head', 'Super Admin'];
+  const financeRoles = ['Finance', 'Super Admin'];
+
   useEffect(() => {
     const handleWheel = () => {
       if (document.activeElement.type === 'number') {
@@ -46,30 +53,30 @@ function App() {
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
 
               {/* Role-Based Dashboard Routes */}
-              <Route path="/" element={<ProtectedRoute><Layout><DashboardPage /></Layout></ProtectedRoute>} />
-              <Route path="/dashboard/director" element={<ProtectedRoute><Layout><DirectorDashboard /></Layout></ProtectedRoute>} />
-              <Route path="/dashboard/businesshead" element={<ProtectedRoute><Layout><BusinessHeadDashboard /></Layout></ProtectedRoute>} />
-              <Route path="/dashboard/manager" element={<ProtectedRoute><Layout><SalesManagerDashboard /></Layout></ProtectedRoute>} />
-              <Route path="/dashboard/executive" element={<ProtectedRoute><Layout><DashboardPage mockRole="Sales Executive" /></Layout></ProtectedRoute>} />
+              <Route path="/" element={<ProtectedRoute allowedRoles={allRoles}><Layout><DashboardPage /></Layout></ProtectedRoute>} />
+              <Route path="/dashboard/director" element={<ProtectedRoute allowedRoles={['Director', 'Super Admin']}><Layout><DirectorDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/dashboard/businesshead" element={<ProtectedRoute allowedRoles={['Business Head', 'Super Admin']}><Layout><BusinessHeadDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/dashboard/manager" element={<ProtectedRoute allowedRoles={['Sales Manager', 'Super Admin']}><Layout><SalesManagerDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/dashboard/executive" element={<ProtectedRoute allowedRoles={['Sales Executive', 'Super Admin']}><Layout><DashboardPage /></Layout></ProtectedRoute>} />
 
               {/* Shared Routes */}
-              <Route path="/clients" element={<ProtectedRoute><Layout><ClientPage /></Layout></ProtectedRoute>} />
-              <Route path="/opportunities" element={<ProtectedRoute><Layout><OpportunityPage /></Layout></ProtectedRoute>} />
-              <Route path="/opportunities/:id" element={<ProtectedRoute><Layout><OpportunityDetailPage /></Layout></ProtectedRoute>} />
-              <Route path="/approvals" element={<ProtectedRoute><Layout><ApprovalsPage /></Layout></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute allowedRoles={salesRoles}><Layout><ClientPage /></Layout></ProtectedRoute>} />
+              <Route path="/opportunities" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityPage /></Layout></ProtectedRoute>} />
+              <Route path="/opportunities/:id" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityDetailPage /></Layout></ProtectedRoute>} />
+              <Route path="/approvals" element={<ProtectedRoute allowedRoles={approvalRoles}><Layout><ApprovalsPage /></Layout></ProtectedRoute>} />
 
               {/* Delivery Routes */}
-              <Route path="/dashboard/delivery" element={<ProtectedRoute><Layout><DeliveryDashboard /></Layout></ProtectedRoute>} />
-              <Route path="/delivery/execution" element={<ProtectedRoute><Layout><ProgramExecutionList /></Layout></ProtectedRoute>} />
+              <Route path="/dashboard/delivery" element={<ProtectedRoute allowedRoles={deliveryRoles}><Layout><DeliveryDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/delivery/execution" element={<ProtectedRoute allowedRoles={deliveryRoles}><Layout><ProgramExecutionList /></Layout></ProtectedRoute>} />
 
 
-              <Route path="/smes" element={<ProtectedRoute><Layout><SMEManagement /></Layout></ProtectedRoute>} />
+              <Route path="/smes" element={<ProtectedRoute allowedRoles={deliveryRoles}><Layout><SMEManagement /></Layout></ProtectedRoute>} />
 
               {/* Finance Routes */}
-              <Route path="/finance/dashboard" element={<ProtectedRoute><Layout><FinanceDashboard /></Layout></ProtectedRoute>} />
-              <Route path="/finance" element={<ProtectedRoute><Layout><FinanceModulePage /></Layout></ProtectedRoute>} />
-              <Route path="/finance/:id" element={<ProtectedRoute><Layout><FinanceDetails /></Layout></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><Layout><SettingsPage /></Layout></ProtectedRoute>} />
+              <Route path="/finance/dashboard" element={<ProtectedRoute allowedRoles={financeRoles}><Layout><FinanceDashboard /></Layout></ProtectedRoute>} />
+              <Route path="/finance" element={<ProtectedRoute allowedRoles={financeRoles}><Layout><FinanceModulePage /></Layout></ProtectedRoute>} />
+              <Route path="/finance/:id" element={<ProtectedRoute allowedRoles={financeRoles}><Layout><FinanceDetails /></Layout></ProtectedRoute>} />
+              <Route path="/settings" element={<ProtectedRoute allowedRoles={allRoles}><Layout><SettingsPage /></Layout></ProtectedRoute>} />
             </Routes>
           </Router>
         </ToastProvider>

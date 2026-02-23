@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDefaultRouteForRole } from '../utils/navigation';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import { validateMobile, validateEmail } from '../utils/validation';
@@ -586,13 +587,7 @@ const ClientPage = () => {
             setViewMode('list');
             return;
           }
-          if (user?.role === 'Sales Manager') {
-            navigate('/dashboard/manager');
-          } else if (user?.role === 'Director') {
-            navigate('/dashboard/businesshead');
-          } else {
-            navigate('/dashboard/executive');
-          }
+          navigate(getDefaultRouteForRole(user?.role));
         }} className="text-gray-600 hover:text-gray-900 bg-white p-2 rounded-full shadow-sm border border-gray-100 transition-all hover:bg-gray-50">
                         <ArrowLeft size={20} />
                     </button>
@@ -730,7 +725,6 @@ const ClientPage = () => {
         </div>;
 };
 export default ClientPage;
-
 
 
 

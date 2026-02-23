@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -10,27 +9,13 @@ import EscalationWidget from '../components/dashboard/EscalationWidget';
 import SalesExecutiveDashboard from './dashboard/SalesExecutiveDashboard';
 import ManagerDashboard from './ManagerDashboard';
 import { API_BASE } from '../config/api';
-const DashboardPage = ({
-  mockRole
-}) => {
+const DashboardPage = () => {
   const {
-    user: authUser,
-    updateUserRole
+    user
   } = useAuth();
   const {
     socket
   } = useSocket();
-  // Allow mockRole to override authUser for testing
-  const user = mockRole ? {
-    ...authUser,
-    role: mockRole
-  } : authUser;
-  useEffect(() => {
-    // Only update role if. mockRole is explicitly provided
-    if (mockRole && authUser?.role !== mockRole && updateUserRole) {
-      updateUserRole(mockRole);
-    }
-  }, [mockRole, user]);
 
   // Redirect to specialized dashboard
   if (user?.role === 'Sales Executive') {
@@ -75,7 +60,7 @@ const DashboardPage = ({
   };
   useEffect(() => {
     fetchData();
-  }, [mockRole]);
+  }, []);
   useEffect(() => {
     if (!socket) return;
     const handleEntityUpdated = event => {
@@ -85,7 +70,7 @@ const DashboardPage = ({
     };
     socket.on('entity_updated', handleEntityUpdated);
     return () => socket.off('entity_updated', handleEntityUpdated);
-  }, [socket, mockRole]);
+  }, [socket]);
 
   // Glass Style for Cards
   const glassCardStyle = {
@@ -140,8 +125,5 @@ const DashboardPage = ({
                 </div>
             </div>
         </div>;
-};
-DashboardPage.propTypes = {
-  mockRole: PropTypes.string
 };
 export default DashboardPage;

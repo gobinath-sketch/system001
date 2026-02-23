@@ -54,7 +54,9 @@ const Sidebar = ({
   }, [settingsKey]);
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', {
+      replace: true
+    });
   };
 
   // Define menu items based on user role

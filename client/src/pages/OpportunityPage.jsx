@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Search, Filter, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDefaultRouteForRole } from '../utils/navigation';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import GPReportSection from '../components/reports/GPReportSection';
@@ -130,7 +131,7 @@ const OpportunityPage = () => {
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 sm:mb-8 gap-3">
                 <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                     <button onClick={() => {
-          if (user?.role === 'Sales Executive') navigate('/dashboard/executive');else if (user?.role === 'Sales Manager') navigate('/dashboard/manager');else if (['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role)) navigate('/dashboard/delivery');else if (user?.role === 'Director') navigate('/dashboard/businesshead');else navigate('/'); // Default fallack
+          navigate(getDefaultRouteForRole(user?.role));
         }} className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0" aria-label="Back">
                         <ArrowLeft size={24} />
                     </button>
@@ -347,6 +348,5 @@ const OpportunityPage = () => {
         </div>;
 };
 export default OpportunityPage;
-
 
 
