@@ -162,14 +162,6 @@ const OpportunityPage = () => {
 
                     {/* Right: Search & Filters */}
                     <div className="flex flex-1 items-center justify-end gap-2 w-full md:w-auto flex-wrap">
-                        {/* Creator Filter - Sales Manager & Business Head */}
-                        {['Sales Manager', 'Business Head'].includes(user?.role) && <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-base cursor-pointer hover:bg-gray-50 max-w-[170px]">
-                                    <option value="">All Creators</option>
-                                    {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
-                                </select>
-                            </div>}
                         <div className="relative w-full sm:w-64 md:max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input type="text" placeholder={isDeliveryRole ? "Search by Opp ID..." : "Opp ID or Client..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px]" />
@@ -220,7 +212,7 @@ const OpportunityPage = () => {
                                 <th className="px-6 py-2 font-semibold text-gray-900">Client</th>
                                 {isDeliveryRole ? <th className="px-6 py-2 font-semibold text-gray-900">Created By</th> : <>
                                         <th className="px-6 py-2 font-semibold text-gray-900">Contact Person</th>
-                                        {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-2 font-semibold text-gray-900">
                                                 Created By
                                             </th>}
                                     </>}
@@ -348,5 +340,3 @@ const OpportunityPage = () => {
         </div>;
 };
 export default OpportunityPage;
-
-
