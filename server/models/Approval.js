@@ -13,7 +13,7 @@ const ApprovalSchema = new mongoose.Schema({
     gpPercent: { type: Number, required: true },
     approvalLevel: {
         type: String,
-        enum: ['Manager', 'Director'],
+        enum: ['Manager', 'Business Head', 'Director'],
         required: true
     },
 

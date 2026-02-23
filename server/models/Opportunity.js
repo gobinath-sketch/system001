@@ -312,7 +312,7 @@ const OpportunitySchema = new mongoose.Schema({
 
     approvalStatus: {
         type: String,
-        enum: ['Not Required', 'Pending Manager', 'Pending Director', 'Approved', 'Rejected'],
+        enum: ['Not Required', 'Pending Manager', 'Pending Business Head', 'Pending Director', 'Approved', 'Rejected'],
         default: 'Not Required'
     },
 
@@ -439,21 +439,19 @@ OpportunitySchema.pre('save', async function () {
         }
 
         // Determine approval requirement - BUT preserve Approved/Rejected statuses
-        const gpPercent = this.financials.grossProfitPercent;
+        // Threshold decisions are based on selected Sales Profit% and Contingency%.
+        const gpPercent = (this.expenses && this.expenses.targetGpPercent !== undefined)
+            ? this.expenses.targetGpPercent
+            : 30;
 
         // Only auto-update approval status if it hasn't been manually set to Approved or Rejected
         if (this.approvalStatus !== 'Approved' && this.approvalStatus !== 'Rejected') {
             const contingencyPercent = (this.expenses && this.expenses.contingencyPercent !== undefined) ? this.expenses.contingencyPercent : 15;
 
-            if (gpPercent < 10) {
+            if (gpPercent < 15) {
                 this.approvalRequired = true;
-                // Pending Director
-            } else if (gpPercent >= 10 && gpPercent < 15) {
-                this.approvalRequired = true;
-                // Pending Manager
             } else if (contingencyPercent < 10) {
                 this.approvalRequired = true;
-                // Pending Manager (Low Contingency)
             } else {
                 this.approvalRequired = false;
                 this.approvalStatus = 'Not Required';
@@ -493,6 +491,11 @@ OpportunitySchema.methods.getRequiredFieldsForNextStage = function () {
 // Check if a field can be edited by a specific role
 // Check if a field can be edited by a specific role
 OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
+    const isApprovalPending = typeof this.approvalStatus === 'string' && this.approvalStatus.includes('Pending');
+    if (isApprovalPending && (fieldPath === 'expenses.targetGpPercent' || fieldPath === 'expenses.contingencyPercent')) {
+        return false;
+    }
+
     // Sales can edit: base details, type-specific details, AND all common/expenses
     const salesEditableFields = [
         'type', 'client', 'participants', 'days',

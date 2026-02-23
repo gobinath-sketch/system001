@@ -24,6 +24,8 @@ const BillingTab = forwardRef(({
   const {
     currency
   } = useCurrency();
+  const DEFAULT_PROFIT_PERCENT = 30;
+  const DEFAULT_CONTINGENCY_PERCENT = 15;
   const [uploading, setUploading] = useState(null);
   const [pendingProposalFile, setPendingProposalFile] = useState(null);
   const [pendingInvoiceFile, setPendingInvoiceFile] = useState(null);
@@ -181,7 +183,7 @@ const BillingTab = forwardRef(({
       });
 
       // API 2: Trigger Escalation
-      await axios.post(`${API_BASE}/api/approvals/escalate`, {
+      const escalationRes = await axios.post(`${API_BASE}/api/approvals/escalate`, {
         opportunityId: opportunity._id,
         ...params
       }, {
@@ -190,14 +192,17 @@ const BillingTab = forwardRef(({
         }
       });
 
-      // Determine message
-      let msg = 'Approval request sent to Manager!';
-      if (triggerType === 'gp' && params.gpPercent < 10) msg = 'Approval request sent to Director!';
-      addToast(msg, 'success');
+      addToast(escalationRes.data?.message || 'Approval request sent', 'success');
       await refreshData();
     } catch (error) {
-      console.error('Escalation failed', error);
-      addToast(error.response?.data?.message || 'Failed to send approval request', 'error');
+      const msg = error.response?.data?.message || 'Failed to send approval request';
+      if (msg === 'Approval already pending for this opportunity') {
+        addToast(msg, 'info');
+        await refreshData();
+      } else {
+        console.error('Escalation failed', error);
+        addToast(msg, 'error');
+      }
     } finally {
       setEscalating(false);
       setAlertConfig(prev => ({
@@ -206,35 +211,85 @@ const BillingTab = forwardRef(({
       }));
     }
   };
-  (title, message, onConfirm, onCancel, type = 'info') => {
-    setAlertConfig({
-      isOpen: true,
-      title,
-      message,
-      onConfirm,
-      onCancel,
-      // Store the cancel handler
-      type
-    });
+  const getApprovalTarget = (type, value) => {
+    if (type === 'gp') {
+      if (value < 5) return {
+        level: 'Director',
+        range: '< 5%'
+      };
+      if (value < 10) return {
+        level: 'Business Head',
+        range: '5-9%'
+      };
+      if (value < 15) return {
+        level: 'Sales Manager',
+        range: '10-14%'
+      };
+      return null;
+    }
+    if (type === 'contingency') {
+      if (value < 5) return {
+        level: 'Business Head',
+        range: '< 5%'
+      };
+      if (value < 10) return {
+        level: 'Sales Manager',
+        range: '5-9%'
+      };
+      return null;
+    }
+    return null;
   };
+
   const handleGpChange = value => {
     // Immediate State Update for UI responsiveness
     handleChange('expenses', 'targetGpPercent', value);
 
-    // Keep changes local until user clicks Save Changes.
-    if (value >= 10 && value < 15) {
-      // Approval flow handled on save.
-    } else if (value < 10) {
-      // Approval flow handled on save.
+    const approvalTarget = getApprovalTarget('gp', value);
+    if (approvalTarget) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Send for Approval?',
+        message: `Sales Profit ${value}% falls in ${approvalTarget.range}. Send this request to ${approvalTarget.level}?`,
+        type: 'warning',
+        confirmText: 'Send',
+        onConfirm: () => {
+          setAlertConfig(prev => ({
+            ...prev,
+            isOpen: false
+          }));
+          handleEscalate('gp', {
+            targetGpPercent: value,
+            gpPercent: value
+          });
+        },
+        onCancel: () => handleChange('expenses', 'targetGpPercent', DEFAULT_PROFIT_PERCENT)
+      });
     }
   };
   const handleContingencyChange = value => {
     // Immediate Update
     handleChange('expenses', 'contingencyPercent', value);
 
-    // Keep changes local until user clicks Save Changes.
-    if (value < 10) {
-      // Approval flow handled on save.
+    const approvalTarget = getApprovalTarget('contingency', value);
+    if (approvalTarget) {
+      setAlertConfig({
+        isOpen: true,
+        title: 'Send for Approval?',
+        message: `Contingency ${value}% falls in ${approvalTarget.range}. Send this request to ${approvalTarget.level}?`,
+        type: 'warning',
+        confirmText: 'Send',
+        onConfirm: () => {
+          setAlertConfig(prev => ({
+            ...prev,
+            isOpen: false
+          }));
+          handleEscalate('contingency', {
+            contingencyPercent: value
+          });
+        },
+        onCancel: () => handleChange('expenses', 'contingencyPercent', DEFAULT_CONTINGENCY_PERCENT)
+      });
     }
   };
 
@@ -244,7 +299,8 @@ const BillingTab = forwardRef(({
   const isAdmin = ['Super Admin', 'Director'].includes(user?.role);
 
   // Execution Details (TOV, Marketing, Contingency): Editable by Sales, Admin (NOT Delivery)
-  const canEditExecution = isEditing && (isSales || isAdmin);
+  const isApprovalPending = typeof opportunity?.approvalStatus === 'string' && opportunity.approvalStatus.includes('Pending');
+  const canEditExecution = isEditing && (isSales || isAdmin) && !isApprovalPending;
 
   // Operational Expenses Breakdown: Editable by Delivery, Admin (NOT Sales)
   const canEditOpExpenses = isEditing && (isDelivery || isAdmin);
@@ -688,7 +744,7 @@ const BillingTab = forwardRef(({
                                     <span className="text-[15px] font-medium text-blue-900">Approval Status</span>
                                     {opportunity.approvalStatus === 'Pending' || opportunity.approvalStatus?.includes('Pending') ? <div className="flex items-center space-x-2">
                                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
-                                                {opportunity.approvalStatus === 'Pending Manager' ? 'Pending - Manager' : opportunity.approvalStatus === 'Pending Director' ? 'Pending - Director' : opportunity.approvalStatus}
+                                                {opportunity.approvalStatus === 'Pending Manager' ? 'Pending - Manager' : opportunity.approvalStatus === 'Pending Business Head' ? 'Pending - Business Head' : opportunity.approvalStatus === 'Pending Director' ? 'Pending - Director' : opportunity.approvalStatus}
                                             </span>
                                             {/* Allow Escalation if pending */}
                                             {canEditExecution && <button onClick={() => handleEscalate('manual')} disabled={escalating} className="text-xs text-primary-blue hover:underline font-medium">
