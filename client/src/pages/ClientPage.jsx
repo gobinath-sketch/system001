@@ -404,7 +404,7 @@ const ClientPage = () => {
                     onChange={value => handleContactChange(index, 'contactNumber', value)}
                     required
                     containerClass="w-full"
-                    inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
+                    inputClass="!w-full focus:!ring-2 focus:!ring-primary-blue"
                   />
                 </div>
                 <div>
@@ -443,7 +443,7 @@ const ClientPage = () => {
                       value={contact.reportingManager.contactNumber}
                       onChange={value => handleReportingManagerChange(index, 'contactNumber', value)}
                       containerClass="w-full"
-                      inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
+                      inputClass="!w-full focus:!ring-2 focus:!ring-primary-blue"
                     />
                   </div>
                   <div>
