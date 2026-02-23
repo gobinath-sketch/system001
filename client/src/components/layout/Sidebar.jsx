@@ -95,7 +95,7 @@ const Sidebar = ({
         icon: Users,
         path: '/clients'
       }, {
-        label: 'Team Opportunities',
+        label: 'Opportunities',
         icon: Briefcase,
         path: '/opportunities'
       }, {
