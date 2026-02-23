@@ -5,6 +5,7 @@ import UploadButton from '../ui/UploadButton';
 import { useToast } from '../../context/ToastContext';
 import { validateMobile, validateEmail, validatePAN, validateGST, validateBankAccount, validateIFSC } from '../../utils/validation';
 import { API_BASE } from '../../config/api';
+import IntlPhoneField from '../form/IntlPhoneField';
 const AddSMEModal = ({
   isOpen,
   onClose,
@@ -102,10 +103,6 @@ const AddSMEModal = ({
       name,
       value
     } = e.target;
-    if (name === 'contactNumber' || name === 'companyContactNumber') {
-      if (!/^\d*$/.test(value)) return;
-      if (value.length > 10) return;
-    }
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -323,7 +320,18 @@ const AddSMEModal = ({
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <input name="companyName" value={formData.companyName} onChange={handleInputChange} placeholder="Company Name *" className="border p-2 rounded text-sm w-full" required />
                                         <div className="relative">
-                                            <input name="companyContactNumber" value={formData.companyContactNumber} onChange={handleInputChange} placeholder="Company Contact Number *" className={`border p-2 rounded text-sm w-full ${errors.companyContactNumber ? 'border-red-500' : ''}`} required />
+                                            <IntlPhoneField
+                                              value={formData.companyContactNumber}
+                                              onChange={value => handleInputChange({
+                                                target: {
+                                                  name: 'companyContactNumber',
+                                                  value
+                                                }
+                                              })}
+                                              required
+                                              containerClass="w-full"
+                                              inputClass={`!w-full !h-[42px] !bg-white !border !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue ${errors.companyContactNumber ? '!border-red-500' : '!border-gray-200'}`}
+                                            />
                                             {errors.companyContactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.companyContactNumber}</div>}
                                         </div>
                                         <input name="companyContactPerson" value={formData.companyContactPerson} onChange={handleInputChange} placeholder="Contact Person Name *" className="border p-2 rounded text-sm w-full" required />
@@ -342,7 +350,18 @@ const AddSMEModal = ({
                                         {errors.email && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.email}</div>}
                                     </div>
                                     <div className="relative">
-                                        <input name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "SME Contact Number *" : "SME Contact Number"} className={`border p-2 rounded text-sm w-full ${errors.contactNumber ? 'border-red-500' : ''}`} />
+                                        <IntlPhoneField
+                                          value={formData.contactNumber}
+                                          onChange={value => handleInputChange({
+                                            target: {
+                                              name: 'contactNumber',
+                                              value
+                                            }
+                                          })}
+                                          required={formData.smeType === 'Freelancer'}
+                                          containerClass="w-full"
+                                          inputClass={`!w-full !h-[42px] !bg-white !border !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue ${errors.contactNumber ? '!border-red-500' : '!border-gray-200'}`}
+                                        />
                                         {errors.contactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.contactNumber}</div>}
                                     </div>
                                     <input name="technology" value={formData.technology} onChange={handleInputChange} placeholder="Technology *" className="border p-2 rounded text-sm w-full" required />
