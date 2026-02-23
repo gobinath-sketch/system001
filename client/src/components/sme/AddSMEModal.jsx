@@ -265,7 +265,7 @@ const AddSMEModal = ({
       data.append('sme_profile', smeToEdit.contentUpload);
     }
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,

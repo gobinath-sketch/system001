@@ -55,7 +55,7 @@ const SalesExecutiveDashboard = ({
 
   const fetchDashboardData = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = {
         Authorization: `Bearer ${token} `
       };

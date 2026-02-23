@@ -41,7 +41,7 @@ const ManagerDashboard = ({
   }, [socket, timeline]);
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = {
         Authorization: `Bearer ${token}`
       };

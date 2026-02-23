@@ -129,7 +129,7 @@ const AddClientModal = ({
       }
     }
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.post(`${API_BASE}/api/clients`, formData, {
         headers: {
           Authorization: `Bearer ${token}`

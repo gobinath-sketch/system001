@@ -41,7 +41,7 @@ const EscalationWidget = ({
     opp.commonDetails?.tov || 0;
     opp.financials?.totalExpense || 0;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.post(`${API_BASE}/api/opportunities/${opp._id}/escalate`, {}, {
         headers: {
           Authorization: `Bearer ${token}`

@@ -26,7 +26,7 @@ const ProgramExecutionList = () => {
   }, [socket]);
   const fetchOpportunities = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`

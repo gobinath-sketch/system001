@@ -74,7 +74,7 @@ const OpportunityPage = () => {
   }, [socket]);
   const fetchOpportunities = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -95,7 +95,7 @@ const OpportunityPage = () => {
   // Delivery Status Change Handler
   const handleStatusChange = async (oppId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.put(`${API_BASE}/api/opportunities/${oppId}/status`, {
         status: newStatus
       }, {

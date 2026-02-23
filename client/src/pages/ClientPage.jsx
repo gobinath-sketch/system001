@@ -46,7 +46,7 @@ const ClientPage = () => {
     if (!name) return;
     if (selectedClient && selectedClient.companyName.toLowerCase() === name.toLowerCase()) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/clients/check-duplicate?name=${encodeURIComponent(name)}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -96,7 +96,7 @@ const ClientPage = () => {
   }, [socket]);
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/clients`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -212,7 +212,7 @@ const ClientPage = () => {
       }
     }
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       let res;
       if (selectedClient && selectedClient._id) {
         // Update existing client

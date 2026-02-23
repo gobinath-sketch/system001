@@ -9,25 +9,29 @@ export const AuthProvider = ({
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    // Check if user is already logged in from localStorage
-    const storedUser = localStorage.getItem('user');
-    const storedToken = localStorage.getItem('token');
+    // Clear legacy persistent auth keys (migrated to sessionStorage-only auth).
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+
+    // Check if user is already logged in from sessionStorage
+    const storedUser = sessionStorage.getItem('user');
+    const storedToken = sessionStorage.getItem('token');
     if (storedUser && storedToken) {
       try {
         // Basic token expiry check (if JWT format)
         const payload = JSON.parse(atob(storedToken.split('.')[1]));
         const isExpired = payload.exp * 1000 < Date.now();
         if (isExpired) {
-          localStorage.removeItem('user');
-          localStorage.removeItem('token');
+          sessionStorage.removeItem('user');
+          sessionStorage.removeItem('token');
           setUser(null);
         } else {
           setUser(JSON.parse(storedUser));
         }
       } catch (e) {
         console.error('Failed to parse stored user or token', e);
-        localStorage.removeItem('user');
-        localStorage.removeItem('token');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
       }
     }
     setLoading(false);
@@ -37,8 +41,8 @@ export const AuthProvider = ({
       email,
       password
     });
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user', JSON.stringify(res.data.user));
+    sessionStorage.setItem('token', res.data.token);
+    sessionStorage.setItem('user', JSON.stringify(res.data.user));
     setUser(res.data.user);
     return res.data.user;
   };
@@ -51,8 +55,8 @@ export const AuthProvider = ({
     }
   };
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('user');
     setUser(null);
   };
   return <AuthContext.Provider value={{

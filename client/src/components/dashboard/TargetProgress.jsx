@@ -18,7 +18,7 @@ const TargetProgress = ({
   const [loading, setLoading] = useState(true);
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/dashboard/performance/${userId}?timeline=${timeline}`, {
         headers: {
           Authorization: `Bearer ${token}`

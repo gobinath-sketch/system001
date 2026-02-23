@@ -122,7 +122,7 @@ const RevenueTab = forwardRef(({
     useImperativeHandle(ref, () => ({
         handleSave: async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 const poDateToCheck = normalizeDate(formData.poDate);
                 const invoiceDateToCheck = normalizeDate(opportunity?.commonDetails?.clientInvoiceDate);
 
@@ -217,7 +217,7 @@ const RevenueTab = forwardRef(({
         }
         setUploading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             await uploadFileByType(file, type, token);
             addToast(`${type.toUpperCase()} uploaded successfully`, 'success');
             refreshData();

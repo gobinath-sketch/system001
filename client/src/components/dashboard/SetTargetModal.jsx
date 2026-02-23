@@ -23,7 +23,7 @@ const SetTargetModal = ({
   }, []);
   const fetchTeamMembers = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await axios.get(`${API_BASE}/api/dashboard/manager/team-performance`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -43,7 +43,7 @@ const SetTargetModal = ({
     }
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.put(`${API_BASE}/api/dashboard/manager/set-target/${formData.userId}`, {
         period: formData.period,
         year: formData.year,

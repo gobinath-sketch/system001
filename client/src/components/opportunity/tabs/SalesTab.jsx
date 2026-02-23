@@ -53,7 +53,7 @@ const SalesTab = forwardRef(({
       try {
         // Mandatory SOW Check Removed
 
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
 
         // Sanitize commonDetails
         const sanitizedCommonDetails = {
@@ -180,7 +180,7 @@ const SalesTab = forwardRef(({
     if (!file) return;
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadFormData = new FormData();
       uploadFormData.append('requirementDocument', file);
       const res = await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-requirement-document`, uploadFormData, {

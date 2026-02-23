@@ -41,7 +41,7 @@ const DeliveryTab = forwardRef(({
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const [smesRes] = await Promise.all([axios.get(`${API_BASE}/api/smes`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -106,7 +106,7 @@ const DeliveryTab = forwardRef(({
   useImperativeHandle(ref, () => ({
     handleSave: async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const payload = {
           expenses: formData.expenses,
           commonDetails: formData.commonDetails,
@@ -251,7 +251,7 @@ const DeliveryTab = forwardRef(({
     }
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadFormData = new FormData();
       uploadFormData.append('invoice', file);
       await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, uploadFormData, {
@@ -282,7 +282,7 @@ const DeliveryTab = forwardRef(({
     }
     setExpenseUploading(expenseKey);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadFormData = new FormData();
 
       // Use 'document' as field name matching backend
@@ -315,7 +315,7 @@ const DeliveryTab = forwardRef(({
     }
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadFormData = new FormData();
       uploadFormData.append('document', file);
       uploadFormData.append('type', type);

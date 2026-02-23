@@ -36,7 +36,7 @@ const ApprovalsPage = () => {
   }, [socket]);
   const fetchApprovals = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/approvals`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -51,7 +51,7 @@ const ApprovalsPage = () => {
   };
   const executeApprove = async id => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.post(`${API_BASE}/api/approvals/${id}/approve`, {}, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -97,7 +97,7 @@ const ApprovalsPage = () => {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.post(`${API_BASE}/api/approvals/${rejectionModal.id}/reject`, {
         reason: rejectionModal.reason
       }, {
@@ -119,7 +119,7 @@ const ApprovalsPage = () => {
   const markAsRead = async (id, currentStatus) => {
     if (currentStatus) return; // Already read
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.put(`${API_BASE}/api/approvals/${id}/read`, {}, {
         headers: {
           Authorization: `Bearer ${token}`

@@ -542,7 +542,7 @@ const RevenueAnalyticsRow = ({
                           }
                           setSavingTarget(member._id);
                           try {
-                            const token = localStorage.getItem('token');
+                            const token = sessionStorage.getItem('token');
                             const amountInInr = currency === 'INR' ? parseFloat(targetValue) : parseFloat(targetValue) * EXCHANGE_RATE;
                             await axios.put(`${API_BASE}/api/dashboard/manager/set-target/${member._id}`, {
                               period: targetPeriod,

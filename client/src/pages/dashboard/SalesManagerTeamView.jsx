@@ -80,7 +80,7 @@ const SalesManagerTeamView = () => {
       const hasChecked = sessionStorage.getItem('hasCheckedApprovals');
       if (hasChecked) return;
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
         const res = await axios.get(`${API_BASE}/api/approvals?status=Pending`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -121,7 +121,7 @@ const SalesManagerTeamView = () => {
   }, [socket, selectedMember]);
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const headers = {
         Authorization: `Bearer ${token}`
       };
@@ -231,7 +231,7 @@ const SalesManagerTeamView = () => {
   };
   const handleSaveTarget = async memberId => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       // Convert back to INR if saving in USD
       const amountInInr = currency === 'INR' ? parseFloat(targetValue) : parseFloat(targetValue) * EXCHANGE_RATE;
       await axios.put(`${API_BASE}/api/dashboard/manager/set-target/${memberId}`, {

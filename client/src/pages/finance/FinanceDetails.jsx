@@ -131,7 +131,7 @@ const FinanceDetails = () => {
   }, [socket, id]);
   const fetchOpportunity = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/opportunities/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -348,7 +348,7 @@ const FinanceDetails = () => {
     if (!file) return;
     setUploading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const formData = new FormData();
       formData.append('document', file);
       formData.append('category', category); // e.g. 'trainer', 'perDiem'
@@ -413,7 +413,7 @@ const FinanceDetails = () => {
         return;
       }
 
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const payload = {
         'commonDetails.clientPONumber': clientData.clientPONumber,
         'commonDetails.clientPODate': clientData.clientPODate,

@@ -65,7 +65,7 @@ const CreateOpportunityModal = ({
 
   const fetchClients = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/clients`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -107,7 +107,7 @@ const CreateOpportunityModal = ({
   const handleSubmit = async e => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
 
       // Build typeSpecificDetails based on opportunity type
       let typeSpecificDetails = {};
