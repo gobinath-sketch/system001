@@ -3,7 +3,13 @@ import 'react-phone-input-2/lib/high-res.css';
 import { validatePhoneNumberLength } from 'libphonenumber-js/max';
 import mobileExamples from 'libphonenumber-js/mobile/examples';
 
-const normalizeForInput = value => String(value || '').replace(/\D/g, '');
+const normalizeForInput = (value, includePlus = false) => {
+  if (!value) return '';
+  const sanitized = String(value).replace(/[^\d+]/g, '');
+  if (includePlus) return sanitized.startsWith('+') ? sanitized : `+${sanitized.replace(/\+/g, '')}`;
+  return sanitized.replace(/\+/g, '');
+};
+
 const getMobileExampleLength = iso2 => {
   const code = String(iso2 || '').toUpperCase();
   const example = code ? mobileExamples[code] : '';
@@ -19,7 +25,7 @@ const IntlPhoneField = ({
   inputClass = '',
   inputHeight = '36px'
 }) => {
-  const sanitizedValue = normalizeForInput(value);
+  const sanitizedValue = normalizeForInput(value, true); // Preserve + sign for PhoneInput display
   const handlePhoneChange = (phoneValue, countryData) => {
     const normalizedDigits = normalizeForInput(phoneValue);
     if (!normalizedDigits) {

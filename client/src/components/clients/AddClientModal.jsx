@@ -222,7 +222,7 @@ const AddClientModal = ({
                     onChange={value => handleContactChange(index, 'contactNumber', value)}
                     required
                     containerClass="w-full"
-                    inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
+                    inputClass="!w-full focus:!ring-2 focus:!ring-primary-blue"
                   />
                 </div>
                 <div>
