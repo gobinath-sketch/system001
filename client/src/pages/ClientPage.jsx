@@ -8,6 +8,7 @@ import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import { validateMobile, validateEmail } from '../utils/validation';
 import { API_BASE } from '../config/api';
+import IntlPhoneField from '../components/form/IntlPhoneField';
 const ClientPage = () => {
   const toSectorOptionValue = sector => {
     if (sector === 'University' || sector === 'Universities') return 'Academics - Universities';
@@ -123,10 +124,6 @@ const ClientPage = () => {
     });
   };
   const handleContactChange = (index, field, value) => {
-    if (field === 'contactNumber') {
-      if (!/^\d*$/.test(value)) return;
-      if (value.length > 10) return;
-    }
     const newContacts = [...formData.contactPersons];
     newContacts[index][field] = value;
     setFormData({
@@ -135,10 +132,6 @@ const ClientPage = () => {
     });
   };
   const handleReportingManagerChange = (index, field, value) => {
-    if (field === 'contactNumber') {
-      if (!/^\d*$/.test(value)) return;
-      if (value.length > 10) return;
-    }
     const newContacts = [...formData.contactPersons];
     newContacts[index].reportingManager[field] = value;
     setFormData({
@@ -405,8 +398,13 @@ const ClientPage = () => {
                                         </div>
                                         <div>
                                             <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact Number <span className="text-red-500">*</span></label>
-                                            <input value={contact.contactNumber} onChange={e => handleContactChange(index, 'contactNumber', e.target.value)} className={`w-full bg-white border p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue ${contact.contactNumber && contact.contactNumber.length !== 10 ? 'border-red-300 focus:ring-red-200' : 'border-gray-200'}`} placeholder="10-digit Mobile Number" pattern="^[0-9]{10}$" title="Enter a valid phone number (Exactly 10 digits)" required />
-                                            {contact.contactNumber && contact.contactNumber.length !== 10 && <p className="text-xs text-red-500 mt-1">Must be exactly 10 digits ({contact.contactNumber.length}/10)</p>}
+                                            <IntlPhoneField
+                                              value={contact.contactNumber}
+                                              onChange={value => handleContactChange(index, 'contactNumber', value)}
+                                              required
+                                              containerClass="w-full"
+                                              inputClass="!w-full !h-[42px] !bg-white !border !border-gray-200 !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue"
+                                            />
                                         </div>
                                         <div>
                                             <label className="block text-[12px] font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
@@ -435,7 +433,12 @@ const ClientPage = () => {
                                             </div>
                                             <div>
                                                 <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact</label>
-                                                <input value={contact.reportingManager.contactNumber} onChange={e => handleReportingManagerChange(index, 'contactNumber', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" pattern="^[0-9]{10}$" title="Enter a valid phone number (Exactly 10 digits)" placeholder="10-digit Mobile Number" />
+                                                <IntlPhoneField
+                                                  value={contact.reportingManager.contactNumber}
+                                                  onChange={value => handleReportingManagerChange(index, 'contactNumber', value)}
+                                                  containerClass="w-full"
+                                                  inputClass="!w-full !h-[38px] !bg-white !border !border-gray-200 !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue"
+                                                />
                                             </div>
                                             <div>
                                                 <label className="block text-[12px] font-medium text-gray-700 mb-1">Email</label>
