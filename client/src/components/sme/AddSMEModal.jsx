@@ -330,7 +330,7 @@ const AddSMEModal = ({
                                               })}
                                               required
                                               containerClass="w-full"
-                                              inputClass={`!w-full !h-[42px] !bg-white !border !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue ${errors.companyContactNumber ? '!border-red-500' : '!border-gray-200'}`}
+                                              inputClass={`!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue ${errors.companyContactNumber ? '!ring-1 !ring-red-500' : ''}`}
                                             />
                                             {errors.companyContactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.companyContactNumber}</div>}
                                         </div>
@@ -360,7 +360,7 @@ const AddSMEModal = ({
                                           })}
                                           required={formData.smeType === 'Freelancer'}
                                           containerClass="w-full"
-                                          inputClass={`!w-full !h-[42px] !bg-white !border !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue ${errors.contactNumber ? '!border-red-500' : '!border-gray-200'}`}
+                                          inputClass={`!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue ${errors.contactNumber ? '!ring-1 !ring-red-500' : ''}`}
                                         />
                                         {errors.contactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.contactNumber}</div>}
                                     </div>

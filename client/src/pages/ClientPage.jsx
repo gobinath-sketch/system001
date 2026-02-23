@@ -396,7 +396,7 @@ const ClientPage = () => {
                                               onChange={value => handleContactChange(index, 'contactNumber', value)}
                                               required
                                               containerClass="w-full"
-                                              inputClass="!w-full !h-[42px] !bg-white !border !border-gray-200 !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue"
+                                              inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
                                             />
                                         </div>
                                         <div>
@@ -430,7 +430,7 @@ const ClientPage = () => {
                                                   value={contact.reportingManager.contactNumber}
                                                   onChange={value => handleReportingManagerChange(index, 'contactNumber', value)}
                                                   containerClass="w-full"
-                                                  inputClass="!w-full !h-[38px] !bg-white !border !border-gray-200 !rounded !pl-14 !text-sm focus:!ring-2 focus:!ring-primary-blue focus:!border-primary-blue"
+                                                  inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
                                                 />
                                             </div>
                                             <div>
@@ -728,5 +728,3 @@ const ClientPage = () => {
         </div>;
 };
 export default ClientPage;
-
-

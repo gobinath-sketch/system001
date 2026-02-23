@@ -16,7 +16,8 @@ const IntlPhoneField = ({
   required = false,
   country = 'in',
   containerClass = '',
-  inputClass = ''
+  inputClass = '',
+  inputHeight = '36px'
 }) => {
   const sanitizedValue = normalizeForInput(value);
   const handlePhoneChange = (phoneValue, countryData) => {
@@ -53,8 +54,11 @@ const IntlPhoneField = ({
       countryCodeEditable={false}
       disableSearchIcon
       inputProps={{ required }}
-      containerClass={containerClass}
+      containerClass={`intl-phone-field ${containerClass}`.trim()}
       inputClass={inputClass}
+      containerStyle={{ width: '100%' }}
+      inputStyle={{ width: '100%', height: inputHeight }}
+      buttonStyle={{ height: inputHeight }}
       buttonClass="!border-gray-200 !bg-white"
       dropdownClass="!text-sm"
     />
