@@ -331,10 +331,10 @@ const ClientPage = () => {
 
   // --- Render Views ---
 
-  const renderForm = title => <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]">
+  const renderForm = title => <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setShowFormModal(false)}>
+            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
-                    <h2 className="text-xl font-semibold text-brand-blue">{title}</h2>
+                    <h2 className="text-2xl font-bold text-brand-blue">{title}</h2>
                     <button onClick={() => setShowFormModal(false)} className="text-gray-500 hover:text-gray-700">
                         <X size={24} />
                     </button>
@@ -344,13 +344,13 @@ const ClientPage = () => {
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-[12px] font-medium text-gray-700 mb-1">
                                     Company Name <span className="text-red-500">*</span>
                                 </label>
                                 <input name="companyName" value={formData.companyName} onChange={handleChange} onBlur={e => checkDuplicate(e.target.value)} className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="Enter company name" required />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-[12px] font-medium text-gray-700 mb-1">
                                     Sector <span className="text-red-500">*</span>
                                 </label>
                                 <select name="sector" value={formData.sector} onChange={handleChange} className="w-full border p-2 rounded" required>
@@ -365,8 +365,8 @@ const ClientPage = () => {
 
                         <div>
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-lg font-semibold text-gray-800">Contact Persons</h3>
-                                <button type="button" onClick={addContactPerson} className="text-brand-blue text-sm font-medium hover:underline">
+                                <h3 className="text-xl font-semibold text-gray-900">Contact Persons</h3>
+                                <button type="button" onClick={addContactPerson} className="text-brand-blue text-[13px] font-medium hover:underline">
                                     + Add Another Contact
                                 </button>
                             </div>
@@ -384,53 +384,53 @@ const ClientPage = () => {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Name <span className="text-red-500">*</span></label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
                                             <input value={contact.name} onChange={e => handleContactChange(index, 'name', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" required />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Designation</label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Designation</label>
                                             <input value={contact.designation} onChange={e => handleContactChange(index, 'designation', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Department (Optional)</label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Department (Optional)</label>
                                             <input value={contact.department} onChange={e => handleContactChange(index, 'department', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="e.g. HR, IT, L&D" />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Contact Number <span className="text-red-500">*</span></label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact Number <span className="text-red-500">*</span></label>
                                             <input value={contact.contactNumber} onChange={e => handleContactChange(index, 'contactNumber', e.target.value)} className={`w-full bg-white border p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue ${contact.contactNumber && contact.contactNumber.length !== 10 ? 'border-red-300 focus:ring-red-200' : 'border-gray-200'}`} placeholder="10-digit Mobile Number" pattern="^[0-9]{10}$" title="Enter a valid phone number (Exactly 10 digits)" required />
                                             {contact.contactNumber && contact.contactNumber.length !== 10 && <p className="text-xs text-red-500 mt-1">Must be exactly 10 digits ({contact.contactNumber.length}/10)</p>}
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Email <span className="text-red-500">*</span></label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
                                             <input type="email" value={contact.email} onChange={e => handleContactChange(index, 'email', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="email@company.com" required />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">Location <span className="text-red-500">*</span></label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Location <span className="text-red-500">*</span></label>
                                             <input value={contact.location} onChange={e => handleContactChange(index, 'location', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="City, State" required />
                                         </div>
                                         <div>
-                                            <label className="block text-xs text-gray-600 mb-1">LinkedIn (Optional)</label>
+                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">LinkedIn (Optional)</label>
                                             <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" />
                                         </div>
                                     </div>
 
                                     <details className="mt-3">
-                                        <summary className="text-xs text-gray-600 cursor-pointer hover:text-brand-blue">+ Add Reporting Manager (Optional)</summary>
+                                        <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-brand-blue">+ Add Reporting Manager (Optional)</summary>
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pl-4 border-l-2 border-gray-200">
                                             <div>
-                                                <label className="block text-xs text-gray-500 mb-1">Manager Name</label>
+                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Manager Name</label>
                                                 <input value={contact.reportingManager.name} onChange={e => handleReportingManagerChange(index, 'name', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs text-gray-500 mb-1">Designation</label>
+                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Designation</label>
                                                 <input value={contact.reportingManager.designation} onChange={e => handleReportingManagerChange(index, 'designation', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs text-gray-500 mb-1">Contact</label>
+                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact</label>
                                                 <input value={contact.reportingManager.contactNumber} onChange={e => handleReportingManagerChange(index, 'contactNumber', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" pattern="^[0-9]{10}$" title="Enter a valid phone number (Exactly 10 digits)" placeholder="10-digit Mobile Number" />
                                             </div>
                                             <div>
-                                                <label className="block text-xs text-gray-500 mb-1">Email</label>
+                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Email</label>
                                                 <input value={contact.reportingManager.email} onChange={e => handleReportingManagerChange(index, 'email', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" />
                                             </div>
                                         </div>
@@ -478,9 +478,9 @@ const ClientPage = () => {
             </div>
 
             <div className="space-y-6">
-                <h3 className="text-lg font-semibold text-gray-900">Contact Persons</h3>
+                <h3 className="text-xl font-semibold text-gray-900">Contact Persons</h3>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full text-left text-sm">
+                    <table className="min-w-full text-left text-[15px]">
                         <thead className="border-b border-gray-200">
                             <tr>
                                 <th className="px-6 py-3 font-semibold text-gray-900">Name</th>
@@ -496,7 +496,7 @@ const ClientPage = () => {
                                     <td className="px-6 py-4">
                                         <div className="flex items-center space-x-2">
                                             <span className="font-medium text-gray-900">{contact.name}</span>
-                                            {contact.isPrimary && <span className="text-xs bg-brand-gold text-white px-2 py-1 rounded">Primary</span>}
+                                            {contact.isPrimary && <span className="text-sm bg-brand-gold text-white px-2.5 py-1 rounded">Primary</span>}
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-gray-700">{contact.designation || 'N/A'}</td>
@@ -512,12 +512,12 @@ const ClientPage = () => {
         </div>;
   return <div className="p-3 sm:p-5 relative">
             {/* Contact Detail Modal */}
-            {selectedContact && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => setSelectedContact(null)}>
+            {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
                     <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">{selectedContact.name}</h2>
-                                <p className="text-gray-600">{selectedContact.designation}</p>
+                                <p className="text-lg text-gray-700">{selectedContact.designation}</p>
                             </div>
                             <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600">
                                 <X size={24} />
@@ -527,38 +527,38 @@ const ClientPage = () => {
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <p className="text-sm font-semibold text-gray-500">Department</p>
-                                    <p className="text-gray-900">{selectedContact.department || 'N/A'}</p>
+                                    <p className="text-lg font-semibold text-gray-800">Department</p>
+                                    <p className="text-[15px] text-gray-900">{selectedContact.department || 'N/A'}</p>
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-gray-500">Location</p>
-                                    <p className="text-primary-blue">{selectedContact.location}</p>
+                                    <p className="text-lg font-semibold text-gray-800">Location</p>
+                                    <p className="text-[15px] text-primary-blue">{selectedContact.location}</p>
                                 </div>
                             </div>
 
                             <div className="border-t pt-4">
-                                <p className="text-sm font-semibold text-gray-500 mb-2">Contact Information</p>
+                                <p className="text-lg font-semibold text-gray-800 mb-2">Contact Information</p>
                                 <div className="space-y-2">
                                     <div>
-                                        <p className="text-xs text-gray-500">Email</p>
-                                        <p className="text-gray-900">{selectedContact.email}</p>
+                                        <p className="text-base font-medium text-gray-700">Email</p>
+                                        <p className="text-[15px] text-gray-900">{selectedContact.email}</p>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500">Phone</p>
-                                        <p className="text-gray-900">{selectedContact.contactNumber}</p>
+                                        <p className="text-base font-medium text-gray-700">Phone</p>
+                                        <p className="text-[15px] text-gray-900">{selectedContact.contactNumber}</p>
                                     </div>
                                 </div>
                             </div>
 
                             {selectedContact.linkedIn && <div className="border-t pt-4">
-                                    <p className="text-sm font-semibold text-gray-500 mb-2">LinkedIn</p>
+                                    <p className="text-base font-semibold text-gray-800 mb-2">LinkedIn</p>
                                     <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline">
                                         {selectedContact.linkedIn}
                                     </a>
                                 </div>}
 
                             {selectedContact.reportingManager?.name && <div className="border-t pt-4">
-                                    <p className="text-sm font-semibold text-gray-500 mb-2">Reporting Manager</p>
+                                    <p className="text-base font-semibold text-gray-800 mb-2">Reporting Manager</p>
                                     <div className="bg-gray-50 p-3 rounded-lg">
                                         <p className="font-medium text-gray-900">{selectedContact.reportingManager.name}</p>
                                         <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation}</p>
@@ -602,8 +602,8 @@ const ClientPage = () => {
                         </div>
                     </div>
                 </div>
-                {viewMode === 'list' && user?.role !== 'Director' && <button onClick={startCreate} className="bg-primary-blue text-white px-6 py-3 rounded-lg flex items-center justify-center space-x-2 hover:bg-primary-blue-dark shadow-md font-semibold transition-colors w-full sm:w-auto">
-                        <Plus size={18} />
+                {viewMode === 'list' && user?.role !== 'Director' && <button onClick={startCreate} className="bg-primary-blue text-white px-7 py-3.5 rounded-lg flex items-center justify-center space-x-2 hover:bg-primary-blue-dark shadow-md font-semibold text-[15px] transition-colors w-full sm:w-auto">
+                        <Plus size={20} />
                         <span>Add Client</span>
                     </button>}
             </div>
@@ -650,15 +650,15 @@ const ClientPage = () => {
                     {/* Client List Container */}
                     <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
                         <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-3">
-                            <h2 className="text-lg font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
+                            <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
                             <div className="flex flex-wrap gap-3 w-full md:w-auto">
                                 <div className="relative w-full md:w-80">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                    <input type="text" placeholder="Search clients..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue" />
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                    <input type="text" placeholder="Search clients..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-[14px]" />
                                 </div>
                                 {['Sales Manager', 'Business Head'].includes(user?.role) && <div className="relative w-full sm:w-48">
-                                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                        <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="w-full pl-10 pr-4 py-2 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue appearance-none">
+                                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                                        <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue appearance-none text-base">
                                             <option value="">All Creators</option>
                                             {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
                                         </select>
@@ -668,7 +668,7 @@ const ClientPage = () => {
 
                         {/* Client Table */}
                         <div className="overflow-auto h-[calc(100vh-240px)]">
-                            <table className="min-w-full text-left text-sm relative">
+                            <table className="min-w-full text-left text-[16px] relative">
                                 <thead className="border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
                                     <tr>
                                         <th className="px-6 py-3 font-semibold text-gray-900">Company Name</th>
@@ -697,7 +697,7 @@ const ClientPage = () => {
                                                     <td className="px-6 py-4">
                                                         {primaryContact ? <div className="space-y-1">
                                                                 <div className="text-gray-700">{primaryContact.email}</div>
-                                                                <div className="text-gray-500 text-xs">{primaryContact.contactNumber}</div>
+                                                                <div className="text-gray-700 text-sm">{primaryContact.contactNumber}</div>
                                                             </div> : <span className="text-gray-400 italic">No contact info</span>}
                                                     </td>
                                                     {['Sales Manager', 'Business Head'].includes(user?.role) && <td className="px-6 py-4 text-gray-500">
@@ -730,3 +730,8 @@ const ClientPage = () => {
         </div>;
 };
 export default ClientPage;
+
+
+
+
+

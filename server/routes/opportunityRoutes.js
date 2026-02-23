@@ -922,6 +922,45 @@ router.post('/:id/upload-proposal', protect, authorize('Sales Executive', 'Sales
     }
 });
 
+// @route   POST /api/opportunities/:id/upload-requirement-document
+// @desc    Upload/Replace Requirement Document from Sales Edit
+// @access  Private (Sales Executive, Sales Manager, Business Head)
+router.post('/:id/upload-requirement-document', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), upload.single('requirementDocument'), async (req, res) => {
+    try {
+        const opportunity = await Opportunity.findById(req.params.id);
+
+        if (!opportunity) {
+            return res.status(404).json({ message: 'Opportunity not found' });
+        }
+
+        if (req.user.role === 'Sales Executive' && opportunity.createdBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to edit this opportunity' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        opportunity.requirementDocument = req.file.path;
+        opportunity.activityLog.push({
+            action: 'Requirement Document Uploaded',
+            by: req.user._id,
+            role: req.user.role,
+            details: `Requirement document uploaded by ${req.user.name}`
+        });
+
+        await opportunity.save();
+
+        res.json({
+            message: 'Requirement document uploaded successfully',
+            requirementDocument: opportunity.requirementDocument
+        });
+    } catch (err) {
+        console.error('Requirement document upload error:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // @route   POST /api/opportunities/:id/upload-po
 // @desc    Upload PO document (Stage 4)
 // @access  Private (Sales Executive, Sales Manager)

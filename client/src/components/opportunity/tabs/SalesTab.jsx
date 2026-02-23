@@ -1,10 +1,11 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import axios from 'axios';
-import { CheckCircle, FileText, MoreHorizontal } from 'lucide-react';
+import { CheckCircle, MoreHorizontal } from 'lucide-react';
 import Card from '../../ui/Card';
 import { useToast } from '../../../context/ToastContext';
 import SearchableSelect from '../../ui/SearchableSelect';
 import DeliveryDocuments from '../sections/DeliveryDocuments';
+import UploadButton from '../../ui/UploadButton';
 import { getTechnologyOptions } from '../../../utils/TechnologyConstants';
 import { API_BASE } from '../../../config/api';
 const SalesTab = forwardRef(({
@@ -24,7 +25,7 @@ const SalesTab = forwardRef(({
     }
     return normalized.replace(/^\/+/, '');
   };
-  const [, setUploading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({});
 
   // Initialize formData
@@ -174,32 +175,43 @@ const SalesTab = forwardRef(({
     });
   };
 
-  // handleFileUpload removed
-  async e => {
+  const handleRequirementDocumentUpload = async e => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
     try {
       const token = localStorage.getItem('token');
       const uploadFormData = new FormData();
-      uploadFormData.append('sow', file);
-      await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-sow`, uploadFormData, {
+      uploadFormData.append('requirementDocument', file);
+      const res = await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-requirement-document`, uploadFormData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-      addToast('SOW uploaded successfully', 'success');
+      const uploadedPath = res.data?.requirementDocument;
+      if (uploadedPath) {
+        setFormData(prev => ({
+          ...prev,
+          requirementDocument: uploadedPath
+        }));
+      }
+      addToast('Requirement document uploaded successfully', 'success');
       refreshData();
     } catch (error) {
       console.error('Upload failed', error);
-      addToast('Failed to upload SOW', 'error');
+      addToast('Failed to upload requirement document', 'error');
     } finally {
       setUploading(false);
     }
   };
   const inputClass = `w-full border p-2 rounded-lg text-base border-gray-500 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue'}`;
   const selectClass = `w-full border p-2 rounded-lg text-base border-gray-500 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue'}`;
+  const isResourceSupport = opportunity.type === 'Resource Support';
+  const isContentDevelopment = opportunity.type === 'Content Development';
+  const isLabSupport = opportunity.type === 'Lab Support';
+  const isProductSupport = opportunity.type === 'Product Support';
+  const showLabSummary = !isLabSupport;
   return <div className="space-y-6">
             {/* Basic Details Section - Dynamic based on Opportunity Type */}
             <Card className="!bg-white">
@@ -264,10 +276,6 @@ const SalesTab = forwardRef(({
                                     <label className="block text-base font-semibold text-gray-800 mb-1">Training Location *</label>
                                     <input type="text" value={formData.typeSpecificDetails?.trainingLocation || ''} onChange={e => handleChange('typeSpecificDetails', 'trainingLocation', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Location" />
                                 </div>}
-                            <div className="md:col-span-2">
-                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
-                                <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
-                            </div>
                         </>}
 
                     {/* Vouchers-Specific Fields */}
@@ -312,6 +320,26 @@ const SalesTab = forwardRef(({
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Region *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.region || ''} onChange={e => handleChange('typeSpecificDetails', 'region', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Region" />
                             </div>
+                            {showLabSummary && <div>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
+                                <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
+                            </div>}
+                            <div>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                                <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                    <div className="min-w-0">
+                                        {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                                                <CheckCircle size={14} /> View
+                                            </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                                    </div>
+                                    {isEditing && <div className="shrink-0">
+                                            <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                                            <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                                                {formData.requirementDocument ? 'Replace' : 'Upload'}
+                                            </UploadButton>
+                                        </div>}
+                                </div>
+                            </div>
                         </>}
 
                     {/* Resource Support-Specific Fields */}
@@ -324,9 +352,25 @@ const SalesTab = forwardRef(({
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Resource Count *</label>
                                 <input type="number" value={formData.typeSpecificDetails?.resourceCount || ''} onChange={e => handleChange('typeSpecificDetails', 'resourceCount', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} placeholder="0" />
                             </div>
-                            <div className="md:col-span-2">
+                            <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
+                            </div>
+                            <div>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                                <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                    <div className="min-w-0">
+                                        {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                                                <CheckCircle size={14} /> View
+                                            </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                                    </div>
+                                    {isEditing && <div className="shrink-0">
+                                            <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                                            <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                                                {formData.requirementDocument ? 'Replace' : 'Upload'}
+                                            </UploadButton>
+                                        </div>}
+                                </div>
                             </div>
                         </>}
 
@@ -340,9 +384,25 @@ const SalesTab = forwardRef(({
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Delivery Format *</label>
                                 <input type="text" value={formData.typeSpecificDetails?.deliveryFormat || ''} onChange={e => handleChange('typeSpecificDetails', 'deliveryFormat', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="e.g., PDF, Video" />
                             </div>
-                            <div className="md:col-span-2">
+                            <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
+                            </div>
+                            <div>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                                <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                    <div className="min-w-0">
+                                        {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                                                <CheckCircle size={14} /> View
+                                            </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                                    </div>
+                                    {isEditing && <div className="shrink-0">
+                                            <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                                            <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                                                {formData.requirementDocument ? 'Replace' : 'Upload'}
+                                            </UploadButton>
+                                        </div>}
+                                </div>
                             </div>
                         </>}
 
@@ -356,19 +416,50 @@ const SalesTab = forwardRef(({
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Team Size *</label>
                                 <input type="number" value={formData.typeSpecificDetails?.teamSize || ''} onChange={e => handleChange('typeSpecificDetails', 'teamSize', parseInt(e.target.value) || 0)} disabled={!isEditing} className={inputClass} placeholder="0" />
                             </div>
-                            <div className="md:col-span-2">
+                            <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
                                 <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
                             </div>
+                            <div>
+                                <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                                <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                    <div className="min-w-0">
+                                        {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                                                <CheckCircle size={14} /> View
+                                            </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                                    </div>
+                                    {isEditing && <div className="shrink-0">
+                                            <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                                            <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                                                {formData.requirementDocument ? 'Replace' : 'Upload'}
+                                            </UploadButton>
+                                        </div>}
+                                </div>
+                            </div>
                         </>}
 
-                    {/* Requirement/Job Description Document - Common for All */}
-                    <div>
-                        <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
-                        {opportunity.requirementDocument ? <a href={`${API_BASE}/${opportunity.requirementDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-500 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Requirement Document">
-                                <FileText size={14} /> View Document
-                            </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Uploaded</span>}
-                    </div>
+                    {!(isResourceSupport || isContentDevelopment || isLabSupport || isProductSupport) && <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
+                            <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
+                        </div>
+                        <div>
+                            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+                            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                <div className="min-w-0">
+                                    {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                                            <CheckCircle size={14} /> View
+                                        </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                                </div>
+                                {isEditing && <div className="shrink-0">
+                                        <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                                        <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                                            {formData.requirementDocument ? 'Replace' : 'Upload'}
+                                        </UploadButton>
+                                    </div>}
+                            </div>
+                        </div>
+                    </div>}
                 </div>
             </Card>
 
@@ -440,15 +531,19 @@ const SalesTab = forwardRef(({
                             {/* Profile Document (from SME Details) */}
                             <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">SME Profile</label>
-                                {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-500 rounded-lg text-sm text-purple-600 hover:text-purple-800 hover:border-purple-300 transition-colors" title="View SME Profile">
-                                        <CheckCircle size={14} /> View Profile
-                                    </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Available</span>}
+                                <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                    {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium" title="View SME Profile">
+                                            <CheckCircle size={14} /> View
+                                        </a> : <span className="text-sm text-gray-400 italic">Not Available</span>}
+                                </div>
                             </div>
                             <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
-                                {opportunity.deliveryDocuments?.contentDocument ? <a href={`${API_BASE}/${toPublicPath(opportunity.deliveryDocuments.contentDocument)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-500 rounded-lg text-sm text-blue-600 hover:text-blue-800 hover:border-blue-300 transition-colors" title="View Content Document">
-                                        <FileText size={14} /> View Document
-                                    </a> : <span className="text-sm text-gray-400 italic p-2 block">Not Uploaded</span>}
+                                <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+                                    {opportunity.deliveryDocuments?.contentDocument ? <a href={`${API_BASE}/${toPublicPath(opportunity.deliveryDocuments.contentDocument)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium" title="View Content Document">
+                                            <CheckCircle size={14} /> View
+                                        </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+                                </div>
                             </div>
                         </React.Fragment>}
                 </div>
@@ -460,4 +555,3 @@ const SalesTab = forwardRef(({
         </div>;
 });
 export default SalesTab;
-

@@ -4,10 +4,53 @@ import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
 const SETTINGS_KEY_PREFIX = 'app_settings_v2';
+const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
+const MAX_AVATAR_STORAGE_BYTES = 300 * 1024;
+const DEFAULT_AVATAR_URL = `${import.meta.env.BASE_URL}profile-default.svg`;
 const getSettingsKey = user => {
   const identity = user?.id || user?.email || user?.name || 'anonymous';
   return `${SETTINGS_KEY_PREFIX}:${String(identity).toLowerCase()}`;
 };
+const isQuotaExceededError = error => error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014;
+const estimateDataUrlSize = dataUrl => {
+  const payload = (dataUrl || '').split(',')[1] || '';
+  return Math.ceil(payload.length * 3 / 4);
+};
+const fileToDataUrl = file => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = () => reject(new Error('Failed to read image.'));
+  reader.readAsDataURL(file);
+});
+const compressAvatar = file => new Promise((resolve, reject) => {
+  const objectUrl = URL.createObjectURL(file);
+  const image = new Image();
+  image.onload = () => {
+    try {
+      const maxDimension = 256;
+      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+      const width = Math.max(1, Math.round(image.width * scale));
+      const height = Math.max(1, Math.round(image.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Image processing is not supported in this browser.');
+      context.drawImage(image, 0, 0, width, height);
+      const dataUrl = canvas.toDataURL('image/webp', 0.72);
+      resolve(dataUrl);
+    } catch (error) {
+      reject(error);
+    } finally {
+      URL.revokeObjectURL(objectUrl);
+    }
+  };
+  image.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    reject(new Error('Failed to process image.'));
+  };
+  image.src = objectUrl;
+});
 const DEFAULT_SETTINGS = user => ({
   profile: {
     firstName: user?.name?.split(' ')?.[0] || '',
@@ -116,13 +159,56 @@ const SettingsPage = () => {
     location: 'Chennai, IN',
     lastSeen: '2 hours ago'
   }]);
+  const persistSettings = currentSettings => {
+    try {
+      localStorage.setItem(settingsKey, JSON.stringify(currentSettings));
+      return {
+        ok: true,
+        avatarRemoved: false
+      };
+    } catch (error) {
+      if (!isQuotaExceededError(error) || !currentSettings?.profile?.avatarDataUrl) {
+        return {
+          ok: false
+        };
+      }
+      const withoutAvatar = {
+        ...currentSettings,
+        profile: {
+          ...currentSettings.profile,
+          avatarDataUrl: ''
+        }
+      };
+      try {
+        localStorage.setItem(settingsKey, JSON.stringify(withoutAvatar));
+        setSettings(withoutAvatar);
+        return {
+          ok: true,
+          avatarRemoved: true
+        };
+      } catch {
+        return {
+          ok: false
+        };
+      }
+    }
+  };
   const saveAll = () => {
     setIsSaving(true);
-    localStorage.setItem(settingsKey, JSON.stringify(settings));
+    const result = persistSettings(settings);
+    if (!result.ok) {
+      setIsSaving(false);
+      addToast('Unable to save settings. Browser storage is full.', 'error');
+      return;
+    }
     window.dispatchEvent(new Event('settings-updated'));
     setTimeout(() => {
       setIsSaving(false);
       setIsEditing(false);
+      if (result.avatarRemoved) {
+        addToast('Settings saved, but profile image was removed due to browser storage limits.', 'warning');
+        return;
+      }
       addToast('Settings saved successfully.', 'success');
     }, 300);
   };
@@ -145,7 +231,7 @@ const SettingsPage = () => {
       }
     }));
   };
-  const onAvatarUpload = event => {
+  const onAvatarUpload = async event => {
     const file = event.target.files?.[0];
     if (!file) return;
     const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -153,16 +239,26 @@ const SettingsPage = () => {
       addToast('Please upload JPG, PNG, GIF, or WEBP image.', 'warning');
       return;
     }
-    if (file.size > 50 * 1024 * 1024) {
-      addToast('Image size should be less than 50MB.', 'warning');
+    if (file.size > MAX_AVATAR_UPLOAD_BYTES) {
+      addToast('Image size should be less than 8MB.', 'warning');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateSection('profile', 'avatarDataUrl', String(reader.result || ''));
+    try {
+      let avatarDataUrl = await compressAvatar(file);
+      if (estimateDataUrlSize(avatarDataUrl) > MAX_AVATAR_STORAGE_BYTES) {
+        avatarDataUrl = await fileToDataUrl(file);
+      }
+      if (estimateDataUrlSize(avatarDataUrl) > MAX_AVATAR_STORAGE_BYTES) {
+        addToast('Image is too large to store in browser settings. Use a smaller image.', 'warning');
+        return;
+      }
+      updateSection('profile', 'avatarDataUrl', avatarDataUrl);
       addToast('Profile picture updated.', 'success');
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      addToast('Unable to process selected image.', 'error');
+    } finally {
+      event.target.value = '';
+    }
   };
   const removeAvatar = () => {
     if (!settings.profile.avatarDataUrl) return;
@@ -243,7 +339,7 @@ const SettingsPage = () => {
                                     <div className="rounded-xl border border-gray-200 p-4">
                                         <div className="flex flex-wrap items-center gap-4">
                                             <div className="w-20 h-20 rounded-md overflow-hidden bg-gray-200 border border-gray-300 shrink-0">
-                                                <img src={settings.profile.avatarDataUrl || '/profile-default.svg'} alt="Profile" className="w-full h-full object-cover" />
+                                                <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-full h-full object-cover" />
                                             </div>
                                             <div className="flex-1 min-w-0">
                                                 <div className="mt-2 flex flex-wrap items-center gap-3">

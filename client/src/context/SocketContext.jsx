@@ -16,7 +16,10 @@ export const SocketProvider = ({
   useEffect(() => {
     if (!userId) return;
     const newSocket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling']
+      transports: ['polling'],
+      upgrade: false,
+      reconnectionAttempts: 5,
+      timeout: 10000
     });
     newSocket.on('connect', () => {
       setSocket(newSocket);
