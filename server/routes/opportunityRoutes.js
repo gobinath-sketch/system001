@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { calculateOpportunityProgress } = require('../utils/progressCalculator');
+const { normalizeSector } = require('../utils/sector');
 const multer = require('multer');
 const path = require('path');
 
@@ -172,7 +173,7 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
             selectedContactPerson,
             typeSpecificDetails: typeSpecificDetails || {},
             commonDetails: {
-                trainingSector: client.sector, // Auto-fetch from client
+                trainingSector: normalizeSector(client.sector), // Auto-fetch from client (normalized)
                 sales: req.user._id, // Auto-fill
                 year: new Date().getFullYear(), // Default to current year for immediate dashboard visibility
                 monthOfTraining: new Date().toLocaleString('default', { month: 'short' }), // Default to current month

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { MoreHorizontal, ChevronRight, ChevronLeft, X, Check } from 'lucide-react';
 import axios from 'axios';
-import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, Bar, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 import { useToast } from '../../context/ToastContext';
 import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
 const shiftColor = (hex, amount) => {
@@ -106,7 +106,7 @@ const RevenueAnalyticsRow = ({
     achievedRevenue: 0,
     adjustedTarget: 0,
     techData: [],
-    typeData: [],
+    sectorData: [],
     emergingBreakdown: {}
   });
 
@@ -122,15 +122,29 @@ const RevenueAnalyticsRow = ({
   const [editingTargets, setEditingTargets] = useState({});
   const [savingTarget, setSavingTarget] = useState(null);
   const [savedSuccessId, setSavedSuccessId] = useState(null);
-  const TYPE_COLORS = {
-    'Training': '#0f172a',
-    'Lab Support': '#1e40af',
-    'Vouchers': '#2563eb',
-    'Product Support': '#3b82f6',
-    'Resource Support': '#60a5fa',
-    'Content Development': '#93c5fd'
+  const [activeSectorIndex, setActiveSectorIndex] = useState(-1);
+  const SECTOR_COLORS = {
+    'Enterprise': '#2563eb',
+    'Academics': '#16a34a',
+    'School': '#f59e0b'
   };
   const FALLBACK_COLORS = ['#cbd5e1', '#94a3b8', '#64748b'];
+  const renderActiveSectorShape = props => {
+    const {
+      cx,
+      cy,
+      innerRadius,
+      outerRadius,
+      startAngle,
+      endAngle,
+      fill
+    } = props;
+    return <g style={{
+      filter: 'drop-shadow(0 6px 8px rgba(0,0,0,0.28))'
+    }}>
+            <Sector cx={cx} cy={cy} innerRadius={innerRadius} outerRadius={outerRadius + 10} startAngle={startAngle} endAngle={endAngle} fill={fill} />
+        </g>;
+  };
 
   // Process data when allOpps (filtered from parent) or filter changes
   useEffect(() => {
@@ -188,42 +202,46 @@ const RevenueAnalyticsRow = ({
       value: techMap[tech]
     }));
 
-    // Opportunity Type Distribution (Pie Chart)
-    const typeMap = {};
+    // Sector Distribution (Pie Chart) - revenue by PO amount
+    const sectorMap = {
+      Enterprise: {
+        revenue: 0,
+        count: 0
+      },
+      Academics: {
+        revenue: 0,
+        count: 0
+      },
+      School: {
+        revenue: 0,
+        count: 0
+      }
+    };
+    const resolveSector = sector => {
+      const normalized = String(sector || '').trim();
+      if (!normalized) return null;
+      if (normalized === 'Enterprise') return 'Enterprise';
+      if (normalized === 'School') return 'School';
+      if (normalized === 'Academics' || normalized === 'College' || normalized === 'University' || normalized === 'Universities' || normalized === 'Academics - College' || normalized === 'Academics - Universities') {
+        return 'Academics';
+      }
+      return null;
+    };
     filteredOpps.forEach(opp => {
-      const type = opp.type || 'Unknown';
       const revenue = opp.poValue || 0;
       if (revenue > 0) {
-        // Only include types with PO amount
-        if (!typeMap[type]) {
-          typeMap[type] = {
-            revenue: 0,
-            count: 0
-          };
+        const sector = resolveSector(opp.commonDetails?.trainingSector);
+        if (sector && sectorMap[sector]) {
+          sectorMap[sector].revenue += revenue;
+          sectorMap[sector].count += 1;
         }
-        typeMap[type].revenue += revenue;
-        typeMap[type].count += 1;
       }
     });
-
-    // Defined sort order
-    const ORDERED_TYPES = ['Training', 'Lab Support', 'Vouchers', 'Product Support', 'Resource Support', 'Content Development'];
-    const typeData = Object.keys(typeMap).map(key => ({
-      name: key,
-      value: typeMap[key].revenue,
-      count: typeMap[key].count
-    })).filter(i => i.value > 0).sort((a, b) => {
-      const indexA = ORDERED_TYPES.indexOf(a.name);
-      const indexB = ORDERED_TYPES.indexOf(b.name);
-      // If both found, sort by index
-      if (indexA !== -1 && indexB !== -1) return indexA - indexB;
-      // If only A found, A comes first
-      if (indexA !== -1) return -1;
-      // If only B found, B comes first
-      if (indexB !== -1) return 1;
-      // If neither found, sort alphabetically
-      return a.name.localeCompare(b.name);
-    });
+    const sectorData = ['Enterprise', 'Academics', 'School'].map(name => ({
+      name,
+      value: sectorMap[name].revenue,
+      count: sectorMap[name].count
+    })).filter(i => i.value > 0);
 
     // Update target factor
     // NOTE: targetFactor was already set at top of effect
@@ -232,7 +250,7 @@ const RevenueAnalyticsRow = ({
       achievedRevenue: achievedRev,
       adjustedTarget: yearlyTarget * targetFactor,
       techData,
-      typeData,
+      sectorData,
       emergingBreakdown,
       otherBreakdown
     });
@@ -422,21 +440,21 @@ const RevenueAnalyticsRow = ({
                     </div>}
             </div>
 
-            {/* 3. Revenue by Opportunity Closure (PIE CHART) */}
+            {/* 3. Revenue by Sector (PIE CHART) */}
             <div style={glassCardStyle} className="p-4 flex flex-col min-h-[350px]">
-                <h3 className="text-sm font-bold text-black mb-2">Revenue by Opportunity Closure</h3>
+                <h3 className="text-sm font-bold text-black mb-2">Revenue by Sector</h3>
                 <div className="flex-1 min-h-[240px]">
                     {loading ? <div className="h-full flex flex-col items-center justify-center text-black font-bold">
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-blue mb-2"></div>
                             <p>Loading revenue data...</p>
-                        </div> : filteredData.typeData.length > 0 ? <SafeResponsiveContainer minHeight={240}>
+                        </div> : filteredData.sectorData.length > 0 ? <SafeResponsiveContainer minHeight={240}>
                             <PieChart accessibilityLayer={false}>
                                 <defs>
                                     <filter id="donutShadow" x="-30%" y="-30%" width="160%" height="180%">
                                         <feDropShadow dx="0" dy="4" stdDeviation="3" floodColor="#000000" floodOpacity="0.2" />
                                     </filter>
-                                    {filteredData.typeData.map((entry, index) => {
-                const baseColor = TYPE_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+                                    {filteredData.sectorData.map((entry, index) => {
+                const baseColor = SECTOR_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
                 return <linearGradient key={`type-grad-${index}`} id={`typeGrad-${index}`} x1="0" y1="0" x2="1" y2="1">
                                                 <stop offset="0%" stopColor={shiftColor(baseColor, 22)} />
                                                 <stop offset="55%" stopColor={baseColor} />
@@ -445,17 +463,10 @@ const RevenueAnalyticsRow = ({
               })}
                                 </defs>
 
-                                <Pie data={filteredData.typeData} cx="50%" cy="52%" innerRadius={60} outerRadius={92} paddingAngle={0} dataKey="value" stroke="none" legendType="none">
-                                    {filteredData.typeData.map((entry, index) => {
-                const baseColor = TYPE_COLORS[entry.name] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
-                return <Cell key={`depth-${index}`} fill={shiftColor(baseColor, -35)} />;
-              })}
-                                </Pie>
-
-                                <Pie data={filteredData.typeData} cx="50%" cy="50%" innerRadius={60} outerRadius={92} paddingAngle={0} dataKey="value" stroke="none" style={{
+                                <Pie data={filteredData.sectorData} cx="50%" cy="50%" innerRadius={0} outerRadius={95} paddingAngle={1} dataKey="value" stroke="none" style={{
               filter: 'url(#donutShadow)'
-            }}>
-                                    {filteredData.typeData.map((entry, index) => <Cell key={`cell-${index}`} fill={`url(#typeGrad-${index})`} />)}
+            }} activeIndex={activeSectorIndex} activeShape={renderActiveSectorShape} onMouseEnter={(_, index) => setActiveSectorIndex(index)} onMouseLeave={() => setActiveSectorIndex(-1)}>
+                                    {filteredData.sectorData.map((entry, index) => <Cell key={`cell-${index}`} fill={`url(#typeGrad-${index})`} />)}
                                 </Pie>
                                 <Tooltip cursor={false} content={<CustomTooltip formatMoney={formatMoney} />} />
                                 <Legend layout="horizontal" verticalAlign="bottom" align="center" wrapperStyle={{
@@ -465,7 +476,8 @@ const RevenueAnalyticsRow = ({
               const {
                 payload
               } = entry;
-              const percentage = filteredData.achievedRevenue > 0 ? (payload.value / filteredData.achievedRevenue * 100).toFixed(0) : 0;
+              const sectorTotal = filteredData.sectorData.reduce((sum, item) => sum + (item.value || 0), 0);
+              const percentage = sectorTotal > 0 ? (payload.value / sectorTotal * 100).toFixed(0) : 0;
               return <span className="text-black font-semibold">{value} <span className="text-black font-normal">({percentage}%)</span></span>;
             }} />
                             </PieChart>
