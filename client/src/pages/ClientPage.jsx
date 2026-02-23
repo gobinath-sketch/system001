@@ -9,6 +9,7 @@ import { useSocket } from '../context/SocketContext';
 import { validateMobile, validateEmail } from '../utils/validation';
 import { API_BASE } from '../config/api';
 import IntlPhoneField from '../components/form/IntlPhoneField';
+import CountrySelectField from '../components/form/CountrySelectField';
 const ClientPage = () => {
   const toSectorOptionValue = sector => {
     if (sector === 'University' || sector === 'Universities') return 'Academics - Universities';
@@ -332,147 +333,152 @@ const ClientPage = () => {
   // --- Render Views ---
 
   const renderForm = title => <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 overflow-y-auto" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setShowFormModal(false)}>
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
-                    <h2 className="text-2xl font-bold text-brand-blue">{title}</h2>
-                    <button onClick={() => setShowFormModal(false)} className="text-gray-500 hover:text-gray-700">
-                        <X size={24} />
-                    </button>
-                </div>
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl my-8 relative flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
+      <div className="flex items-center justify-between p-4 sm:p-6 border-b sticky top-0 bg-white rounded-t-lg z-10">
+        <h2 className="text-2xl font-bold text-brand-blue">{title}</h2>
+        <button onClick={() => setShowFormModal(false)} className="text-gray-500 hover:text-gray-700">
+          <X size={24} />
+        </button>
+      </div>
 
-                <div className="p-3 sm:p-6 overflow-y-auto">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
-                            <div>
-                                <label className="block text-[12px] font-medium text-gray-700 mb-1">
-                                    Company Name <span className="text-red-500">*</span>
-                                </label>
-                                <input name="companyName" value={formData.companyName} onChange={handleChange} onBlur={e => checkDuplicate(e.target.value)} className="w-full bg-gray-50 border-0 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="Enter company name" required />
-                            </div>
-                            <div>
-                                <label className="block text-[12px] font-medium text-gray-700 mb-1">
-                                    Sector <span className="text-red-500">*</span>
-                                </label>
-                                <select name="sector" value={formData.sector} onChange={handleChange} className="w-full border p-2 rounded" required>
-                                    <option value="Enterprise">Enterprise</option>
-                                    <optgroup label="Academics">
-                                        <option value="Academics - College">College</option>
-                                        <option value="Academics - Universities">Universities</option>
-                                    </optgroup>
-                                    <option value="School">School</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div>
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-semibold text-gray-900">Contact Persons</h3>
-                                <button type="button" onClick={addContactPerson} className="text-brand-blue text-[13px] font-medium hover:underline">
-                                    + Add Another Contact
-                                </button>
-                            </div>
-
-                            {formData.contactPersons.map((contact, index) => <div key={index} className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h4 className="font-medium text-gray-900">
-                                            Contact Person {index + 1}
-                                            {contact.isPrimary && <span className="ml-2 text-xs bg-brand-gold text-white px-2 py-1 rounded">Primary</span>}
-                                        </h4>
-                                        {formData.contactPersons.length > 1 && <button type="button" onClick={() => removeContactPerson(index)} className="text-red-500 hover:text-red-700">
-                                                <Trash2 size={16} />
-                                            </button>}
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
-                                            <input value={contact.name} onChange={e => handleContactChange(index, 'name', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Designation</label>
-                                            <input value={contact.designation} onChange={e => handleContactChange(index, 'designation', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Department (Optional)</label>
-                                            <input value={contact.department} onChange={e => handleContactChange(index, 'department', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="e.g. HR, IT, L&D" />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact Number <span className="text-red-500">*</span></label>
-                                            <IntlPhoneField
-                                              value={contact.contactNumber}
-                                              onChange={value => handleContactChange(index, 'contactNumber', value)}
-                                              required
-                                              containerClass="w-full"
-                                              inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
-                                            <input type="email" value={contact.email} onChange={e => handleContactChange(index, 'email', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="email@company.com" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">Location <span className="text-red-500">*</span></label>
-                                            <input value={contact.location} onChange={e => handleContactChange(index, 'location', e.target.value)} className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" placeholder="City, State" required />
-                                        </div>
-                                        <div>
-                                            <label className="block text-[12px] font-medium text-gray-700 mb-1">LinkedIn (Optional)</label>
-                                            <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full bg-white border border-gray-200 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue" />
-                                        </div>
-                                    </div>
-
-                                    <details className="mt-3">
-                                        <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-brand-blue">+ Add Reporting Manager (Optional)</summary>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pl-4 border-l-2 border-gray-200">
-                                            <div>
-                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Manager Name</label>
-                                                <input value={contact.reportingManager.name} onChange={e => handleReportingManagerChange(index, 'name', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Designation</label>
-                                                <input value={contact.reportingManager.designation} onChange={e => handleReportingManagerChange(index, 'designation', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact</label>
-                                                <IntlPhoneField
-                                                  value={contact.reportingManager.contactNumber}
-                                                  onChange={value => handleReportingManagerChange(index, 'contactNumber', value)}
-                                                  containerClass="w-full"
-                                                  inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[12px] font-medium text-gray-700 mb-1">Email</label>
-                                                <input value={contact.reportingManager.email} onChange={e => handleReportingManagerChange(index, 'email', e.target.value)} className="w-full border p-2 rounded text-sm bg-white" />
-                                            </div>
-                                        </div>
-                                    </details>
-                                </div>)}
-                        </div>
-
-                        <div className="flex space-x-4 pt-4 border-t sticky bottom-0 bg-white">
-                            <button type="submit" className="bg-brand-blue text-white px-6 py-2 rounded-lg hover:bg-opacity-90 flex-1 md:flex-none">
-                                {selectedClient ? 'Update Client' : 'Create Client'}
-                            </button>
-                            <button type="button" onClick={() => setShowFormModal(false)} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 flex-1 md:flex-none">
-                                Cancel
-                            </button>
-                        </div>
-                    </form>
-                </div>
+      <div className="p-3 sm:p-6 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-4 border-b">
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <input name="companyName" value={formData.companyName} onChange={handleChange} onBlur={e => checkDuplicate(e.target.value)} className="w-full h-[36px] bg-gray-50 border border-gray-200 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" placeholder="Enter company name" required />
             </div>
-        </div>;
-  const renderDetails = () => <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="flex items-center justify-between mb-6 pb-4 border-b">
-                <div className="flex items-center space-x-4">
-                    <button onClick={goBack} className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0" aria-label="Back">
-                        <ArrowLeft size={24} />
-                    </button>
-                    <div>
-                        <h2 className="text-2xl font-bold text-gray-900">{selectedClient.companyName}</h2>
-                        <p className="text-gray-500">Sector: {selectedClient.sector}</p>
-                    </div>
+            <div>
+              <label className="block text-[12px] font-medium text-gray-700 mb-1">
+                Sector <span className="text-red-500">*</span>
+              </label>
+              <select name="sector" value={formData.sector} onChange={handleChange} className="w-full h-[36px] border border-gray-200 px-2 rounded text-[13px]" required>
+                <option value="Enterprise">Enterprise</option>
+                <optgroup label="Academics">
+                  <option value="Academics - College">College</option>
+                  <option value="Academics - Universities">Universities</option>
+                </optgroup>
+                <option value="School">School</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-gray-900">Contact Persons</h3>
+              <button type="button" onClick={addContactPerson} className="text-brand-blue text-[13px] font-medium hover:underline">
+                + Add Another Contact
+              </button>
+            </div>
+
+            {formData.contactPersons.map((contact, index) => <div key={index} className="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-100">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="font-medium text-gray-900">
+                  Contact Person {index + 1}
+                  {contact.isPrimary && <span className="ml-2 text-xs bg-brand-gold text-white px-2 py-1 rounded">Primary</span>}
+                </h4>
+                {formData.contactPersons.length > 1 && <button type="button" onClick={() => removeContactPerson(index)} className="text-red-500 hover:text-red-700">
+                  <Trash2 size={16} />
+                </button>}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Name <span className="text-red-500">*</span></label>
+                  <input value={contact.name} onChange={e => handleContactChange(index, 'name', e.target.value)} className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" required />
                 </div>
-                {(() => {
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Designation</label>
+                  <input value={contact.designation} onChange={e => handleContactChange(index, 'designation', e.target.value)} className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Department (Optional)</label>
+                  <input value={contact.department} onChange={e => handleContactChange(index, 'department', e.target.value)} className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" placeholder="e.g. HR, IT, L&D" />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact Number <span className="text-red-500">*</span></label>
+                  <IntlPhoneField
+                    value={contact.contactNumber}
+                    onChange={value => handleContactChange(index, 'contactNumber', value)}
+                    required
+                    containerClass="w-full"
+                    inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                  <input type="email" value={contact.email} onChange={e => handleContactChange(index, 'email', e.target.value)} className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" placeholder="email@company.com" required />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">Location <span className="text-red-500">*</span></label>
+                  <CountrySelectField
+                    value={contact.location}
+                    onChange={e => handleContactChange(index, 'location', e.target.value)}
+                    className="w-full"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[12px] font-medium text-gray-700 mb-1">LinkedIn (Optional)</label>
+                  <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
+                </div>
+              </div>
+
+              <details className="mt-3">
+                <summary className="text-sm font-medium text-gray-700 cursor-pointer hover:text-brand-blue">+ Add Reporting Manager (Optional)</summary>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pl-4 border-l-2 border-gray-200">
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-700 mb-1">Manager Name</label>
+                    <input value={contact.reportingManager.name} onChange={e => handleReportingManagerChange(index, 'name', e.target.value)} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px] bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-700 mb-1">Designation</label>
+                    <input value={contact.reportingManager.designation} onChange={e => handleReportingManagerChange(index, 'designation', e.target.value)} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px] bg-white" />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-700 mb-1">Contact</label>
+                    <IntlPhoneField
+                      value={contact.reportingManager.contactNumber}
+                      onChange={value => handleReportingManagerChange(index, 'contactNumber', value)}
+                      containerClass="w-full"
+                      inputClass="!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[12px] font-medium text-gray-700 mb-1">Email</label>
+                    <input value={contact.reportingManager.email} onChange={e => handleReportingManagerChange(index, 'email', e.target.value)} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px] bg-white" />
+                  </div>
+                </div>
+              </details>
+            </div>)}
+          </div>
+
+          <div className="flex space-x-4 pt-4 border-t sticky bottom-0 bg-white">
+            <button type="submit" className="bg-brand-blue text-white px-6 py-2 rounded-lg hover:bg-opacity-90 flex-1 md:flex-none">
+              {selectedClient ? 'Update Client' : 'Create Client'}
+            </button>
+            <button type="button" onClick={() => setShowFormModal(false)} className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 flex-1 md:flex-none">
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>;
+  const renderDetails = () => <div className="bg-white p-6 rounded-lg shadow-md">
+    <div className="flex items-center justify-between mb-6 pb-4 border-b">
+      <div className="flex items-center space-x-4">
+        <button onClick={goBack} className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0" aria-label="Back">
+          <ArrowLeft size={24} />
+        </button>
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">{selectedClient.companyName}</h2>
+          <p className="text-gray-500">Sector: {selectedClient.sector}</p>
+        </div>
+      </div>
+      {(() => {
         // Start with base check: Super Admin can always edit
         let canEdit = user.role === 'Super Admin';
 
@@ -482,154 +488,154 @@ const ClientPage = () => {
         }
         if (!canEdit) return null;
         return <button onClick={startEdit} className="bg-primary-blue text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-primary-blue-dark">
-                            <Edit size={16} />
-                            <span>Edit</span>
-                        </button>;
+          <Edit size={16} />
+          <span>Edit</span>
+        </button>;
       })()}
-            </div>
+    </div>
 
-            <div className="space-y-6">
-                <h3 className="text-xl font-semibold text-gray-900">Contact Persons</h3>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-left text-[15px]">
-                        <thead className="border-b border-gray-200">
-                            <tr>
-                                <th className="px-6 py-3 font-semibold text-gray-900">Name</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900">Department</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900">Email</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900">Phone</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {selectedClient.contactPersons.map((contact, idx) => <tr key={idx} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedContact(contact)}>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center space-x-2">
-                                            <span className="font-medium text-gray-900">{contact.name}</span>
-                                            {contact.isPrimary && <span className="text-sm bg-brand-gold text-white px-2.5 py-1 rounded">Primary</span>}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 text-gray-700">{contact.designation || 'N/A'}</td>
-                                    <td className="px-6 py-4 text-gray-700">{contact.department || 'N/A'}</td>
-                                    <td className="px-6 py-4 text-gray-700">{contact.email}</td>
-                                    <td className="px-6 py-4 text-gray-700">{contact.contactNumber}</td>
-                                    <td className="px-6 py-4 text-primary-blue">{contact.location}</td>
-                                </tr>)}
-                        </tbody>
-                    </table>
+    <div className="space-y-6">
+      <h3 className="text-xl font-semibold text-gray-900">Contact Persons</h3>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-[15px]">
+          <thead className="border-b border-gray-200">
+            <tr>
+              <th className="px-6 py-3 font-semibold text-gray-900">Name</th>
+              <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
+              <th className="px-6 py-3 font-semibold text-gray-900">Department</th>
+              <th className="px-6 py-3 font-semibold text-gray-900">Email</th>
+              <th className="px-6 py-3 font-semibold text-gray-900">Phone</th>
+              <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {selectedClient.contactPersons.map((contact, idx) => <tr key={idx} className="hover:bg-gray-50 cursor-pointer" onClick={() => setSelectedContact(contact)}>
+              <td className="px-6 py-4">
+                <div className="flex items-center space-x-2">
+                  <span className="font-medium text-gray-900">{contact.name}</span>
+                  {contact.isPrimary && <span className="text-sm bg-brand-gold text-white px-2.5 py-1 rounded">Primary</span>}
                 </div>
-            </div>
-        </div>;
+              </td>
+              <td className="px-6 py-4 text-gray-700">{contact.designation || 'N/A'}</td>
+              <td className="px-6 py-4 text-gray-700">{contact.department || 'N/A'}</td>
+              <td className="px-6 py-4 text-gray-700">{contact.email}</td>
+              <td className="px-6 py-4 text-gray-700">{contact.contactNumber}</td>
+              <td className="px-6 py-4 text-primary-blue">{contact.location}</td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>;
   return <div className="p-3 sm:p-5 relative">
-            {/* Contact Detail Modal */}
-            {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
-                    <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-between items-start mb-6">
-                            <div>
-                                <h2 className="text-2xl font-bold text-gray-900">{selectedContact.name}</h2>
-                                <p className="text-lg text-gray-700">{selectedContact.designation}</p>
-                            </div>
-                            <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600">
-                                <X size={24} />
-                            </button>
-                        </div>
+    {/* Contact Detail Modal */}
+    {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{selectedContact.name}</h2>
+            <p className="text-lg text-gray-700">{selectedContact.designation}</p>
+          </div>
+          <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600">
+            <X size={24} />
+          </button>
+        </div>
 
-                        <div className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <p className="text-lg font-semibold text-gray-800">Department</p>
-                                    <p className="text-[15px] text-gray-900">{selectedContact.department || 'N/A'}</p>
-                                </div>
-                                <div>
-                                    <p className="text-lg font-semibold text-gray-800">Location</p>
-                                    <p className="text-[15px] text-primary-blue">{selectedContact.location}</p>
-                                </div>
-                            </div>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-lg font-semibold text-gray-800">Department</p>
+              <p className="text-[15px] text-gray-900">{selectedContact.department || 'N/A'}</p>
+            </div>
+            <div>
+              <p className="text-lg font-semibold text-gray-800">Location</p>
+              <p className="text-[15px] text-primary-blue">{selectedContact.location}</p>
+            </div>
+          </div>
 
-                            <div className="border-t pt-4">
-                                <p className="text-lg font-semibold text-gray-800 mb-2">Contact Information</p>
-                                <div className="space-y-2">
-                                    <div>
-                                        <p className="text-base font-medium text-gray-700">Email</p>
-                                        <p className="text-[15px] text-gray-900">{selectedContact.email}</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-base font-medium text-gray-700">Phone</p>
-                                        <p className="text-[15px] text-gray-900">{selectedContact.contactNumber}</p>
-                                    </div>
-                                </div>
-                            </div>
+          <div className="border-t pt-4">
+            <p className="text-lg font-semibold text-gray-800 mb-2">Contact Information</p>
+            <div className="space-y-2">
+              <div>
+                <p className="text-base font-medium text-gray-700">Email</p>
+                <p className="text-[15px] text-gray-900">{selectedContact.email}</p>
+              </div>
+              <div>
+                <p className="text-base font-medium text-gray-700">Phone</p>
+                <p className="text-[15px] text-gray-900">{selectedContact.contactNumber}</p>
+              </div>
+            </div>
+          </div>
 
-                            {selectedContact.linkedIn && <div className="border-t pt-4">
-                                    <p className="text-base font-semibold text-gray-800 mb-2">LinkedIn</p>
-                                    <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline">
-                                        {selectedContact.linkedIn}
-                                    </a>
-                                </div>}
+          {selectedContact.linkedIn && <div className="border-t pt-4">
+            <p className="text-base font-semibold text-gray-800 mb-2">LinkedIn</p>
+            <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline">
+              {selectedContact.linkedIn}
+            </a>
+          </div>}
 
-                            {selectedContact.reportingManager?.name && <div className="border-t pt-4">
-                                    <p className="text-base font-semibold text-gray-800 mb-2">Reporting Manager</p>
-                                    <div className="bg-gray-50 p-3 rounded-lg">
-                                        <p className="font-medium text-gray-900">{selectedContact.reportingManager.name}</p>
-                                        <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation}</p>
-                                        <div className="mt-2 text-sm space-y-1">
-                                            <p className="text-gray-700">{selectedContact.reportingManager.email}</p>
-                                            <p className="text-gray-700">{selectedContact.reportingManager.contactNumber}</p>
-                                        </div>
-                                    </div>
-                                </div>}
+          {selectedContact.reportingManager?.name && <div className="border-t pt-4">
+            <p className="text-base font-semibold text-gray-800 mb-2">Reporting Manager</p>
+            <div className="bg-gray-50 p-3 rounded-lg">
+              <p className="font-medium text-gray-900">{selectedContact.reportingManager.name}</p>
+              <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation}</p>
+              <div className="mt-2 text-sm space-y-1">
+                <p className="text-gray-700">{selectedContact.reportingManager.email}</p>
+                <p className="text-gray-700">{selectedContact.reportingManager.contactNumber}</p>
+              </div>
+            </div>
+          </div>}
 
-                            {selectedContact.isPrimary && <div className="mt-4">
-                                    <span className="inline-block bg-brand-gold text-white px-3 py-1 rounded-full text-sm font-medium">
-                                        Primary Contact
-                                    </span>
-                                </div>}
-                        </div>
-                    </div>
-                </div>}
+          {selectedContact.isPrimary && <div className="mt-4">
+            <span className="inline-block bg-brand-gold text-white px-3 py-1 rounded-full text-sm font-medium">
+              Primary Contact
+            </span>
+          </div>}
+        </div>
+      </div>
+    </div>}
 
-            {/* Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-                    <button onClick={() => {
+    {/* Header */}
+    <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+        <button onClick={() => {
           if (viewMode === 'details') {
             setViewMode('list');
             return;
           }
           navigate(getDefaultRouteForRole(user?.role));
         }} className="text-gray-600 hover:text-gray-900 bg-white p-2 rounded-full shadow-sm border border-gray-100 transition-all hover:bg-gray-50">
-                        <ArrowLeft size={20} />
-                    </button>
-                    <div>
-                        <div className="flex items-center gap-3">
-                            <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue">Clients</h1>
-                        </div>
-                    </div>
-                </div>
-                {viewMode === 'list' && user?.role !== 'Director' && <button onClick={startCreate} className="bg-primary-blue text-white px-7 py-3.5 rounded-lg flex items-center justify-center space-x-2 hover:bg-primary-blue-dark shadow-md font-semibold text-[15px] transition-colors w-full sm:w-auto">
-                        <Plus size={20} />
-                        <span>Add Client</span>
-                    </button>}
-            </div>
+          <ArrowLeft size={20} />
+        </button>
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue">Clients</h1>
+          </div>
+        </div>
+      </div>
+      {viewMode === 'list' && user?.role !== 'Director' && <button onClick={startCreate} className="bg-primary-blue text-white px-7 py-3.5 rounded-lg flex items-center justify-center space-x-2 hover:bg-primary-blue-dark shadow-md font-semibold text-[15px] transition-colors w-full sm:w-auto">
+        <Plus size={20} />
+        <span>Add Client</span>
+      </button>}
+    </div>
 
-            {/* Content Switcher */}
-            {/* Duplicate Warning Modal */}
-            {showDuplicateWarning && <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-                        <div className="text-center">
-                            <h3 className="text-lg font-bold text-gray-900 mb-2">Duplicate Client Detected</h3>
-                            <p className="text-gray-600 mb-6 font-medium">
-                                The client already exists. Do you want to proceed further or just create another contact person under the same client?
-                            </p>
-                            <div className="flex flex-col gap-3">
-                                <button onClick={() => {
+    {/* Content Switcher */}
+    {/* Duplicate Warning Modal */}
+    {showDuplicateWarning && <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+        <div className="text-center">
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Duplicate Client Detected</h3>
+          <p className="text-gray-600 mb-6 font-medium">
+            The client already exists. Do you want to proceed further or just create another contact person under the same client?
+          </p>
+          <div className="flex flex-col gap-3">
+            <button onClick={() => {
               setShowDuplicateWarning(false);
               // Proceed with new client
             }} className="w-full py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-colors">
-                                    Proceed with new client
-                                </button>
-                                <button onClick={() => {
+              Proceed with new client
+            </button>
+            <button onClick={() => {
               setShowDuplicateWarning(false);
               setShowFormModal(false);
               // Redirect to existing client details
@@ -637,79 +643,79 @@ const ClientPage = () => {
                 openDetails(duplicateClientData);
               }
             }} className="w-full py-2 px-4 bg-primary-blue text-white rounded-lg font-medium hover:bg-primary-blue-dark transition-colors">
-                                    Add as contact person
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>}
+              Add as contact person
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>}
 
-            {/* Modal for Create/Edit */}
-            {showFormModal && renderForm(selectedClient ? 'Update Client' : 'Add New Client')}
+    {/* Modal for Create/Edit */}
+    {showFormModal && renderForm(selectedClient ? 'Update Client' : 'Add New Client')}
 
-            {/* Details View */}
-            {viewMode === 'details' && selectedClient && renderDetails()}
+    {/* Details View */}
+    {viewMode === 'details' && selectedClient && renderDetails()}
 
-            {/* List View - Always show unless in details mode */}
-            {viewMode === 'list' && <>
-                    {/* Client List Container */}
-                    <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
-                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-3">
-                            <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
-                            <div className="flex flex-wrap gap-3 w-full md:w-auto">
-                                <div className="relative w-full md:w-80">
-                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                                    <input type="text" placeholder="Search clients..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-[14px]" />
-                                </div>
-                                {['Sales Manager', 'Business Head'].includes(user?.role) && <div className="relative w-full sm:w-48">
-                                        <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-                                        <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue appearance-none text-base">
-                                            <option value="">All Creators</option>
-                                            {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
-                                        </select>
-                                    </div>}
-                            </div>
-                        </div>
+    {/* List View - Always show unless in details mode */}
+    {viewMode === 'list' && <>
+      {/* Client List Container */}
+      <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
+        <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-3">
+          <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
+          <div className="flex flex-wrap gap-3 w-full md:w-auto">
+            <div className="relative w-full md:w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <input type="text" placeholder="Search clients..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-[14px]" />
+            </div>
+            {['Sales Manager', 'Business Head'].includes(user?.role) && <div className="relative w-full sm:w-48">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+              <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="w-full pl-11 pr-4 py-2.5 bg-gray-50 border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue appearance-none text-base">
+                <option value="">All Creators</option>
+                {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
+              </select>
+            </div>}
+          </div>
+        </div>
 
-                        {/* Client Table */}
-                        <div className="overflow-auto h-[calc(100vh-240px)]">
-                            <table className="min-w-full text-left text-[16px] relative">
-                                <thead className="border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
-                                    <tr>
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Company Name</th>
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Contact Person</th>
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Contact Info</th>
-                                        {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>}
-                                        <th className="px-6 py-3 font-semibold text-gray-900">Add Opportunity</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                    {filteredClients.length > 0 ? filteredClients.map(client => {
+        {/* Client Table */}
+        <div className="overflow-auto h-[calc(100vh-240px)]">
+          <table className="min-w-full text-left text-[16px] relative">
+            <thead className="border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
+              <tr>
+                <th className="px-6 py-3 font-semibold text-gray-900">Company Name</th>
+                <th className="px-6 py-3 font-semibold text-gray-900">Contact Person</th>
+                <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
+                <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
+                <th className="px-6 py-3 font-semibold text-gray-900">Contact Info</th>
+                {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>}
+                <th className="px-6 py-3 font-semibold text-gray-900">Add Opportunity</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {filteredClients.length > 0 ? filteredClients.map(client => {
                 const primaryContact = client.contactPersons?.find(c => c.isPrimary) || client.contactPersons?.[0];
                 return <tr key={client._id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => openDetails(client)}>
-                                                    <td className="px-6 py-4 font-bold text-gray-900">{client.companyName}</td>
-                                                    <td className="px-6 py-4 text-gray-700">
-                                                        {primaryContact?.name || <span className="text-gray-400 italic">No contact</span>}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-gray-700">
-                                                        {primaryContact?.designation || 'N/A'}
-                                                    </td>
-                                                    <td className="px-6 py-4 text-primary-blue">
-                                                        {primaryContact?.location || 'N/A'}
-                                                    </td>
-                                                    <td className="px-6 py-4">
-                                                        {primaryContact ? <div className="space-y-1">
-                                                                <div className="text-gray-700">{primaryContact.email}</div>
-                                                                <div className="text-gray-700 text-sm">{primaryContact.contactNumber}</div>
-                                                            </div> : <span className="text-gray-400 italic">No contact info</span>}
-                                                    </td>
-                                                    {['Sales Manager', 'Business Head'].includes(user?.role) && <td className="px-6 py-4 text-gray-500">
-                                                            {client.createdBy?.name || 'N/A'}
-                                                        </td>}
-                                                    <td className="px-6 py-4">
-                                                        <button onClick={e => {
+                  <td className="px-6 py-4 font-bold text-gray-900">{client.companyName}</td>
+                  <td className="px-6 py-4 text-gray-700">
+                    {primaryContact?.name || <span className="text-gray-400 italic">No contact</span>}
+                  </td>
+                  <td className="px-6 py-4 text-gray-700">
+                    {primaryContact?.designation || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 text-primary-blue">
+                    {primaryContact?.location || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4">
+                    {primaryContact ? <div className="space-y-1">
+                      <div className="text-gray-700">{primaryContact.email}</div>
+                      <div className="text-gray-700 text-sm">{primaryContact.contactNumber}</div>
+                    </div> : <span className="text-gray-400 italic">No contact info</span>}
+                  </td>
+                  {['Sales Manager', 'Business Head'].includes(user?.role) && <td className="px-6 py-4 text-gray-500">
+                    {client.createdBy?.name || 'N/A'}
+                  </td>}
+                  <td className="px-6 py-4">
+                    <button onClick={e => {
                       e.stopPropagation();
                       navigate('/opportunities', {
                         state: {
@@ -718,20 +724,20 @@ const ClientPage = () => {
                         }
                       });
                     }} className="text-white bg-blue-900 p-2 rounded-md transition-colors" title="Create Opportunity">
-                                                            <Plus size={20} />
-                                                        </button>
-                                                    </td>
-                                                </tr>;
+                      <Plus size={20} />
+                    </button>
+                  </td>
+                </tr>;
               }) : <tr>
-                                            <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                                                No clients found matching your search.
-                                            </td>
-                                        </tr>}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </>}
-        </div>;
+                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                  No clients found matching your search.
+                </td>
+              </tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </>}
+  </div>;
 };
 export default ClientPage;

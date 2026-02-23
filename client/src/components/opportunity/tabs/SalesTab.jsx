@@ -8,6 +8,7 @@ import DeliveryDocuments from '../sections/DeliveryDocuments';
 import UploadButton from '../../ui/UploadButton';
 import { getTechnologyOptions } from '../../../utils/TechnologyConstants';
 import { API_BASE } from '../../../config/api';
+import CountrySelectField from '../../form/CountrySelectField';
 const SalesTab = forwardRef(({
   opportunity,
   isEditing,
@@ -274,7 +275,13 @@ const SalesTab = forwardRef(({
                             </div>
                             {(formData.typeSpecificDetails?.modeOfTraining === 'Classroom' || formData.typeSpecificDetails?.modeOfTraining === 'Hybrid') && <div>
                                     <label className="block text-base font-semibold text-gray-800 mb-1">Training Location *</label>
-                                    <input type="text" value={formData.typeSpecificDetails?.trainingLocation || ''} onChange={e => handleChange('typeSpecificDetails', 'trainingLocation', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Location" />
+                                    <CountrySelectField
+                                      value={formData.typeSpecificDetails?.trainingLocation || ''}
+                                      onChange={e => handleChange('typeSpecificDetails', 'trainingLocation', e.target.value)}
+                                      disabled={!isEditing}
+                                      className="w-full"
+                                      required
+                                    />
                                 </div>}
                         </>}
 
@@ -294,7 +301,13 @@ const SalesTab = forwardRef(({
                             </div>
                             <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Exam Location *</label>
-                                <input type="text" value={formData.typeSpecificDetails?.examLocation || ''} onChange={e => handleChange('typeSpecificDetails', 'examLocation', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Exam Location" />
+                                <CountrySelectField
+                                  value={formData.typeSpecificDetails?.examLocation || ''}
+                                  onChange={e => handleChange('typeSpecificDetails', 'examLocation', e.target.value)}
+                                  disabled={!isEditing}
+                                  className="w-full"
+                                  required
+                                />
                             </div>
                         </>}
 
@@ -318,7 +331,13 @@ const SalesTab = forwardRef(({
                             </div>
                             <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Region *</label>
-                                <input type="text" value={formData.typeSpecificDetails?.region || ''} onChange={e => handleChange('typeSpecificDetails', 'region', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Region" />
+                                <CountrySelectField
+                                  value={formData.typeSpecificDetails?.region || ''}
+                                  onChange={e => handleChange('typeSpecificDetails', 'region', e.target.value)}
+                                  disabled={!isEditing}
+                                  className="w-full"
+                                  required
+                                />
                             </div>
                             {showLabSummary && <div>
                                 <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
