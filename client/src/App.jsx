@@ -19,6 +19,7 @@ import FinanceModulePage from './pages/finance/FinanceModulePage';
 import FinanceDetails from './pages/finance/FinanceDetails';
 import SettingsPage from './pages/SettingsPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import PublicRoute from './components/PublicRoute';
 import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { SocketProvider } from './context/SocketContext';
@@ -42,7 +43,7 @@ function App() {
         <ToastProvider>
           <Router basename={import.meta.env.BASE_URL}>
             <Routes>
-              <Route path="/login" element={<LoginPage />} />
+              <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
 
               {/* Role-Based Dashboard Routes */}
               <Route path="/" element={<ProtectedRoute><Layout><DashboardPage /></Layout></ProtectedRoute>} />
