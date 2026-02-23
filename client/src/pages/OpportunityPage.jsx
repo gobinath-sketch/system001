@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Plus, Search, Filter, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { getDefaultRouteForRole } from '../utils/navigation';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
 import GPReportSection from '../components/reports/GPReportSection';
@@ -73,7 +74,7 @@ const OpportunityPage = () => {
   }, [socket]);
   const fetchOpportunities = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/opportunities`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -94,7 +95,7 @@ const OpportunityPage = () => {
   // Delivery Status Change Handler
   const handleStatusChange = async (oppId, newStatus) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.put(`${API_BASE}/api/opportunities/${oppId}/status`, {
         status: newStatus
       }, {
@@ -130,7 +131,7 @@ const OpportunityPage = () => {
             <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 sm:mb-8 gap-3">
                 <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
                     <button onClick={() => {
-          if (user?.role === 'Sales Executive') navigate('/dashboard/executive');else if (user?.role === 'Sales Manager') navigate('/dashboard/manager');else if (['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role)) navigate('/dashboard/delivery');else if (user?.role === 'Director') navigate('/dashboard/businesshead');else navigate('/'); // Default fallack
+          navigate(getDefaultRouteForRole(user?.role));
         }} className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0" aria-label="Back">
                         <ArrowLeft size={24} />
                     </button>
@@ -161,14 +162,6 @@ const OpportunityPage = () => {
 
                     {/* Right: Search & Filters */}
                     <div className="flex flex-1 items-center justify-end gap-2 w-full md:w-auto flex-wrap">
-                        {/* Creator Filter - Sales Manager & Business Head */}
-                        {['Sales Manager', 'Business Head'].includes(user?.role) && <div className="relative">
-                                <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                                <select value={filterCreator} onChange={e => setFilterCreator(e.target.value)} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-base cursor-pointer hover:bg-gray-50 max-w-[170px]">
-                                    <option value="">All Creators</option>
-                                    {uniqueCreators.map((creator, idx) => <option key={idx} value={creator}>{creator}</option>)}
-                                </select>
-                            </div>}
                         <div className="relative w-full sm:w-64 md:max-w-md">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
                             <input type="text" placeholder={isDeliveryRole ? "Search by Opp ID..." : "Opp ID or Client..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px]" />
@@ -219,7 +212,7 @@ const OpportunityPage = () => {
                                 <th className="px-6 py-2 font-semibold text-gray-900">Client</th>
                                 {isDeliveryRole ? <th className="px-6 py-2 font-semibold text-gray-900">Created By</th> : <>
                                         <th className="px-6 py-2 font-semibold text-gray-900">Contact Person</th>
-                                        {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-2 font-semibold text-gray-900">
                                                 Created By
                                             </th>}
                                     </>}
@@ -347,6 +340,3 @@ const OpportunityPage = () => {
         </div>;
 };
 export default OpportunityPage;
-
-
-

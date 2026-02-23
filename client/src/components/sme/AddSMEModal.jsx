@@ -5,6 +5,8 @@ import UploadButton from '../ui/UploadButton';
 import { useToast } from '../../context/ToastContext';
 import { validateMobile, validateEmail, validatePAN, validateGST, validateBankAccount, validateIFSC } from '../../utils/validation';
 import { API_BASE } from '../../config/api';
+import IntlPhoneField from '../form/IntlPhoneField';
+import CountrySelectField from '../form/CountrySelectField';
 const AddSMEModal = ({
   isOpen,
   onClose,
@@ -102,10 +104,6 @@ const AddSMEModal = ({
       name,
       value
     } = e.target;
-    if (name === 'contactNumber' || name === 'companyContactNumber') {
-      if (!/^\d*$/.test(value)) return;
-      if (value.length > 10) return;
-    }
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setFormData(prev => ({
@@ -265,7 +263,7 @@ const AddSMEModal = ({
       data.append('sme_profile', smeToEdit.contentUpload);
     }
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -291,137 +289,171 @@ const AddSMEModal = ({
   };
   if (!isOpen) return null;
   return <div className="fixed inset-0 bg-gray-500/20 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-100">
-                <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center z-10">
-                    <h2 className="text-xl font-bold text-gray-900">{smeToEdit ? 'Edit SME' : 'Add New SME'}</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-                        <X size={24} />
-                    </button>
+    <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-100">
+      <div className="sticky top-0 bg-white px-6 py-4 border-b border-gray-200 flex justify-between items-center z-10">
+        <h2 className="text-xl font-bold text-gray-900">{smeToEdit ? 'Edit SME' : 'Add New SME'}</h2>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <X size={24} />
+        </button>
+      </div>
+
+      <div className="p-6">
+        <form onSubmit={handleSubmit}>
+          {/* Type Selection */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">SME Type</label>
+            <div className="flex gap-4">
+              <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Company' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
+                <input type="radio" name="smeType" value="Company" checked={formData.smeType === 'Company'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
+                <span className="font-medium">Company</span>
+              </label>
+              <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Freelancer' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
+                <input type="radio" name="smeType" value="Freelancer" checked={formData.smeType === 'Freelancer'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
+                <span className="font-medium">Freelancer</span>
+              </label>
+            </div>
+          </div>
+
+          <div className="space-y-8">
+            {/* Company Specific Section */}
+            {formData.smeType === 'Company' && <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+              <h3 className="font-semibold text-blue-900 mb-4">Company Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input name="companyName" value={formData.companyName} onChange={handleInputChange} placeholder="Company Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <div className="relative">
+                  <IntlPhoneField
+                    value={formData.companyContactNumber}
+                    onChange={value => handleInputChange({
+                      target: {
+                        name: 'companyContactNumber',
+                        value
+                      }
+                    })}
+                    required
+                    containerClass="w-full"
+                    inputClass={`!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue ${errors.companyContactNumber ? '!ring-1 !ring-red-500' : ''}`}
+                  />
+                  {errors.companyContactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.companyContactNumber}</div>}
                 </div>
+                <input name="companyContactPerson" value={formData.companyContactPerson} onChange={handleInputChange} placeholder="Contact Person Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <CountrySelectField
+                  name="companyLocation"
+                  value={formData.companyLocation}
+                  onChange={handleInputChange}
+                  className="w-full"
+                  required
+                />
+                <textarea name="companyAddress" value={formData.companyAddress} onChange={handleInputChange} placeholder="Company Address *" className="border p-2 rounded text-sm w-full md:col-span-2" rows="2" required />
+              </div>
+            </div>}
 
-                <div className="p-6">
-                    <form onSubmit={handleSubmit}>
-                        {/* Type Selection */}
-                        <div className="mb-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">SME Type</label>
-                            <div className="flex gap-4">
-                                <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Company' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
-                                    <input type="radio" name="smeType" value="Company" checked={formData.smeType === 'Company'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
-                                    <span className="font-medium">Company</span>
-                                </label>
-                                <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Freelancer' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
-                                    <input type="radio" name="smeType" value="Freelancer" checked={formData.smeType === 'Freelancer'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
-                                    <span className="font-medium">Freelancer</span>
-                                </label>
-                            </div>
-                        </div>
+            {/* Section A: Basic Details */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">A. Basic Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input name="name" value={formData.name} onChange={handleInputChange} placeholder="SME Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <div className="relative">
+                  <input name="email" value={formData.email} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "Email *" : "Email"} type="email" className={`w-full h-[36px] border px-3 rounded text-[13px] ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
+                  {errors.email && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.email}</div>}
+                </div>
+                <div className="relative">
+                  <IntlPhoneField
+                    value={formData.contactNumber}
+                    onChange={value => handleInputChange({
+                      target: {
+                        name: 'contactNumber',
+                        value
+                      }
+                    })}
+                    required={formData.smeType === 'Freelancer'}
+                    containerClass="w-full"
+                    inputClass={`!w-full !pl-14 focus:!ring-2 focus:!ring-primary-blue ${errors.contactNumber ? '!ring-1 !ring-red-500' : ''}`}
+                  />
+                  {errors.contactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.contactNumber}</div>}
+                </div>
+                <input name="technology" value={formData.technology} onChange={handleInputChange} placeholder="Technology *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <div className="relative">
+                  <input name="yearsExperience" value={formData.yearsExperience} onChange={handleInputChange} onWheel={e => e.target.blur()} placeholder="Years Experience *" type="number" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px] no-arrows" required />
+                </div>
+                <CountrySelectField
+                  name="location"
+                  value={formData.location}
+                  onChange={handleInputChange}
+                  className="w-full"
+                  required
+                />
+                {formData.smeType === 'Freelancer' && <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Address *" className="border p-2 rounded text-sm w-full md:col-span-3" rows="2" required />}
+              </div>
+            </div>
 
-                        <div className="space-y-8">
-                            {/* Company Specific Section */}
-                            {formData.smeType === 'Company' && <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                                    <h3 className="font-semibold text-blue-900 mb-4">Company Details</h3>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <input name="companyName" value={formData.companyName} onChange={handleInputChange} placeholder="Company Name *" className="border p-2 rounded text-sm w-full" required />
-                                        <div className="relative">
-                                            <input name="companyContactNumber" value={formData.companyContactNumber} onChange={handleInputChange} placeholder="Company Contact Number *" className={`border p-2 rounded text-sm w-full ${errors.companyContactNumber ? 'border-red-500' : ''}`} required />
-                                            {errors.companyContactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.companyContactNumber}</div>}
-                                        </div>
-                                        <input name="companyContactPerson" value={formData.companyContactPerson} onChange={handleInputChange} placeholder="Contact Person Name *" className="border p-2 rounded text-sm w-full" required />
-                                        <input name="companyLocation" value={formData.companyLocation} onChange={handleInputChange} placeholder="Company Location *" className="border p-2 rounded text-sm w-full" required />
-                                        <textarea name="companyAddress" value={formData.companyAddress} onChange={handleInputChange} placeholder="Company Address *" className="border p-2 rounded text-sm w-full md:col-span-2" rows="2" required />
-                                    </div>
-                                </div>}
+            {/* Section B: Bank Details */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">B. Bank Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <input name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleInputChange} placeholder="Bank Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <input name="bankDetails.branchName" value={formData.bankDetails.branchName} onChange={handleInputChange} placeholder="Branch Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <div className="relative">
+                  <input name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleInputChange} placeholder="Account Number *" className={`w-full h-[36px] border px-3 rounded text-[13px] ${errors['bankDetails.accountNumber'] ? 'border-red-500' : 'border-gray-200'}`} required />
+                  {errors['bankDetails.accountNumber'] && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors['bankDetails.accountNumber']}</div>}
+                </div>
+                <input name="bankDetails.accountHolderName" value={formData.bankDetails.accountHolderName} onChange={handleInputChange} placeholder="Account Holder Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
+                <div className="relative">
+                  <input name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleInputChange} placeholder="IFSC Code *" className={`w-full h-[36px] border px-3 rounded text-[13px] ${errors['bankDetails.ifscCode'] ? 'border-red-500' : 'border-gray-200'}`} required />
+                  {errors['bankDetails.ifscCode'] && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors['bankDetails.ifscCode']}</div>}
+                </div>
+              </div>
+            </div>
 
-                            {/* Section A: Basic Details */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">A. Basic Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <input name="name" value={formData.name} onChange={handleInputChange} placeholder="SME Name *" className="border p-2 rounded text-sm w-full" required />
-                                    <div className="relative">
-                                        <input name="email" value={formData.email} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "Email *" : "Email"} type="email" className={`border p-2 rounded text-sm w-full ${errors.email ? 'border-red-500' : ''}`} />
-                                        {errors.email && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.email}</div>}
-                                    </div>
-                                    <div className="relative">
-                                        <input name="contactNumber" value={formData.contactNumber} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "SME Contact Number *" : "SME Contact Number"} className={`border p-2 rounded text-sm w-full ${errors.contactNumber ? 'border-red-500' : ''}`} />
-                                        {errors.contactNumber && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.contactNumber}</div>}
-                                    </div>
-                                    <input name="technology" value={formData.technology} onChange={handleInputChange} placeholder="Technology *" className="border p-2 rounded text-sm w-full" required />
-                                    <div className="relative">
-                                        <input name="yearsExperience" value={formData.yearsExperience} onChange={handleInputChange} onWheel={e => e.target.blur()} placeholder="Years Experience *" type="number" className="border p-2 rounded text-sm w-full no-arrows" required />
-                                    </div>
-                                    <input name="location" value={formData.location} onChange={handleInputChange} placeholder="Location *" className="border p-2 rounded text-sm w-full" required />
-                                    {formData.smeType === 'Freelancer' && <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Address *" className="border p-2 rounded text-sm w-full md:col-span-3" rows="2" required />}
-                                </div>
-                            </div>
+            {/* Section C: Tax Details */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">C. Tax Details</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <div className="relative">
+                    <input name="gstNo" value={formData.gstNo} onChange={handleInputChange} placeholder="GST Number *" className={`w-full h-[36px] border px-3 rounded text-[13px] mb-2 ${errors.gstNo ? 'border-red-500' : 'border-gray-200'}`} required />
+                    {errors.gstNo && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.gstNo}</div>}
+                    <label className="block text-xs text-gray-500 mb-1">GST Document *</label>
+                    <div className="flex flex-col gap-2">
+                      <input type="file" id="upload-gst" name="gstDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
+                      <div className="flex items-center gap-2">
+                        <UploadButton onClick={() => document.getElementById('upload-gst').click()} type="button" size="sm">
+                          {files.gstDocument ? 'Selected' : smeToEdit?.gstDocument ? 'Replace' : 'Upload'}
+                        </UploadButton>
+                        {!!smeToEdit?.gstDocument && <a href={`${API_BASE}/${toPublicPath(smeToEdit.gstDocument)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View GST Document">
+                          <Eye size={16} />
+                        </a>}
+                        {files.gstDocument && <span className="text-xs text-green-600 truncate max-w-[150px]">{files.gstDocument.name}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <div className="relative">
+                    <input name="panNo" value={formData.panNo} onChange={handleInputChange} placeholder="PAN Number *" className={`w-full h-[36px] border px-3 rounded text-[13px] mb-2 ${errors.panNo ? 'border-red-500' : 'border-gray-200'}`} required />
+                    {errors.panNo && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.panNo}</div>}
+                    <label className="block text-xs text-gray-500 mb-1">PAN Card *</label>
+                    <div className="flex flex-col gap-2">
+                      <input type="file" id="upload-pan" name="panDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
+                      <div className="flex items-center gap-2">
+                        <UploadButton onClick={() => document.getElementById('upload-pan').click()} type="button" size="sm">
+                          {files.panDocument ? 'Selected' : smeToEdit?.panDocument ? 'Replace' : 'Upload'}
+                        </UploadButton>
+                        {!!smeToEdit?.panDocument && <a href={`${API_BASE}/${toPublicPath(smeToEdit.panDocument)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View PAN Document">
+                          <Eye size={16} />
+                        </a>}
+                        {files.panDocument && <span className="text-xs text-green-600 truncate max-w-[150px]">{files.panDocument.name}</span>}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                            {/* Section B: Bank Details */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">B. Bank Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                    <input name="bankDetails.bankName" value={formData.bankDetails.bankName} onChange={handleInputChange} placeholder="Bank Name *" className="border p-2 rounded text-sm w-full" required />
-                                    <input name="bankDetails.branchName" value={formData.bankDetails.branchName} onChange={handleInputChange} placeholder="Branch Name *" className="border p-2 rounded text-sm w-full" required />
-                                    <div className="relative">
-                                        <input name="bankDetails.accountNumber" value={formData.bankDetails.accountNumber} onChange={handleInputChange} placeholder="Account Number *" className={`border p-2 rounded text-sm w-full ${errors['bankDetails.accountNumber'] ? 'border-red-500' : ''}`} required />
-                                        {errors['bankDetails.accountNumber'] && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors['bankDetails.accountNumber']}</div>}
-                                    </div>
-                                    <input name="bankDetails.accountHolderName" value={formData.bankDetails.accountHolderName} onChange={handleInputChange} placeholder="Account Holder Name *" className="border p-2 rounded text-sm w-full" required />
-                                    <div className="relative">
-                                        <input name="bankDetails.ifscCode" value={formData.bankDetails.ifscCode} onChange={handleInputChange} placeholder="IFSC Code *" className={`border p-2 rounded text-sm w-full ${errors['bankDetails.ifscCode'] ? 'border-red-500' : ''}`} required />
-                                        {errors['bankDetails.ifscCode'] && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors['bankDetails.ifscCode']}</div>}
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section C: Tax Details */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">C. Tax Details</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div>
-                                        <div className="relative">
-                                            <input name="gstNo" value={formData.gstNo} onChange={handleInputChange} placeholder="GST Number *" className={`border p-2 rounded text-sm w-full mb-2 ${errors.gstNo ? 'border-red-500' : ''}`} required />
-                                            {errors.gstNo && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.gstNo}</div>}
-                                            <label className="block text-xs text-gray-500 mb-1">GST Document *</label>
-                                            <div className="flex flex-col gap-2">
-                                                <input type="file" id="upload-gst" name="gstDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
-                                                <div className="flex items-center gap-2">
-                                                    <UploadButton onClick={() => document.getElementById('upload-gst').click()} type="button" size="sm">
-                                                        {files.gstDocument ? 'Selected' : smeToEdit?.gstDocument ? 'Replace' : 'Upload'}
-                                                    </UploadButton>
-                                                    {!!smeToEdit?.gstDocument && <a href={`${API_BASE}/${toPublicPath(smeToEdit.gstDocument)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View GST Document">
-                                                        <Eye size={16} />
-                                                    </a>}
-                                                    {files.gstDocument && <span className="text-xs text-green-600 truncate max-w-[150px]">{files.gstDocument.name}</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="relative">
-                                            <input name="panNo" value={formData.panNo} onChange={handleInputChange} placeholder="PAN Number *" className={`border p-2 rounded text-sm w-full mb-2 ${errors.panNo ? 'border-red-500' : ''}`} required />
-                                            {errors.panNo && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.panNo}</div>}
-                                            <label className="block text-xs text-gray-500 mb-1">PAN Card *</label>
-                                            <div className="flex flex-col gap-2">
-                                                <input type="file" id="upload-pan" name="panDocument" onChange={handleFileChange} className="hidden" accept=".pdf,.jpg,.png" />
-                                                <div className="flex items-center gap-2">
-                                                    <UploadButton onClick={() => document.getElementById('upload-pan').click()} type="button" size="sm">
-                                                        {files.panDocument ? 'Selected' : smeToEdit?.panDocument ? 'Replace' : 'Upload'}
-                                                    </UploadButton>
-                                                    {!!smeToEdit?.panDocument && <a href={`${API_BASE}/${toPublicPath(smeToEdit.panDocument)}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title="View PAN Document">
-                                                        <Eye size={16} />
-                                                    </a>}
-                                                    {files.panDocument && <span className="text-xs text-green-600 truncate max-w-[150px]">{files.panDocument.name}</span>}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Section D: Documents */}
-                            <div>
-                                <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">D. Documents</h3>
-                                <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                                    {[{
+            {/* Section D: Documents */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">D. Documents</h3>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                {[{
                   id: 'upload-sow',
                   name: 'sowDocument',
                   label: 'SOW Document *',
@@ -442,38 +474,38 @@ const AddSMEModal = ({
                   label: 'ID Proof (Optional)',
                   accept: '.pdf,.jpg,.png'
                 }].map(doc => <div key={doc.id} className="border p-3 rounded bg-gray-50">
-                                            <label className="block text-sm font-medium mb-1">{doc.label}</label>
-                                            <div className="flex flex-col gap-2">
-                                                <input type="file" id={doc.id} name={doc.name} onChange={handleFileChange} className="hidden" accept={doc.accept} />
-                                                <div className="flex items-center gap-2">
-                                                    <UploadButton onClick={() => document.getElementById(doc.id).click()} type="button" size="sm">
-                                                        {files[doc.name]
-                  ? 'Selected'
-                  : smeToEdit?.[doc.name] || (doc.name === 'sme_profile' && smeToEdit?.contentUpload)
-                    ? 'Replace'
-                    : 'Upload'}
-                                                    </UploadButton>
-                                                    {!!getExistingDocPath(doc.name) && <a href={`${API_BASE}/${toPublicPath(getExistingDocPath(doc.name))}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title={`View ${doc.label}`}>
-                                                        <Eye size={16} />
-                                                    </a>}
-                                                    {files[doc.name] && <span className="text-xs text-green-600 truncate max-w-[100px]">{files[doc.name].name}</span>}
-                                                </div>
-                                            </div>
-                                        </div>)}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="sticky bottom-0 bg-white pt-4 pb-0 mt-8 border-t border-gray-200 flex justify-end gap-3 z-10">
-                            <button type="button" onClick={onClose} className="px-5 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors">Cancel</button>
-                            <button type="submit" disabled={loading} className="px-5 py-2 bg-brand-blue text-white rounded hover:bg-opacity-90 font-medium transition-colors disabled:opacity-50">
-                                {loading ? 'Saving...' : smeToEdit ? 'Update SME' : 'Create SME'}
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                  <label className="block text-sm font-medium mb-1">{doc.label}</label>
+                  <div className="flex flex-col gap-2">
+                    <input type="file" id={doc.id} name={doc.name} onChange={handleFileChange} className="hidden" accept={doc.accept} />
+                    <div className="flex items-center gap-2">
+                      <UploadButton onClick={() => document.getElementById(doc.id).click()} type="button" size="sm">
+                        {files[doc.name]
+                          ? 'Selected'
+                          : smeToEdit?.[doc.name] || (doc.name === 'sme_profile' && smeToEdit?.contentUpload)
+                            ? 'Replace'
+                            : 'Upload'}
+                      </UploadButton>
+                      {!!getExistingDocPath(doc.name) && <a href={`${API_BASE}/${toPublicPath(getExistingDocPath(doc.name))}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 transition-transform hover:scale-110" title={`View ${doc.label}`}>
+                        <Eye size={16} />
+                      </a>}
+                      {files[doc.name] && <span className="text-xs text-green-600 truncate max-w-[100px]">{files[doc.name].name}</span>}
+                    </div>
+                  </div>
+                </div>)}
+              </div>
             </div>
-        </div>;
+          </div>
+
+          {/* Actions */}
+          <div className="sticky bottom-0 bg-white pt-4 pb-0 mt-8 border-t border-gray-200 flex justify-end gap-3 z-10">
+            <button type="button" onClick={onClose} className="px-5 py-2 text-gray-700 bg-gray-100 rounded hover:bg-gray-200 transition-colors">Cancel</button>
+            <button type="submit" disabled={loading} className="px-5 py-2 bg-brand-blue text-white rounded hover:bg-opacity-90 font-medium transition-colors disabled:opacity-50">
+              {loading ? 'Saving...' : smeToEdit ? 'Update SME' : 'Create SME'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>;
 };
 export default AddSMEModal;

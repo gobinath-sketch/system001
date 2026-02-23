@@ -17,7 +17,7 @@ const BusinessHeadDashboard = () => {
   const [loading, setLoading] = useState(true);
   const fetchTeamStructure = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await axios.get(`${API_BASE}/api/dashboard/business-head/team-structure`, {
         headers: {
           Authorization: `Bearer ${token}`

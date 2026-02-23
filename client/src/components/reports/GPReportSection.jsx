@@ -105,7 +105,7 @@ const GPReportSection = () => {
   const fetchReportData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
 
       // Build query params
       const params = new URLSearchParams();

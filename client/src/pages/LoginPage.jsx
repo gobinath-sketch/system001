@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { getDefaultRouteForRole } from '../utils/navigation';
 const LoginPage = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,8 +16,9 @@ const LoginPage = () => {
     e.preventDefault();
     try {
       const userData = await login(email, password);
-      // Redirect based on user role
-      if (userData.role === 'Director') navigate('/dashboard/businesshead');else if (userData.role === 'Sales Manager') navigate('/dashboard/manager');else if (userData.role === 'Sales Executive') navigate('/dashboard/executive');else if (userData.role === 'Delivery Team') navigate('/dashboard/delivery');else if (userData.role === 'Finance') navigate('/finance/dashboard');else navigate('/');
+      navigate(getDefaultRouteForRole(userData.role), {
+        replace: true
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to login');
     }

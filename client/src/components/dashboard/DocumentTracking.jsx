@@ -26,7 +26,7 @@ const DocumentTracking = () => {
   }, [socket]);
   const fetchDocuments = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await axios.get(`${API_BASE}/api/dashboard/manager/documents`, {
         headers: {
           Authorization: `Bearer ${token}`

@@ -5,6 +5,7 @@ const Client = require('../models/Client');
 const Opportunity = require('../models/Opportunity');
 // Vendor import removed
 const { protect } = require('../middleware/authMiddleware');
+const { sectorGroup } = require('../utils/sector');
 
 const getAccessibleUserIds = async (user) => {
     if (user.role === 'Sales Executive') {
@@ -991,11 +992,18 @@ router.get('/analytics/sector-distribution', protect, async (req, res) => {
             { $sort: { count: -1 } }
         ]);
 
-        const formatted = stats.map(item => ({
-            sector: item._id || 'Unspecified',
-            count: item.count,
-            revenue: item.revenue
-        }));
+        const grouped = new Map();
+        stats.forEach((item) => {
+            const key = sectorGroup(item._id);
+            if (!grouped.has(key)) {
+                grouped.set(key, { sector: key, count: 0, revenue: 0 });
+            }
+            const row = grouped.get(key);
+            row.count += item.count || 0;
+            row.revenue += item.revenue || 0;
+        });
+
+        const formatted = Array.from(grouped.values()).sort((a, b) => b.count - a.count);
 
         res.json(formatted);
     } catch (err) {

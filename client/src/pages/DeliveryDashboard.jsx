@@ -46,7 +46,7 @@ const DeliveryDashboard = () => {
   }, [socket]);
   const fetchDashboardRevamp = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const res = await axios.get(`${API_BASE}/api/dashboard/delivery/revamp-stats`, {
         headers: {
           Authorization: `Bearer ${token}`

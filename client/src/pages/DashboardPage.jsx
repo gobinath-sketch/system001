@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import PropTypes from 'prop-types';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -8,36 +7,21 @@ import { Users, Briefcase, Activity, Clock } from 'lucide-react';
 import TargetProgress from '../components/dashboard/TargetProgress';
 import EscalationWidget from '../components/dashboard/EscalationWidget';
 import SalesExecutiveDashboard from './dashboard/SalesExecutiveDashboard';
-import ManagerDashboard from './ManagerDashboard';
 import { API_BASE } from '../config/api';
-const DashboardPage = ({
-  mockRole
-}) => {
+const DashboardPage = () => {
   const {
-    user: authUser,
-    updateUserRole
+    user
   } = useAuth();
   const {
     socket
   } = useSocket();
-  // Allow mockRole to override authUser for testing
-  const user = mockRole ? {
-    ...authUser,
-    role: mockRole
-  } : authUser;
-  useEffect(() => {
-    // Only update role if. mockRole is explicitly provided
-    if (mockRole && authUser?.role !== mockRole && updateUserRole) {
-      updateUserRole(mockRole);
-    }
-  }, [mockRole, user]);
 
   // Redirect to specialized dashboard
   if (user?.role === 'Sales Executive') {
     return <SalesExecutiveDashboard user={user} />;
   }
   if (user?.role === 'Sales Manager') {
-    return <ManagerDashboard user={user} />;
+    return <Navigate to="/dashboard/manager" replace />;
   }
 
   // Redirect other roles to their specific dashboards
@@ -50,7 +34,7 @@ const DashboardPage = ({
   const [loading, setLoading] = useState(true);
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
 
       // Fetch Stats
       const statsRes = await axios.get(`${API_BASE}/api/dashboard/stats`, {
@@ -75,7 +59,7 @@ const DashboardPage = ({
   };
   useEffect(() => {
     fetchData();
-  }, [mockRole]);
+  }, []);
   useEffect(() => {
     if (!socket) return;
     const handleEntityUpdated = event => {
@@ -85,7 +69,7 @@ const DashboardPage = ({
     };
     socket.on('entity_updated', handleEntityUpdated);
     return () => socket.off('entity_updated', handleEntityUpdated);
-  }, [socket, mockRole]);
+  }, [socket]);
 
   // Glass Style for Cards
   const glassCardStyle = {
@@ -140,8 +124,5 @@ const DashboardPage = ({
                 </div>
             </div>
         </div>;
-};
-DashboardPage.propTypes = {
-  mockRole: PropTypes.string
 };
 export default DashboardPage;

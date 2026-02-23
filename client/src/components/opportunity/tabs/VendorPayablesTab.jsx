@@ -205,7 +205,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
         if (!file) return;
         setUploading(true);
         try {
-            const token = localStorage.getItem('token');
+            const token = sessionStorage.getItem('token');
             const formData = new FormData();
             formData.append('document', file);
             formData.append('category', category);
@@ -247,7 +247,7 @@ const VendorPayablesTab = forwardRef(({ opportunity, canEdit, refreshData }, ref
     useImperativeHandle(ref, () => ({
         handleSave: async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = sessionStorage.getItem('token');
                 // We only want to update vendorPayables. 
                 // The API at /api/opportunities/:id updates whatever is in the body.
                 // We should respect the nested structure: financeDetails.vendorPayables

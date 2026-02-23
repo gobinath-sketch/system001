@@ -92,7 +92,7 @@ const ClientWiseGPChart = () => {
   const fetchChartData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       let timeline = '';
       if (filterType === 'month') {
         timeline = `month-${selectedMonth}`;

@@ -351,7 +351,7 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
     } catch (error) {
         console.error('Approval error:', error);
         res.status(500).json({ message: error.message });
-    
+    }
 });
 
 // @route   PUT /api/approvals/:id/read

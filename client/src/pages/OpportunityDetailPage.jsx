@@ -97,7 +97,7 @@ const OpportunityDetailPage = () => {
   // Fetch Opportunity Data
   const fetchOpportunity = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const response = await axios.get(`${API_BASE}/api/opportunities/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -203,7 +203,7 @@ const OpportunityDetailPage = () => {
   };
   const executeStatusUpdate = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.put(`${API_BASE}/api/opportunities/${id}/status`, {
         status: statusModal.newStatus
       }, {

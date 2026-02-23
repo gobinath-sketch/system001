@@ -47,7 +47,7 @@ const SMEManagement = () => {
   const fetchSMEs = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const queryParams = new URLSearchParams();
       if (filters.search) queryParams.append('search', filters.search);
       if (filters.type) queryParams.append('type', filters.type);
@@ -90,7 +90,7 @@ const SMEManagement = () => {
     e.stopPropagation();
     if (!window.confirm('Are you sure you want to delete this SME?')) return;
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       await axios.delete(`${API_BASE}/api/smes/${id}`, {
         headers: {
           Authorization: `Bearer ${token}`

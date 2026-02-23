@@ -54,7 +54,9 @@ const Sidebar = ({
   }, [settingsKey]);
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/login', {
+      replace: true
+    });
   };
 
   // Define menu items based on user role
@@ -93,7 +95,7 @@ const Sidebar = ({
         icon: Users,
         path: '/clients'
       }, {
-        label: 'Team Opportunities',
+        label: 'Opportunities',
         icon: Briefcase,
         path: '/opportunities'
       }, {

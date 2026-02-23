@@ -1,23 +1,42 @@
+import { parsePhoneNumberFromString, validatePhoneNumberLength } from 'libphonenumber-js/max';
+
 // Validation utility functions
 
 export const validateMobile = (mobile) => {
     if (!mobile) return { valid: false, message: 'Mobile number is required' };
 
-    // Remove spaces for validation
-    const cleanedMobile = mobile.replace(/\s/g, '');
+    const cleanedMobile = String(mobile).trim().replace(/[\s()-]/g, '');
+    const lengthResult = validatePhoneNumberLength(cleanedMobile);
 
-    // Check if it contains only digits after cleaning
-    if (!/^[0-9]+$/.test(cleanedMobile)) {
-        return { valid: false, message: 'Mobile number must contain only numbers' };
+    if (lengthResult === 'TOO_SHORT') {
+        return { valid: false, message: 'Phone number is too short for the selected country' };
+    }
+    if (lengthResult === 'TOO_LONG') {
+        return { valid: false, message: 'Phone number is too long for the selected country' };
     }
 
-    // Check exact digit count
-    const digitCount = cleanedMobile.length;
-    if (digitCount !== 10) {
-        return { valid: false, message: `Only ${digitCount} digit${digitCount !== 1 ? 's' : ''} entered. Mobile number must be exactly 10 digits` };
+    const parsed = parsePhoneNumberFromString(cleanedMobile);
+    if (parsed?.isValid()) {
+        return { valid: true, message: '' };
     }
 
-    return { valid: true, message: '' };
+    // Backward compatibility for legacy data saved as local 10-digit number.
+    if (/^[0-9]{10}$/.test(cleanedMobile)) {
+        const legacyLength = validatePhoneNumberLength(cleanedMobile, 'IN');
+        if (legacyLength === 'TOO_SHORT') {
+            return { valid: false, message: 'Phone number is too short' };
+        }
+        if (legacyLength === 'TOO_LONG') {
+            return { valid: false, message: 'Phone number is too long' };
+        }
+
+        const legacyParsed = parsePhoneNumberFromString(cleanedMobile, 'IN');
+        if (legacyParsed?.isValid()) {
+            return { valid: true, message: '' };
+        }
+    }
+
+    return { valid: false, message: 'Enter a valid phone number for the selected country' };
 };
 
 export const validateEmail = (email) => {

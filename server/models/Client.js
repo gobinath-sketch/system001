@@ -28,7 +28,8 @@ const ClientSchema = new mongoose.Schema({
     // Sector type
     sector: {
         type: String,
-        enum: ['Corporate', 'Enterprise', 'Academics', 'University', 'College', 'School'],
+        // Keep legacy values for backward compatibility; new UI writes grouped Academic values.
+        enum: ['Enterprise', 'Academics', 'Academics - College', 'Academics - Universities', 'University', 'College', 'School'],
         required: true
     },
 

@@ -167,7 +167,8 @@ const OpportunitySchema = new mongoose.Schema({
         // Auto-fetched from Client Base
         trainingSector: {
             type: String,
-            enum: ['Corporate', 'Enterprise', 'Academics', 'University', 'College', 'School']
+            // Keep legacy values for backward compatibility; new UI writes grouped Academic values.
+            enum: ['Enterprise', 'Academics', 'Academics - College', 'Academics - Universities', 'University', 'College', 'School']
         },
 
         status: {

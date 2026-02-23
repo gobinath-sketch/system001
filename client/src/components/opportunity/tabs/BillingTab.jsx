@@ -129,7 +129,7 @@ const BillingTab = forwardRef(({
   const handleEscalate = async (triggerType = 'gp', overrides = {}) => {
     setEscalating(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const data = isEditing ? formData : opportunity;
       const expenseTypes = [{
         key: 'trainerCost'
@@ -349,7 +349,7 @@ const BillingTab = forwardRef(({
   useImperativeHandle(ref, () => ({
     handleSave: async () => {
       try {
-        const token = localStorage.getItem('token');
+        const token = sessionStorage.getItem('token');
 
         // Sanitize commonDetails (only need specific fields but sending whole obj is fine if carefully handled)
         const sanitizedCommonDetails = {
@@ -528,7 +528,7 @@ const BillingTab = forwardRef(({
     }
     setUploading(expenseKey);
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadFormData = new FormData();
       let endpoint = '';
 
@@ -566,7 +566,7 @@ const BillingTab = forwardRef(({
     }
     setUploading('invoice');
     try {
-      const token = localStorage.getItem('token');
+      const token = sessionStorage.getItem('token');
       const uploadFormData = new FormData();
       uploadFormData.append('invoice', file);
       await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, uploadFormData, {
