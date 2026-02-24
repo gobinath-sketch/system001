@@ -68,6 +68,9 @@ export const API_ENDPOINTS = {
     password: '/api/settings/me/password',
     resetPassword: '/api/settings/me/reset-password',
     sessionById: (sessionId) => `/api/settings/me/sessions/${sessionId}`,
+    savePreset: '/api/settings/me/preferences/presets',
+    syncLocale: '/api/settings/me/sync-locale',
+    exportProfileCard: '/api/settings/me/export-profile-card',
   },
 };
 

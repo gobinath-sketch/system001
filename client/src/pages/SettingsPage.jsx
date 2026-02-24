@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { AlertTriangle, Download, Globe2, KeyRound, LayoutGrid, ShieldCheck, SlidersHorizontal, UserCircle2 } from 'lucide-react';
+import { AlertTriangle, Download, Globe2, KeyRound, ShieldCheck, SlidersHorizontal, UserCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
@@ -12,8 +12,8 @@ const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
 
 const defaults = (user) => ({
   profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
-  preferences: { defaultCurrency: 'INR', defaultLanding: 'Dashboard', dateFormat: 'DD/MM/YYYY', numberFormat: 'Indian' },
-  workspace: { autoLogout: '30m', enableTwoFactor: false },
+  preferences: { defaultCurrency: 'INR', defaultLanding: 'Dashboard', dateFormat: 'DD/MM/YYYY', numberFormat: 'Indian', savedPresets: [] },
+  workspace: { autoLogout: '30m', enableTwoFactor: false, workingHours: '09:00-18:00', alertMode: 'Balanced', lastLocaleSyncAt: null },
   security: { sessions: [] }
 });
 
@@ -47,10 +47,115 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState(() => defaults(user));
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
-  const [active, setActive] = useState('profile');
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const profileCompletion = useMemo(() => {
+    const checks = [
+      settings.profile.firstName,
+      settings.profile.lastName,
+      settings.profile.email,
+      settings.profile.language,
+      settings.profile.timezone,
+      settings.profile.weekStartsOn
+    ];
+    const done = checks.filter(Boolean).length;
+    return Math.round(done / checks.length * 100);
+  }, [settings.profile]);
+
+  const formatDatePreview = useMemo(() => {
+    const now = new Date('2026-02-24T10:30:00');
+    if (settings.preferences.dateFormat === 'MM/DD/YYYY') {
+      return `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
+    }
+    if (settings.preferences.dateFormat === 'YYYY-MM-DD') {
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+    return `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+  }, [settings.preferences.dateFormat]);
+
+  const formatNumberPreview = useMemo(() => {
+    const value = 1234567.89;
+    if (settings.preferences.numberFormat === 'International') {
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  }, [settings.preferences.numberFormat]);
+
+  const totalSessions = (settings.security.sessions || []).length;
+  const otherSessions = (settings.security.sessions || []).filter((s) => !s.isCurrent).length;
+
+  const copyText = async (text, label) => {
+    try {
+      await navigator.clipboard.writeText(String(text || ''));
+      addToast(`${label} copied`, 'success');
+    } catch {
+      addToast('Copy failed', 'error');
+    }
+  };
+
+  const savePreferencePreset = async () => {
+    try {
+      const newPreset = {
+        name: `Preset ${new Date().toLocaleString('en-IN')}`,
+        defaultCurrency: currency,
+        defaultLanding: settings.preferences.defaultLanding,
+        dateFormat: settings.preferences.dateFormat,
+        numberFormat: settings.preferences.numberFormat,
+        createdAt: new Date().toISOString()
+      };
+      const nextPresets = [newPreset, ...(settings.preferences.savedPresets || [])].slice(0, 10);
+      const res = await axios.put(`${API_BASE}${API_ENDPOINTS.settings.me}`, {
+        preferences: {
+          ...settings.preferences,
+          defaultCurrency: currency,
+          savedPresets: nextPresets
+        }
+      }, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Preference preset saved.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to save preset.', 'error');
+    }
+  };
+
+  const syncLocale = async () => {
+    try {
+      const res = await axios.post(`${API_BASE}${API_ENDPOINTS.settings.syncLocale}`, {}, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Locale sync updated.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to sync locale.', 'error');
+    }
+  };
+
+  const exportProfileCard = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}${API_ENDPOINTS.settings.exportProfileCard}`, {
+        ...auth,
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `profile-card-${user?.id || 'user'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      addToast('Profile card exported.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to export profile card.', 'error');
+    }
+  };
 
   const syncSettings = (next) => {
     const merged = mergeSettings(next, user);
@@ -136,145 +241,287 @@ export default function SettingsPage() {
     } catch (e) { addToast(e?.response?.data?.message || 'Unable to remove session.', 'error'); }
   };
 
-  const sections = [
-    { id: 'profile', label: 'Profile', icon: UserCircle2, subtitle: 'Identity and account details' },
-    { id: 'preferences', label: 'Preferences', icon: SlidersHorizontal, subtitle: 'Display and format defaults' },
-    { id: 'password', label: 'Password & Access', icon: KeyRound, subtitle: 'Security and active sessions' },
-    { id: 'workspace', label: 'Workspace', icon: LayoutGrid, subtitle: 'Organization-level controls' }
-  ];
-
   if (loading) {
-    return <div className="p-4 sm:p-6 bg-bg-page h-full">
-      <div className="max-w-7xl mx-auto rounded-3xl border border-[#d9e2ef] bg-white/90 shadow-sm p-10 text-center text-slate-600">Loading settings...</div>
+    return <div className="p-3 sm:p-6 bg-bg-page h-full">
+      <div className="max-w-6xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-slate-600">Loading settings...</div>
     </div>;
   }
 
   return <div className="p-3 sm:p-6 bg-bg-page h-full">
-    <div className="max-w-7xl mx-auto">
-      <div className="rounded-3xl border border-[#d9e2ef] bg-white shadow-[0_18px_60px_-40px_rgba(12,38,74,0.45)] overflow-hidden">
-        <div className="bg-[radial-gradient(120%_120%_at_0%_0%,#d8f0ff_0%,#eef6ff_45%,#f7fafc_100%)] border-b border-[#dbe5f1] p-6 sm:p-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p className="text-xs tracking-[0.2em] text-slate-500 uppercase font-semibold">Control Center</p>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mt-1">Settings</h1>
-              <p className="text-sm text-slate-600 mt-1">Professional account controls with real-time persistence.</p>
-            </div>
+    <div className="w-full max-w-[1500px] mx-auto space-y-4">
+      <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm px-5 py-5">
+          <p className="text-[11px] tracking-[0.2em] text-slate-500 uppercase font-semibold">Settings</p>
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <h1 className="text-xl font-extrabold text-slate-900">Account Controls</h1>
             <button
               onClick={() => editing ? saveAll() : setEditing(true)}
-              className={`h-11 px-5 rounded-xl text-sm font-semibold transition inline-flex items-center gap-2 ${editing ? 'bg-slate-900 text-white hover:bg-slate-700' : 'bg-[#0b5cab] text-white hover:bg-[#0d6dcc]'}`}
+              className={`h-10 px-4 rounded-lg text-sm font-bold transition ${editing ? 'bg-slate-900 text-white hover:bg-slate-700' : 'bg-[#0b5cab] text-white hover:bg-[#0d6dcc]'}`}
             >
-              {editing ? saving ? 'Saving Changes...' : 'Save Changes' : 'Enable Editing'}
+              {editing ? saving ? 'Saving...' : 'Save' : 'Edit'}
             </button>
           </div>
-        </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr]">
-          <aside className="border-b lg:border-b-0 lg:border-r border-[#e2e8f0] bg-slate-50/65 p-4 sm:p-5">
-            <div className="space-y-2">
-              {sections.map((section) => {
-                const Icon = section.icon;
-                const selected = active === section.id;
-                return <button
-                  key={section.id}
-                  onClick={() => setActive(section.id)}
-                  className={`w-full rounded-2xl border text-left p-3.5 transition ${selected ? 'border-sky-300 bg-white shadow-sm' : 'border-transparent hover:border-slate-200 hover:bg-white/90'}`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className={`mt-0.5 h-8 w-8 rounded-lg flex items-center justify-center ${selected ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600'}`}>
-                      <Icon size={17} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{section.label}</p>
-                      <p className="text-xs text-slate-500 mt-0.5">{section.subtitle}</p>
-                    </div>
-                  </div>
-                </button>;
-              })}
+      <main className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-4">
+              <UserCircle2 size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Profile</h2>
             </div>
-          </aside>
+            <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+              <div className="flex items-center gap-3">
+                <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-16 h-16 rounded-xl border border-slate-300 object-cover" />
+                <button onClick={() => fileInputRef.current?.click()} disabled={!editing} aria-label="Upload profile picture" className="h-9 w-9 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
+                  <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-4 h-4 object-contain" />
+                </button>
+                <button onClick={() => update('profile', 'avatarDataUrl', '')} disabled={!editing} aria-label="Remove profile picture" className="h-9 w-9 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
+                  <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-4 h-4 object-contain" />
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!editing} onChange={onUploadAvatar} />
+              </div>
+              <input disabled={!editing} value={settings.profile.firstName} onChange={(e) => update('profile', 'firstName', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="First Name" />
+              <input disabled={!editing} value={settings.profile.lastName} onChange={(e) => update('profile', 'lastName', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Last Name" />
+              <input disabled={!editing} value={settings.profile.email} onChange={(e) => update('profile', 'email', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Primary Email" />
+              <select disabled={!editing} value={settings.profile.language} onChange={(e) => update('profile', 'language', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="English">English</option><option value="Kannada">Kannada</option><option value="Telugu">Telugu</option><option value="Hindi">Hindi</option></select>
+              <select disabled={!editing} value={settings.profile.timezone} onChange={(e) => update('profile', 'timezone', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Asia/Kolkata">Asia/Kolkata</option><option value="UTC">UTC</option><option value="America/New_York">America/New_York</option><option value="Europe/London">Europe/London</option></select>
+              <select disabled={!editing} value={settings.profile.weekStartsOn} onChange={(e) => update('profile', 'weekStartsOn', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
 
-          <main className="p-4 sm:p-6 lg:p-8">
-            {active === 'profile' && <section className="space-y-6">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50/40 p-4 sm:p-5">
-                <p className="text-sm font-semibold text-slate-900 mb-4">Profile Image</p>
-                <div className="flex flex-wrap items-center gap-4">
-                  <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-20 h-20 rounded-xl border border-slate-300 object-cover" />
-                  <button onClick={() => fileInputRef.current?.click()} disabled={!editing} aria-label="Upload profile picture" className="h-10 w-10 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
-                    <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-5 h-5 object-contain" />
-                  </button>
-                  <button onClick={() => update('profile', 'avatarDataUrl', '')} disabled={!editing} aria-label="Remove profile picture" className="h-10 w-10 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
-                    <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-5 h-5 object-contain" />
-                  </button>
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!editing} onChange={onUploadAvatar} />
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="font-bold text-slate-700">Profile Completeness</span>
+                  <span className="font-extrabold text-slate-900">{profileCompletion}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div className="h-full bg-[#0b5cab]" style={{ width: `${profileCompletion}%` }} />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block"><span className="text-xs font-medium text-slate-500">First Name</span><input disabled={!editing} value={settings.profile.firstName} onChange={(e) => update('profile', 'firstName', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100" /></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Last Name</span><input disabled={!editing} value={settings.profile.lastName} onChange={(e) => update('profile', 'lastName', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100" /></label>
-                <label className="block md:col-span-2"><span className="text-xs font-medium text-slate-500">Primary Email</span><input disabled={!editing} value={settings.profile.email} onChange={(e) => update('profile', 'email', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100" /></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Language</span><select disabled={!editing} value={settings.profile.language} onChange={(e) => update('profile', 'language', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="English">English</option><option value="Kannada">Kannada</option><option value="Telugu">Telugu</option><option value="Hindi">Hindi</option></select></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Preferred Timezone</span><select disabled={!editing} value={settings.profile.timezone} onChange={(e) => update('profile', 'timezone', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="Asia/Kolkata">Asia/Kolkata</option><option value="UTC">UTC</option><option value="America/New_York">America/New_York</option><option value="Europe/London">Europe/London</option></select></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Week Starts On</span><select disabled={!editing} value={settings.profile.weekStartsOn} onChange={(e) => update('profile', 'weekStartsOn', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select></label>
+              <div className="rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
+                <p className="font-bold text-slate-800 mb-1">Quick Tips</p>
+                <p>Complete your profile to improve account recovery and notification accuracy.</p>
               </div>
-            </section>}
 
-            {active === 'preferences' && <section className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block"><span className="text-xs font-medium text-slate-500">Default Currency</span><select disabled={!editing} value={currency} onChange={(e) => { setCurrency(e.target.value); update('preferences', 'defaultCurrency', e.target.value); }} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="INR">INR</option><option value="USD">USD</option></select></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Default Landing Page</span><select disabled={!editing} value={settings.preferences.defaultLanding} onChange={(e) => update('preferences', 'defaultLanding', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="Dashboard">Dashboard</option><option value="Opportunities">Opportunities</option><option value="Clients">Clients</option></select></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Date Format</span><select disabled={!editing} value={settings.preferences.dateFormat} onChange={(e) => update('preferences', 'dateFormat', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="DD/MM/YYYY">DD/MM/YYYY</option><option value="MM/DD/YYYY">MM/DD/YYYY</option><option value="YYYY-MM-DD">YYYY-MM-DD</option></select></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Number Format</span><select disabled={!editing} value={settings.preferences.numberFormat} onChange={(e) => update('preferences', 'numberFormat', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="Indian">Indian (12,34,567)</option><option value="International">International (1,234,567)</option></select></label>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 space-y-2">
+                <p className="font-bold text-slate-800">Quick Actions</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => copyText(settings.profile.email, 'Email')} className="h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50">Copy Email</button>
+                  <button onClick={() => copyText(`${settings.profile.firstName} ${settings.profile.lastName}`.trim(), 'Name')} className="h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50">Copy Name</button>
+                </div>
+                <button onClick={exportProfileCard} className="w-full h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50">Export Profile Card</button>
               </div>
-            </section>}
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
 
-            {active === 'password' && <section className="space-y-5">
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-sm text-amber-900">Use a strong password and rotate it periodically for better account security.</div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block md:col-span-2"><span className="text-xs font-medium text-slate-500">Current Password</span><input type="password" disabled={!editing} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100" /></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">New Password</span><input type="password" disabled={!editing} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100" /></label>
-                <label className="block"><span className="text-xs font-medium text-slate-500">Confirm Password</span><input type="password" disabled={!editing} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100" /></label>
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-4">
+              <SlidersHorizontal size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Preferences</h2>
+            </div>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <select disabled={!editing} value={currency} onChange={(e) => { setCurrency(e.target.value); update('preferences', 'defaultCurrency', e.target.value); }} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="INR">INR</option><option value="USD">USD</option></select>
+              <select disabled={!editing} value={settings.preferences.defaultLanding} onChange={(e) => update('preferences', 'defaultLanding', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Dashboard">Dashboard</option><option value="Opportunities">Opportunities</option><option value="Clients">Clients</option></select>
+              <select disabled={!editing} value={settings.preferences.dateFormat} onChange={(e) => update('preferences', 'dateFormat', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="DD/MM/YYYY">DD/MM/YYYY</option><option value="MM/DD/YYYY">MM/DD/YYYY</option><option value="YYYY-MM-DD">YYYY-MM-DD</option></select>
+              <select disabled={!editing} value={settings.preferences.numberFormat} onChange={(e) => update('preferences', 'numberFormat', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Indian">Indian (12,34,567)</option><option value="International">International (1,234,567)</option></select>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-bold text-slate-800">Preview</p>
+                <div className="text-sm text-slate-700">Date: <span className="font-bold">{formatDatePreview}</span></div>
+                <div className="text-sm text-slate-700">Number: <span className="font-bold">{formatNumberPreview}</span></div>
+                <div className="text-sm text-slate-700">Currency: <span className="font-bold">{currency}</span></div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button onClick={changePassword} disabled={!editing} className="h-11 px-4 rounded-xl bg-[#0b5cab] text-white text-sm font-semibold hover:bg-[#0d6dcc] disabled:opacity-50">Update Password</button>
-                <button onClick={resetPassword} disabled={!editing} className="h-11 px-4 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50">Reset Password</button>
+
+              <button
+                onClick={savePreferencePreset}
+                className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50"
+              >
+                Save As Personal Preset
+              </button>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-bold text-slate-800">Quick Presets</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setCurrency('INR');
+                      update('preferences', 'defaultCurrency', 'INR');
+                      update('preferences', 'dateFormat', 'DD/MM/YYYY');
+                      update('preferences', 'numberFormat', 'Indian');
+                    }}
+                    className="h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50"
+                  >
+                    India
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrency('USD');
+                      update('preferences', 'defaultCurrency', 'USD');
+                      update('preferences', 'dateFormat', 'MM/DD/YYYY');
+                      update('preferences', 'numberFormat', 'International');
+                    }}
+                    className="h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50"
+                  >
+                    Global
+                  </button>
+                </div>
               </div>
-              <div className="rounded-2xl border border-slate-200 p-4">
-                <p className="text-sm font-semibold text-slate-900 mb-3">Active Sessions</p>
-                <div className="space-y-2.5">
-                  {(settings.security.sessions || []).map((s) => <div key={s.sessionId} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/50 p-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-900">{s.device}{s.isCurrent ? ' (Current)' : ''}</p>
-                      <p className="text-xs text-slate-500">{s.location}</p>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-bold text-slate-800">Saved Presets</p>
+                <div className="space-y-2">
+                  {(settings.preferences.savedPresets || []).slice(0, 3).map((preset, idx) => (
+                    <button
+                      key={`${preset.name}-${idx}`}
+                      onClick={() => {
+                        update('preferences', 'defaultCurrency', preset.defaultCurrency);
+                        setCurrency(preset.defaultCurrency);
+                        update('preferences', 'defaultLanding', preset.defaultLanding);
+                        update('preferences', 'dateFormat', preset.dateFormat);
+                        update('preferences', 'numberFormat', preset.numberFormat);
+                        addToast(`Applied preset: ${preset.name}`, 'success');
+                      }}
+                      className="w-full h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50 text-left px-2"
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                  {(settings.preferences.savedPresets || []).length === 0 && (
+                    <p className="text-xs text-slate-500">No saved presets yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-3">
+              <KeyRound size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Password & Access</h2>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900 mb-3">Use a strong password and rotate it periodically.</div>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <input type="password" disabled={!editing} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Current Password" />
+              <input type="password" disabled={!editing} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="New Password" />
+              <input type="password" disabled={!editing} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Confirm Password" />
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={changePassword} disabled={!editing} className="h-10 rounded-xl bg-[#0b5cab] text-white text-sm font-bold hover:bg-[#0d6dcc] disabled:opacity-50">Update</button>
+                <button onClick={resetPassword} disabled={!editing} className="h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 disabled:opacity-50">Reset</button>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-sm font-bold text-slate-700 mb-2">Active Sessions</p>
+                <div className="space-y-2">
+                  {(settings.security.sessions || []).map((s) => <div key={s.sessionId} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{s.device}{s.isCurrent ? ' (Current)' : ''}</p>
+                      <p className="text-xs text-slate-600 truncate">{s.location}</p>
                     </div>
-                    {!s.isCurrent && <button onClick={() => revokeSession(s.sessionId)} disabled={!editing} className="text-xs font-semibold text-rose-600 hover:underline disabled:opacity-50">Sign out</button>}
+                    {!s.isCurrent && <button onClick={() => revokeSession(s.sessionId)} disabled={!editing} className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-50">Sign out</button>}
                   </div>)}
                 </div>
               </div>
-            </section>}
 
-            {active === 'workspace' && <section className="space-y-4">
-              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3.5 text-sm text-blue-900 inline-flex items-start gap-2">
-                <ShieldCheck size={16} className="mt-0.5 shrink-0" />
-                <div><p className="font-semibold">Role & Access</p><p>{user?.role || 'Unknown role'}</p></div>
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                <p className="font-bold text-slate-800 mb-1">Password Strength Checklist</p>
+                <ul className="space-y-1 text-slate-700">
+                  <li>{passwordForm.newPassword.length >= 8 ? '✓' : '•'} Minimum 8 characters</li>
+                  <li>{/[A-Z]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one uppercase letter</li>
+                  <li>{/[0-9]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one number</li>
+                </ul>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block"><span className="text-xs font-medium text-slate-500">Auto Logout</span><select disabled={!editing} value={settings.workspace.autoLogout} onChange={(e) => update('workspace', 'autoLogout', e.target.value)} className="mt-1.5 w-full h-11 border border-slate-300 rounded-xl px-3 bg-white disabled:bg-slate-100"><option value="15m">15 minutes</option><option value="30m">30 minutes</option><option value="1h">1 hour</option><option value="8h">8 hours</option></select></label>
-                <label className="rounded-xl border border-slate-300 bg-white px-3 h-11 mt-6 flex items-center justify-between"><span className="text-sm text-slate-700">Require two-factor authentication</span><input type="checkbox" disabled={!editing} checked={settings.workspace.enableTwoFactor} onChange={(e) => update('workspace', 'enableTwoFactor', e.target.checked)} /></label>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
+                <p className="font-bold text-slate-800">Session Controls</p>
+                <p className="text-slate-700">Total sessions: {totalSessions} | Other devices: {otherSessions}</p>
+                <button
+                  disabled={!editing || otherSessions === 0}
+                  onClick={async () => {
+                    const targets = (settings.security.sessions || []).filter((s) => !s.isCurrent);
+                    for (const item of targets) {
+                      // Keep existing revoke flow for each session.
+                      // eslint-disable-next-line no-await-in-loop
+                      await revokeSession(item.sessionId);
+                    }
+                  }}
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Sign Out All Other Devices
+                </button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <button onClick={() => addToast('Data export request queued.', 'info')} className="h-11 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Download size={16} />Export My Data</button>
-                <button onClick={() => addToast('Locale sync updated.', 'success')} className="h-11 rounded-xl border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Globe2 size={16} />Sync Locale Settings</button>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldCheck size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Workspace</h2>
+            </div>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">Role: <span className="font-bold">{user?.role || 'Unknown role'}</span></div>
+              <select disabled={!editing} value={settings.workspace.autoLogout} onChange={(e) => update('workspace', 'autoLogout', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="15m">15 minutes</option><option value="30m">30 minutes</option><option value="1h">1 hour</option><option value="8h">8 hours</option></select>
+              <label className="rounded-xl border border-slate-300 bg-white px-3 h-10 flex items-center justify-between text-[15px] font-semibold text-slate-700"><span>Require two-factor authentication</span><input type="checkbox" disabled={!editing} checked={settings.workspace.enableTwoFactor} onChange={(e) => update('workspace', 'enableTwoFactor', e.target.checked)} /></label>
+              <button onClick={() => addToast('Data export request queued.', 'info')} className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Download size={14} />Export My Data</button>
+              <button onClick={syncLocale} className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Globe2 size={14} />Sync Locale</button>
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+                <p className="text-sm font-bold text-rose-700 inline-flex items-center gap-1.5"><AlertTriangle size={13} />Danger Zone</p>
+                <p className="text-sm text-rose-600 mt-1">Sensitive action. Admin confirmation may be required.</p>
+                <button onClick={() => addToast('Request submitted to deactivate account. Admin review required.', 'warning')} className="mt-2 h-9 px-3 rounded-lg bg-rose-600 text-white text-sm font-bold hover:bg-rose-700">Request Deactivation</button>
               </div>
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
-                <p className="text-sm font-semibold text-rose-700 inline-flex items-center gap-2"><AlertTriangle size={14} />Danger Zone</p>
-                <p className="text-xs text-rose-600 mt-1">These actions are sensitive and may require admin confirmation.</p>
-                <button onClick={() => addToast('Request submitted to deactivate account. Admin review required.', 'warning')} className="mt-3 h-9 px-3 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700">Request Account Deactivation</button>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p className="font-bold text-slate-800 mb-1">Workspace Status</p>
+                <p>Last locale sync: {settings.workspace.lastLocaleSyncAt ? new Date(settings.workspace.lastLocaleSyncAt).toLocaleString() : 'Not synced yet'}</p>
               </div>
-            </section>}
-          </main>
-        </div>
-      </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
+                <p className="font-bold text-slate-800">Work Preferences</p>
+                <label className="block">
+                  <span className="text-slate-700 font-medium">Working hours</span>
+                  <select value={settings.workspace.workingHours || '09:00-18:00'} onChange={(e) => update('workspace', 'workingHours', e.target.value)} className="mt-1 w-full h-9 rounded-lg border border-slate-300 bg-white px-2 font-medium">
+                    <option value="09:00-18:00">09:00 - 18:00</option>
+                    <option value="10:00-19:00">10:00 - 19:00</option>
+                    <option value="Flexible">Flexible</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-slate-700 font-medium">Alert mode</span>
+                  <select value={settings.workspace.alertMode || 'Balanced'} onChange={(e) => update('workspace', 'alertMode', e.target.value)} className="mt-1 w-full h-9 rounded-lg border border-slate-300 bg-white px-2 font-medium">
+                    <option value="Balanced">Balanced</option>
+                    <option value="Important Only">Important Only</option>
+                    <option value="All Alerts">All Alerts</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+      </main>
     </div>
   </div>;
 }

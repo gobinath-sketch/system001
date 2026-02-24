@@ -21,12 +21,26 @@ const PreferencesSettingsSchema = new mongoose.Schema({
     dateFormat: { type: String, default: 'DD/MM/YYYY' },
     numberFormat: { type: String, default: 'Indian' },
     defaultRows: { type: String, default: '25' },
-    defaultCurrency: { type: String, enum: ['INR', 'USD'], default: 'INR' }
+    defaultCurrency: { type: String, enum: ['INR', 'USD'], default: 'INR' },
+    savedPresets: {
+        type: [{
+            name: { type: String, default: '' },
+            defaultCurrency: { type: String, enum: ['INR', 'USD'], default: 'INR' },
+            defaultLanding: { type: String, default: 'Dashboard' },
+            dateFormat: { type: String, default: 'DD/MM/YYYY' },
+            numberFormat: { type: String, default: 'Indian' },
+            createdAt: { type: Date, default: Date.now }
+        }],
+        default: []
+    }
 }, { _id: false });
 
 const WorkspaceSettingsSchema = new mongoose.Schema({
     autoLogout: { type: String, default: '30m' },
-    enableTwoFactor: { type: Boolean, default: false }
+    enableTwoFactor: { type: Boolean, default: false },
+    workingHours: { type: String, default: '09:00-18:00' },
+    alertMode: { type: String, default: 'Balanced' },
+    lastLocaleSyncAt: { type: Date, default: null }
 }, { _id: false });
 
 const SessionSchema = new mongoose.Schema({

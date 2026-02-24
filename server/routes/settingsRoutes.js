@@ -7,8 +7,8 @@ const router = express.Router();
 
 const SETTINGS_ALLOWED_FIELDS = {
     profile: ['firstName', 'lastName', 'email', 'backupEmail', 'phone', 'designation', 'department', 'language', 'timezone', 'weekStartsOn', 'avatarDataUrl'],
-    preferences: ['compactTables', 'reducedMotion', 'defaultLanding', 'dateFormat', 'numberFormat', 'defaultRows', 'defaultCurrency'],
-    workspace: ['autoLogout', 'enableTwoFactor']
+    preferences: ['compactTables', 'reducedMotion', 'defaultLanding', 'dateFormat', 'numberFormat', 'defaultRows', 'defaultCurrency', 'savedPresets'],
+    workspace: ['autoLogout', 'enableTwoFactor', 'workingHours', 'alertMode']
 };
 
 const getDeviceName = (userAgent = '') => {
@@ -122,7 +122,12 @@ router.put('/me', protect, async (req, res) => {
             const fullName = `${first} ${last}`.trim();
             if (fullName) user.name = fullName;
         }
-        if (updates.preferences) Object.assign(user.settings.preferences, updates.preferences);
+        if (updates.preferences) {
+            Object.assign(user.settings.preferences, updates.preferences);
+            if (Array.isArray(user.settings.preferences.savedPresets)) {
+                user.settings.preferences.savedPresets = user.settings.preferences.savedPresets.slice(0, 10);
+            }
+        }
         if (updates.workspace) Object.assign(user.settings.workspace, updates.workspace);
 
         if (typeof updates?.profile?.email === 'string' && updates.profile.email.trim()) {
@@ -224,6 +229,89 @@ router.delete('/me/sessions/:sessionId', protect, async (req, res) => {
     } catch (err) {
         console.error('Error removing session:', err);
         res.status(500).json({ message: 'Failed to remove session' });
+    }
+});
+
+router.post('/me/preferences/presets', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        ensureSettingsShape(user);
+
+        const name = String(req.body?.name || '').trim() || `Preset ${new Date().toLocaleString('en-IN')}`;
+        const incoming = req.body?.preferences && typeof req.body.preferences === 'object' ? req.body.preferences : {};
+        const pref = user.settings.preferences || {};
+        const preset = {
+            name,
+            defaultCurrency: incoming.defaultCurrency || pref.defaultCurrency || 'INR',
+            defaultLanding: incoming.defaultLanding || pref.defaultLanding || 'Dashboard',
+            dateFormat: incoming.dateFormat || pref.dateFormat || 'DD/MM/YYYY',
+            numberFormat: incoming.numberFormat || pref.numberFormat || 'Indian',
+            createdAt: new Date()
+        };
+        user.settings.preferences.savedPresets = user.settings.preferences.savedPresets || [];
+        user.settings.preferences.savedPresets.unshift(preset);
+        user.settings.preferences.savedPresets = user.settings.preferences.savedPresets.slice(0, 10);
+        await user.save();
+
+        res.json({
+            message: 'Preference preset saved',
+            settings: toSettingsResponse(user, req.sessionId || null)
+        });
+    } catch (err) {
+        console.error('Error saving preference preset:', err);
+        res.status(500).json({ message: 'Failed to save preset' });
+    }
+});
+
+router.post('/me/sync-locale', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        ensureSettingsShape(user);
+        user.settings.workspace.lastLocaleSyncAt = new Date();
+        await user.save();
+
+        if (global.io) {
+            global.io.to(user._id.toString()).emit('settings_updated', {
+                settings: toSettingsResponse(user, req.sessionId || null),
+                updatedAt: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            message: 'Locale sync timestamp updated',
+            settings: toSettingsResponse(user, req.sessionId || null)
+        });
+    } catch (err) {
+        console.error('Error syncing locale:', err);
+        res.status(500).json({ message: 'Failed to sync locale' });
+    }
+});
+
+router.get('/me/export-profile-card', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        ensureSettingsShape(user);
+
+        const payload = {
+            exportedAt: new Date().toISOString(),
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            },
+            profile: user.settings.profile
+        };
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="profile-card-${user._id}.json"`);
+        res.status(200).send(JSON.stringify(payload, null, 2));
+    } catch (err) {
+        console.error('Error exporting profile card:', err);
+        res.status(500).json({ message: 'Failed to export profile card' });
     }
 });
 
