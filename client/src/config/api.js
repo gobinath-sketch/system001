@@ -63,6 +63,15 @@ export const API_ENDPOINTS = {
     gpAnalysis: '/api/reports/gp-analysis',
     vendorExpenses: '/api/reports/vendor-expenses',
   },
+  settings: {
+    me: '/api/settings/me',
+    password: '/api/settings/me/password',
+    resetPassword: '/api/settings/me/reset-password',
+    sessionById: (sessionId) => `/api/settings/me/sessions/${sessionId}`,
+    savePreset: '/api/settings/me/preferences/presets',
+    syncLocale: '/api/settings/me/sync-locale',
+    exportProfileCard: '/api/settings/me/export-profile-card',
+  },
 };
 
 export const apiUrl = (path) => `${API_BASE}${path}`;

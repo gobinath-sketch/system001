@@ -25,9 +25,17 @@ export const SocketProvider = ({
       setSocket(newSocket);
       newSocket.emit('join_room', userId);
     });
+    newSocket.on('settings_updated', (payload) => {
+      window.dispatchEvent(new CustomEvent('settings-updated', {
+        detail: {
+          settings: payload?.settings || {}
+        }
+      }));
+    });
     newSocket.on('disconnect', () => setSocket(null));
     return () => {
       newSocket.off('connect');
+      newSocket.off('settings_updated');
       newSocket.off('disconnect');
       newSocket.close();
     };

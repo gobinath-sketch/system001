@@ -1,556 +1,527 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Download, Edit3, Globe2, KeyRound, LayoutGrid, Laptop, RotateCcw, Save, ShieldCheck, UserCircle2 } from 'lucide-react';
+import axios from 'axios';
+import { AlertTriangle, Download, Globe2, KeyRound, ShieldCheck, SlidersHorizontal, UserCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
-const SETTINGS_KEY_PREFIX = 'app_settings_v2';
-const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
-const MAX_AVATAR_STORAGE_BYTES = 300 * 1024;
+import { useSocket } from '../context/SocketContext';
+import { API_BASE, API_ENDPOINTS } from '../config/api';
+
 const DEFAULT_AVATAR_URL = `${import.meta.env.BASE_URL}profile-default.svg`;
-const getSettingsKey = user => {
-  const identity = user?.id || user?.email || user?.name || 'anonymous';
-  return `${SETTINGS_KEY_PREFIX}:${String(identity).toLowerCase()}`;
+const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+const defaults = (user) => ({
+  profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
+  preferences: { defaultCurrency: 'INR', defaultLanding: 'Dashboard', dateFormat: 'DD/MM/YYYY', numberFormat: 'Indian', savedPresets: [] },
+  workspace: { autoLogout: '30m', enableTwoFactor: false, workingHours: '09:00-18:00', alertMode: 'Balanced', lastLocaleSyncAt: null },
+  security: { sessions: [] }
+});
+
+const mergeSettings = (incoming, user) => {
+  const d = defaults(user);
+  return {
+    ...d,
+    ...(incoming || {}),
+    profile: { ...d.profile, ...(incoming?.profile || {}) },
+    preferences: { ...d.preferences, ...(incoming?.preferences || {}) },
+    workspace: { ...d.workspace, ...(incoming?.workspace || {}) },
+    security: { ...d.security, ...(incoming?.security || {}) }
+  };
 };
-const isQuotaExceededError = error => error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014;
-const estimateDataUrlSize = dataUrl => {
-  const payload = (dataUrl || '').split(',')[1] || '';
-  return Math.ceil(payload.length * 3 / 4);
-};
-const fileToDataUrl = file => new Promise((resolve, reject) => {
+
+const toDataUrl = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = () => resolve(String(reader.result || ''));
   reader.onerror = () => reject(new Error('Failed to read image.'));
   reader.readAsDataURL(file);
 });
-const compressAvatar = file => new Promise((resolve, reject) => {
-  const objectUrl = URL.createObjectURL(file);
-  const image = new Image();
-  image.onload = () => {
+
+export default function SettingsPage() {
+  const { user, updateUser } = useAuth();
+  const { currency, setCurrency } = useCurrency();
+  const { addToast } = useToast();
+  const { socket } = useSocket();
+  const token = useMemo(() => sessionStorage.getItem('token'), [user?.id]);
+  const auth = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
+  const fileInputRef = useRef(null);
+
+  const [settings, setSettings] = useState(() => defaults(user));
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const profileCompletion = useMemo(() => {
+    const checks = [
+      settings.profile.firstName,
+      settings.profile.lastName,
+      settings.profile.email,
+      settings.profile.language,
+      settings.profile.timezone,
+      settings.profile.weekStartsOn
+    ];
+    const done = checks.filter(Boolean).length;
+    return Math.round(done / checks.length * 100);
+  }, [settings.profile]);
+
+  const formatDatePreview = useMemo(() => {
+    const now = new Date('2026-02-24T10:30:00');
+    if (settings.preferences.dateFormat === 'MM/DD/YYYY') {
+      return `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}`;
+    }
+    if (settings.preferences.dateFormat === 'YYYY-MM-DD') {
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+    return `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()}`;
+  }, [settings.preferences.dateFormat]);
+
+  const formatNumberPreview = useMemo(() => {
+    const value = 1234567.89;
+    if (settings.preferences.numberFormat === 'International') {
+      return new Intl.NumberFormat('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(value);
+    }
+    return new Intl.NumberFormat('en-IN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  }, [settings.preferences.numberFormat]);
+
+  const totalSessions = (settings.security.sessions || []).length;
+  const otherSessions = (settings.security.sessions || []).filter((s) => !s.isCurrent).length;
+
+  const copyText = async (text, label) => {
     try {
-      const maxDimension = 256;
-      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
-      const width = Math.max(1, Math.round(image.width * scale));
-      const height = Math.max(1, Math.round(image.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Image processing is not supported in this browser.');
-      context.drawImage(image, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/webp', 0.72);
-      resolve(dataUrl);
-    } catch (error) {
-      reject(error);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
+      await navigator.clipboard.writeText(String(text || ''));
+      addToast(`${label} copied`, 'success');
+    } catch {
+      addToast('Copy failed', 'error');
     }
   };
-  image.onerror = () => {
-    URL.revokeObjectURL(objectUrl);
-    reject(new Error('Failed to process image.'));
+
+  const savePreferencePreset = async () => {
+    try {
+      const newPreset = {
+        name: `Preset ${new Date().toLocaleString('en-IN')}`,
+        defaultCurrency: currency,
+        defaultLanding: settings.preferences.defaultLanding,
+        dateFormat: settings.preferences.dateFormat,
+        numberFormat: settings.preferences.numberFormat,
+        createdAt: new Date().toISOString()
+      };
+      const nextPresets = [newPreset, ...(settings.preferences.savedPresets || [])].slice(0, 10);
+      const res = await axios.put(`${API_BASE}${API_ENDPOINTS.settings.me}`, {
+        preferences: {
+          ...settings.preferences,
+          defaultCurrency: currency,
+          savedPresets: nextPresets
+        }
+      }, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Preference preset saved.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to save preset.', 'error');
+    }
   };
-  image.src = objectUrl;
-});
-const DEFAULT_SETTINGS = user => ({
-  profile: {
-    firstName: user?.name?.split(' ')?.[0] || '',
-    lastName: user?.name?.split(' ')?.slice(1).join(' ') || '',
-    email: user?.email || '',
-    backupEmail: '',
-    phone: '',
-    designation: '',
-    department: '',
-    language: 'English',
-    timezone: 'Asia/Kolkata',
-    weekStartsOn: 'Monday',
-    avatarDataUrl: ''
-  },
-  preferences: {
-    compactTables: false,
-    reducedMotion: false,
-    defaultLanding: 'Dashboard',
-    dateFormat: 'DD/MM/YYYY',
-    numberFormat: 'Indian',
-    defaultRows: '25'
-  },
-  workspace: {
-    autoLogout: '30m',
-    enableTwoFactor: false
-  }
-});
-const loadSettings = user => {
-  const raw = localStorage.getItem(getSettingsKey(user));
-  if (!raw) return DEFAULT_SETTINGS(user);
-  try {
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_SETTINGS(user),
-      ...parsed,
-      profile: {
-        ...DEFAULT_SETTINGS(user).profile,
-        ...(parsed.profile || {})
-      },
-      preferences: {
-        ...DEFAULT_SETTINGS(user).preferences,
-        ...(parsed.preferences || {})
-      },
-      workspace: {
-        ...DEFAULT_SETTINGS(user).workspace,
-        ...(parsed.workspace || {})
+
+  const syncLocale = async () => {
+    try {
+      const res = await axios.post(`${API_BASE}${API_ENDPOINTS.settings.syncLocale}`, {}, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Locale sync updated.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to sync locale.', 'error');
+    }
+  };
+
+  const exportProfileCard = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}${API_ENDPOINTS.settings.exportProfileCard}`, {
+        ...auth,
+        responseType: 'blob'
+      });
+      const blob = new Blob([res.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `profile-card-${user?.id || 'user'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      addToast('Profile card exported.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to export profile card.', 'error');
+    }
+  };
+
+  const syncSettings = (next) => {
+    const merged = mergeSettings(next, user);
+    setSettings(merged);
+    if (merged?.preferences?.defaultCurrency) setCurrency(merged.preferences.defaultCurrency);
+    window.dispatchEvent(new CustomEvent('settings-updated', { detail: { settings: merged } }));
+  };
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE}${API_ENDPOINTS.settings.me}`, auth);
+        if (!cancelled) syncSettings(res?.data?.settings || {});
+      } catch {
+        if (!cancelled) addToast('Unable to load settings from server.', 'error');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-  } catch {
-    return DEFAULT_SETTINGS(user);
-  }
-};
-const sectionGroups = [{
-  title: 'Personal',
-  items: [{
-    id: 'profile',
-    label: 'Profile',
-    icon: UserCircle2
-  }, {
-    id: 'preferences',
-    label: 'Preferences',
-    icon: LayoutGrid
-  }]
-}, {
-  title: 'Security',
-  items: [{
-    id: 'password',
-    label: 'Password & Access',
-    icon: KeyRound
-  }, {
-    id: 'workspace',
-    label: 'Workspace Settings',
-    icon: ShieldCheck
-  }]
-}];
-const SettingsPage = () => {
-  const {
-    user
-  } = useAuth();
-  const {
-    currency,
-    setCurrency
-  } = useCurrency();
-  const {
-    addToast
-  } = useToast();
-  const fileInputRef = useRef(null);
-  const settingsKey = useMemo(() => getSettingsKey(user), [user?.id, user?.email, user?.name]);
-  const [settings, setSettings] = useState(() => loadSettings(user));
-  const [activeSection, setActiveSection] = useState('profile');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [sessions, setSessions] = useState([{
-    id: 1,
-    device: 'Windows - Chrome',
-    location: 'Chennai, IN',
-    lastSeen: 'Active now'
-  }, {
-    id: 2,
-    device: 'Android App',
-    location: 'Chennai, IN',
-    lastSeen: '2 hours ago'
-  }]);
-  const persistSettings = currentSettings => {
-    try {
-      localStorage.setItem(settingsKey, JSON.stringify(currentSettings));
-      return {
-        ok: true,
-        avatarRemoved: false
-      };
-    } catch (error) {
-      if (!isQuotaExceededError(error) || !currentSettings?.profile?.avatarDataUrl) {
-        return {
-          ok: false
-        };
-      }
-      const withoutAvatar = {
-        ...currentSettings,
-        profile: {
-          ...currentSettings.profile,
-          avatarDataUrl: ''
-        }
-      };
-      try {
-        localStorage.setItem(settingsKey, JSON.stringify(withoutAvatar));
-        setSettings(withoutAvatar);
-        return {
-          ok: true,
-          avatarRemoved: true
-        };
-      } catch {
-        return {
-          ok: false
-        };
-      }
-    }
-  };
-  const saveAll = () => {
-    setIsSaving(true);
-    const result = persistSettings(settings);
-    if (!result.ok) {
-      setIsSaving(false);
-      addToast('Unable to save settings. Browser storage is full.', 'error');
-      return;
-    }
-    window.dispatchEvent(new Event('settings-updated'));
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsEditing(false);
-      if (result.avatarRemoved) {
-        addToast('Settings saved, but profile image was removed due to browser storage limits.', 'warning');
-        return;
-      }
-      addToast('Settings saved successfully.', 'success');
-    }, 300);
-  };
+    load();
+    return () => { cancelled = true; };
+  }, [token, user?.id]);
+
   useEffect(() => {
-    setSettings(loadSettings(user));
-  }, [settingsKey, user]);
-  const handleEditSave = () => {
-    if (!isEditing) {
-      setIsEditing(true);
-      return;
+    if (!socket) return undefined;
+    const onSettingsUpdated = (payload) => syncSettings(payload?.settings || {});
+    socket.on('settings_updated', onSettingsUpdated);
+    return () => socket.off('settings_updated', onSettingsUpdated);
+  }, [socket, user?.id, setCurrency]);
+
+  const update = (section, key, value) => setSettings((prev) => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      const payload = { ...settings, preferences: { ...settings.preferences, defaultCurrency: currency } };
+      const res = await axios.put(`${API_BASE}${API_ENDPOINTS.settings.me}`, payload, auth);
+      syncSettings(res?.data?.settings || payload);
+      if (res?.data?.user && typeof updateUser === 'function') updateUser(res.data.user);
+      setEditing(false);
+      addToast('Settings saved successfully.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to save settings.', 'error');
+    } finally {
+      setSaving(false);
     }
-    saveAll();
   };
-  const updateSection = (section, field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
-    }));
-  };
-  const onAvatarUpload = async event => {
+
+  const onUploadAvatar = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowed.includes(file.type)) {
-      addToast('Please upload JPG, PNG, GIF, or WEBP image.', 'warning');
-      return;
-    }
-    if (file.size > MAX_AVATAR_UPLOAD_BYTES) {
-      addToast('Image size should be less than 8MB.', 'warning');
-      return;
-    }
+    if (file.size > MAX_AVATAR_UPLOAD_BYTES) { addToast('Image size should be less than 8MB.', 'warning'); return; }
+    try { update('profile', 'avatarDataUrl', await toDataUrl(file)); addToast('Profile picture updated.', 'success'); }
+    catch { addToast('Unable to process selected image.', 'error'); }
+    finally { event.target.value = ''; }
+  };
+
+  const changePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+    if (!currentPassword || !newPassword || !confirmPassword) return addToast('Please fill all password fields.', 'warning');
+    if (newPassword.length < 8) return addToast('New password must be at least 8 characters.', 'warning');
+    if (newPassword !== confirmPassword) return addToast('Confirm password does not match.', 'error');
     try {
-      let avatarDataUrl = await compressAvatar(file);
-      if (estimateDataUrlSize(avatarDataUrl) > MAX_AVATAR_STORAGE_BYTES) {
-        avatarDataUrl = await fileToDataUrl(file);
-      }
-      if (estimateDataUrlSize(avatarDataUrl) > MAX_AVATAR_STORAGE_BYTES) {
-        addToast('Image is too large to store in browser settings. Use a smaller image.', 'warning');
-        return;
-      }
-      updateSection('profile', 'avatarDataUrl', avatarDataUrl);
-      addToast('Profile picture updated.', 'success');
-    } catch {
-      addToast('Unable to process selected image.', 'error');
-    } finally {
-      event.target.value = '';
-    }
+      await axios.put(`${API_BASE}${API_ENDPOINTS.settings.password}`, { currentPassword, newPassword, confirmPassword }, auth);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      addToast('Password updated successfully.', 'success');
+    } catch (e) { addToast(e?.response?.data?.message || 'Unable to update password.', 'error'); }
   };
-  const removeAvatar = () => {
-    if (!settings.profile.avatarDataUrl) return;
-    if (!window.confirm('Remove profile picture?')) return;
-    updateSection('profile', 'avatarDataUrl', '');
-    addToast('Profile picture removed.', 'info');
+
+  const resetPassword = async () => {
+    try { await axios.post(`${API_BASE}${API_ENDPOINTS.settings.resetPassword}`, {}, auth); addToast('Password reset request sent.', 'info'); }
+    catch (e) { addToast(e?.response?.data?.message || 'Unable to submit reset request.', 'error'); }
   };
-  const updatePassword = () => {
-    const {
-      currentPassword,
-      newPassword,
-      confirmPassword
-    } = passwordForm;
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      addToast('Please fill all password fields.', 'warning');
-      return;
-    }
-    if (newPassword.length < 8) {
-      addToast('New password must be at least 8 characters.', 'warning');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      addToast('Confirm password does not match.', 'error');
-      return;
-    }
-    if (!window.confirm('Do you want to update your password now?')) return;
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-    addToast('Password updated successfully.', 'success');
+
+  const revokeSession = async (sessionId) => {
+    try {
+      const res = await axios.delete(`${API_BASE}${API_ENDPOINTS.settings.sessionById(sessionId)}`, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Session removed.', 'success');
+    } catch (e) { addToast(e?.response?.data?.message || 'Unable to remove session.', 'error'); }
   };
-  const resetPassword = () => {
-    if (!window.confirm('Send a password reset link to your email?')) return;
-    addToast(`Reset link sent to ${settings.profile.email || user?.email || 'your email'}.`, 'info');
-  };
-  const revokeSession = id => {
-    if (!window.confirm('Sign out this device session?')) return;
-    setSessions(prev => prev.filter(s => s.id !== id));
-    addToast('Session removed.', 'success');
-  };
+
+  if (loading) {
+    return <div className="p-3 sm:p-6 bg-bg-page h-full">
+      <div className="max-w-6xl mx-auto rounded-2xl border border-slate-200 bg-white shadow-sm p-8 text-center text-slate-600">Loading settings...</div>
+    </div>;
+  }
+
   return <div className="p-3 sm:p-6 bg-bg-page h-full">
-            <div className="max-w-7xl mx-auto">
-                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] min-h-[74vh]">
-                        <aside className="border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50/70 p-4">
-                            <h1 className="text-xl font-bold text-gray-900 mb-4">Settings</h1>
-                            {sectionGroups.map(group => <div key={group.title} className="mb-5">
-                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">{group.title}</p>
-                                    <div className="space-y-1">
-                                        {group.items.map(item => {
-                  const Icon = item.icon;
-                  const active = activeSection === item.id;
-                  return <button key={item.id} onClick={() => setActiveSection(item.id)} className={`w-full text-left rounded-lg px-3 py-2.5 flex items-center gap-2 transition ${active ? 'bg-white border border-gray-200 shadow-sm text-gray-900' : 'text-gray-700 hover:bg-white'}`}>
-                                                    <Icon size={15} />
-                                                    <span className="text-sm font-medium">{item.label}</span>
-                                                </button>;
-                })}
-                                    </div>
-                                </div>)}
-                        </aside>
+    <div className="w-full max-w-[1500px] mx-auto space-y-4">
+      <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm px-5 py-5">
+          <p className="text-[11px] tracking-[0.2em] text-slate-500 uppercase font-semibold">Settings</p>
+          <div className="mt-1 flex items-center justify-between gap-3">
+            <h1 className="text-xl font-extrabold text-slate-900">Account Controls</h1>
+            <button
+              onClick={() => editing ? saveAll() : setEditing(true)}
+              className={`h-10 px-4 rounded-lg text-sm font-bold transition ${editing ? 'bg-slate-900 text-white hover:bg-slate-700' : 'bg-[#0b5cab] text-white hover:bg-[#0d6dcc]'}`}
+            >
+              {editing ? saving ? 'Saving...' : 'Save' : 'Edit'}
+            </button>
+          </div>
+      </div>
 
-                        <main className="p-4 sm:p-6 lg:p-8">
-                            <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">
-                                        {sectionGroups.flatMap(g => g.items).find(i => i.id === activeSection)?.label || 'Settings'}
-                                    </h2>
-                                </div>
-                                <button onClick={handleEditSave} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold transition ${isEditing ? 'bg-primary-blue hover:bg-primary-blue-light' : 'bg-green-600 hover:bg-green-700'}`}>
-                                    {isEditing ? <Save size={16} /> : <Edit3 size={16} />}
-                                    {isEditing ? isSaving ? 'Saving...' : 'Save Changes' : 'Edit Changes'}
-                                </button>
-                            </div>
-
-                            {activeSection === 'profile' && <section className="space-y-5">
-                                    <div className="rounded-xl border border-gray-200 p-4">
-                                        <div className="flex flex-wrap items-center gap-4">
-                                            <div className="w-20 h-20 rounded-md overflow-hidden bg-gray-200 border border-gray-300 shrink-0">
-                                                <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="mt-2 flex flex-wrap items-center gap-3">
-                                                    <button onClick={() => fileInputRef.current?.click()} disabled={!isEditing} aria-label="Upload profile picture" title="Upload profile picture" className="inline-flex items-center justify-center h-10 w-10 text-gray-900 hover:opacity-80 disabled:opacity-50">
-                                                <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-6 h-6 object-contain scale-125 origin-center" />
-                                                    </button>
-                                                    <button onClick={removeAvatar} disabled={!isEditing} aria-label="Remove profile picture" title="Remove profile picture" className="inline-flex items-center justify-center h-10 w-10 text-gray-700 hover:opacity-80 disabled:opacity-50">
-                                                <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-6 h-6 object-contain scale-125 origin-center" />
-                                                    </button>
-                                                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!isEditing} onChange={onAvatarUpload} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">First Name</span>
-                                            <input value={settings.profile.firstName} onChange={e => updateSection('profile', 'firstName', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Last Name</span>
-                                            <input value={settings.profile.lastName} onChange={e => updateSection('profile', 'lastName', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block md:col-span-2">
-                                            <span className="text-xs text-gray-500">Primary Email</span>
-                                            <div className="mt-1 flex items-center gap-2">
-                                                <input value={settings.profile.email} onChange={e => updateSection('profile', 'email', e.target.value)} disabled={!isEditing} className="w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                                <button onClick={() => addToast('Email change flow can be linked with backend verification.', 'info')} disabled={!isEditing} className="h-11 px-3 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50">
-                                                    Change
-                                                </button>
-                                            </div>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Language</span>
-                                            <select value={settings.profile.language} onChange={e => updateSection('profile', 'language', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="English">English</option>
-                                                <option value="Kannada">Kannada</option>
-                                                <option value="Telugu">Telugu</option>
-                                                <option value="Hindi">Hindi</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Preferred Timezone</span>
-                                            <select value={settings.profile.timezone} onChange={e => updateSection('profile', 'timezone', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Asia/Kolkata">Asia/Kolkata</option>
-                                                <option value="UTC">UTC</option>
-                                                <option value="America/New_York">America/New_York</option>
-                                                <option value="Europe/London">Europe/London</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Week Starts On</span>
-                                            <select value={settings.profile.weekStartsOn} onChange={e => updateSection('profile', 'weekStartsOn', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Monday">Monday</option>
-                                                <option value="Sunday">Sunday</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </section>}
-
-                            {activeSection === 'preferences' && <section className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Default Currency</span>
-                                            <select value={currency} onChange={e => setCurrency(e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="INR">INR</option>
-                                                <option value="USD">USD</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Default Landing Page</span>
-                                            <select value={settings.preferences.defaultLanding} onChange={e => updateSection('preferences', 'defaultLanding', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Dashboard">Dashboard</option>
-                                                <option value="Opportunities">Opportunities</option>
-                                                <option value="Clients">Clients</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Date Format</span>
-                                            <select value={settings.preferences.dateFormat} onChange={e => updateSection('preferences', 'dateFormat', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                                                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Number Format</span>
-                                            <select value={settings.preferences.numberFormat} onChange={e => updateSection('preferences', 'numberFormat', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Indian">Indian (12,34,567)</option>
-                                                <option value="International">International (1,234,567)</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </section>}
-
-
-
-                            {activeSection === 'password' && <section className="space-y-5">
-                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                        Use a strong password and rotate it periodically for better account security.
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block md:col-span-2">
-                                            <span className="text-xs text-gray-500">Current Password</span>
-                                            <input type="password" value={passwordForm.currentPassword} onChange={e => setPasswordForm(p => ({
-                    ...p,
-                    currentPassword: e.target.value
-                  }))} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">New Password</span>
-                                            <input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm(p => ({
-                    ...p,
-                    newPassword: e.target.value
-                  }))} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Confirm Password</span>
-                                            <input type="password" value={passwordForm.confirmPassword} onChange={e => setPasswordForm(p => ({
-                    ...p,
-                    confirmPassword: e.target.value
-                  }))} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        <button onClick={updatePassword} disabled={!isEditing} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold hover:bg-primary-blue-light">
-                                            <KeyRound size={16} />
-                                            Update Password
-                                        </button>
-                                        <button onClick={resetPassword} disabled={!isEditing} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50">
-                                            <RotateCcw size={16} />
-                                            Reset Password
-                                        </button>
-                                    </div>
-
-                                    <div className="rounded-lg border border-gray-200 p-4">
-                                        <h3 className="text-sm font-semibold text-gray-900 mb-3">Active Sessions</h3>
-                                        <div className="space-y-2">
-                                            {sessions.map(session => <div key={session.id} className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <Laptop size={15} className="text-gray-600" />
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-800">{session.device}</p>
-                                                            <p className="text-xs text-gray-500">{session.location} â€¢ {session.lastSeen}</p>
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={() => revokeSession(session.id)} disabled={!isEditing} className="text-xs font-semibold text-red-600 hover:underline">
-                                                        Sign out
-                                                    </button>
-                                                </div>)}
-                                        </div>
-                                    </div>
-                                </section>}
-
-                            {activeSection === 'workspace' && <section className="space-y-4">
-                                    <div className="border border-blue-100 bg-blue-50 rounded-lg p-3 text-sm text-blue-900 flex items-start gap-2">
-                                        <ShieldCheck size={16} className="mt-0.5 shrink-0" />
-                                        <div>
-                                            <p className="font-semibold">Role & Access</p>
-                                            <p>{user?.role || 'Unknown role'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Auto Logout</span>
-                                            <select value={settings.workspace.autoLogout} onChange={e => updateSection('workspace', 'autoLogout', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="15m">15 minutes</option>
-                                                <option value="30m">30 minutes</option>
-                                                <option value="1h">1 hour</option>
-                                                <option value="8h">8 hours</option>
-                                            </select>
-                                        </label>
-                                        <div className="block">
-                                            <span className="text-xs text-transparent select-none">Auto Logout</span>
-                                            <label className="mt-1 flex items-center justify-between border border-gray-300 rounded-lg px-3 h-11">
-                                                <span className="text-sm font-medium text-gray-700">Require two-factor authentication</span>
-                                                <input type="checkbox" checked={settings.workspace.enableTwoFactor} onChange={e => updateSection('workspace', 'enableTwoFactor', e.target.checked)} disabled={!isEditing} />
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <button onClick={() => addToast('Data export has been queued. You will receive an email shortly.', 'info')} className="h-11 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50">
-                                            <Download size={16} />
-                                            Export My Data
-                                        </button>
-                                        <button onClick={() => addToast('Locale sync updated for your workspace.', 'success')} className="h-11 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50">
-                                            <Globe2 size={16} />
-                                            Sync Locale Settings
-                                        </button>
-                                    </div>
-
-                                    <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-                                        <p className="text-sm font-semibold text-red-700 inline-flex items-center gap-2">
-                                            <AlertTriangle size={14} />
-                                            Danger Zone
-                                        </p>
-                                        <p className="text-xs text-red-600 mt-1">These actions are sensitive and may require admin confirmation.</p>
-                                        <button onClick={() => addToast('Request submitted to deactivate account. Admin review required.', 'warning')} className="mt-3 px-3 py-1.5 rounded-md bg-red-600 text-white text-sm font-semibold hover:bg-red-700">
-                                            Request Account Deactivation
-                                        </button>
-                                    </div>
-                                </section>}
-                        </main>
-                    </div>
-                </div>
+      <main className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-4">
+              <UserCircle2 size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Profile</h2>
             </div>
-        </div>;
-};
-export default SettingsPage;
+            <div className="space-y-4 flex-1 overflow-y-auto pr-1">
+              <div className="flex items-center gap-3">
+                <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-16 h-16 rounded-xl border border-slate-300 object-cover" />
+                <button onClick={() => fileInputRef.current?.click()} disabled={!editing} aria-label="Upload profile picture" className="h-9 w-9 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
+                  <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-4 h-4 object-contain" />
+                </button>
+                <button onClick={() => update('profile', 'avatarDataUrl', '')} disabled={!editing} aria-label="Remove profile picture" className="h-9 w-9 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
+                  <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-4 h-4 object-contain" />
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!editing} onChange={onUploadAvatar} />
+              </div>
+              <input disabled={!editing} value={settings.profile.firstName} onChange={(e) => update('profile', 'firstName', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="First Name" />
+              <input disabled={!editing} value={settings.profile.lastName} onChange={(e) => update('profile', 'lastName', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Last Name" />
+              <input disabled={!editing} value={settings.profile.email} onChange={(e) => update('profile', 'email', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Primary Email" />
+              <select disabled={!editing} value={settings.profile.language} onChange={(e) => update('profile', 'language', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="English">English</option><option value="Kannada">Kannada</option><option value="Telugu">Telugu</option><option value="Hindi">Hindi</option></select>
+              <select disabled={!editing} value={settings.profile.timezone} onChange={(e) => update('profile', 'timezone', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Asia/Kolkata">Asia/Kolkata</option><option value="UTC">UTC</option><option value="America/New_York">America/New_York</option><option value="Europe/London">Europe/London</option></select>
+              <select disabled={!editing} value={settings.profile.weekStartsOn} onChange={(e) => update('profile', 'weekStartsOn', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                <div className="flex items-center justify-between text-sm mb-2">
+                  <span className="font-bold text-slate-700">Profile Completeness</span>
+                  <span className="font-extrabold text-slate-900">{profileCompletion}%</span>
+                </div>
+                <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                  <div className="h-full bg-[#0b5cab]" style={{ width: `${profileCompletion}%` }} />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
+                <p className="font-bold text-slate-800 mb-1">Quick Tips</p>
+                <p>Complete your profile to improve account recovery and notification accuracy.</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 space-y-2">
+                <p className="font-bold text-slate-800">Quick Actions</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => copyText(settings.profile.email, 'Email')} className="h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50">Copy Email</button>
+                  <button onClick={() => copyText(`${settings.profile.firstName} ${settings.profile.lastName}`.trim(), 'Name')} className="h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50">Copy Name</button>
+                </div>
+                <button onClick={exportProfileCard} className="w-full h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50">Export Profile Card</button>
+              </div>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-4">
+              <SlidersHorizontal size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Preferences</h2>
+            </div>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <select disabled={!editing} value={currency} onChange={(e) => { setCurrency(e.target.value); update('preferences', 'defaultCurrency', e.target.value); }} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="INR">INR</option><option value="USD">USD</option></select>
+              <select disabled={!editing} value={settings.preferences.defaultLanding} onChange={(e) => update('preferences', 'defaultLanding', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Dashboard">Dashboard</option><option value="Opportunities">Opportunities</option><option value="Clients">Clients</option></select>
+              <select disabled={!editing} value={settings.preferences.dateFormat} onChange={(e) => update('preferences', 'dateFormat', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="DD/MM/YYYY">DD/MM/YYYY</option><option value="MM/DD/YYYY">MM/DD/YYYY</option><option value="YYYY-MM-DD">YYYY-MM-DD</option></select>
+              <select disabled={!editing} value={settings.preferences.numberFormat} onChange={(e) => update('preferences', 'numberFormat', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="Indian">Indian (12,34,567)</option><option value="International">International (1,234,567)</option></select>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-bold text-slate-800">Preview</p>
+                <div className="text-sm text-slate-700">Date: <span className="font-bold">{formatDatePreview}</span></div>
+                <div className="text-sm text-slate-700">Number: <span className="font-bold">{formatNumberPreview}</span></div>
+                <div className="text-sm text-slate-700">Currency: <span className="font-bold">{currency}</span></div>
+              </div>
+
+              <button
+                onClick={savePreferencePreset}
+                className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50"
+              >
+                Save As Personal Preset
+              </button>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-bold text-slate-800">Quick Presets</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => {
+                      setCurrency('INR');
+                      update('preferences', 'defaultCurrency', 'INR');
+                      update('preferences', 'dateFormat', 'DD/MM/YYYY');
+                      update('preferences', 'numberFormat', 'Indian');
+                    }}
+                    className="h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50"
+                  >
+                    India
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCurrency('USD');
+                      update('preferences', 'defaultCurrency', 'USD');
+                      update('preferences', 'dateFormat', 'MM/DD/YYYY');
+                      update('preferences', 'numberFormat', 'International');
+                    }}
+                    className="h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50"
+                  >
+                    Global
+                  </button>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-sm font-bold text-slate-800">Saved Presets</p>
+                <div className="space-y-2">
+                  {(settings.preferences.savedPresets || []).slice(0, 3).map((preset, idx) => (
+                    <button
+                      key={`${preset.name}-${idx}`}
+                      onClick={() => {
+                        update('preferences', 'defaultCurrency', preset.defaultCurrency);
+                        setCurrency(preset.defaultCurrency);
+                        update('preferences', 'defaultLanding', preset.defaultLanding);
+                        update('preferences', 'dateFormat', preset.dateFormat);
+                        update('preferences', 'numberFormat', preset.numberFormat);
+                        addToast(`Applied preset: ${preset.name}`, 'success');
+                      }}
+                      className="w-full h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50 text-left px-2"
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                  {(settings.preferences.savedPresets || []).length === 0 && (
+                    <p className="text-xs text-slate-500">No saved presets yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-3">
+              <KeyRound size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Password & Access</h2>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900 mb-3">Use a strong password and rotate it periodically.</div>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <input type="password" disabled={!editing} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Current Password" />
+              <input type="password" disabled={!editing} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="New Password" />
+              <input type="password" disabled={!editing} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Confirm Password" />
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={changePassword} disabled={!editing} className="h-10 rounded-xl bg-[#0b5cab] text-white text-sm font-bold hover:bg-[#0d6dcc] disabled:opacity-50">Update</button>
+                <button onClick={resetPassword} disabled={!editing} className="h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 disabled:opacity-50">Reset</button>
+              </div>
+              <div className="rounded-xl border border-slate-200 p-3">
+                <p className="text-sm font-bold text-slate-700 mb-2">Active Sessions</p>
+                <div className="space-y-2">
+                  {(settings.security.sessions || []).map((s) => <div key={s.sessionId} className="flex items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
+                    <div className="min-w-0">
+                      <p className="text-sm font-bold text-slate-900 truncate">{s.device}{s.isCurrent ? ' (Current)' : ''}</p>
+                      <p className="text-xs text-slate-600 truncate">{s.location}</p>
+                    </div>
+                    {!s.isCurrent && <button onClick={() => revokeSession(s.sessionId)} disabled={!editing} className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-50">Sign out</button>}
+                  </div>)}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                <p className="font-bold text-slate-800 mb-1">Password Strength Checklist</p>
+                <ul className="space-y-1 text-slate-700">
+                  <li>{passwordForm.newPassword.length >= 8 ? '✓' : '•'} Minimum 8 characters</li>
+                  <li>{/[A-Z]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one uppercase letter</li>
+                  <li>{/[0-9]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one number</li>
+                </ul>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
+                <p className="font-bold text-slate-800">Session Controls</p>
+                <p className="text-slate-700">Total sessions: {totalSessions} | Other devices: {otherSessions}</p>
+                <button
+                  disabled={!editing || otherSessions === 0}
+                  onClick={async () => {
+                    const targets = (settings.security.sessions || []).filter((s) => !s.isCurrent);
+                    for (const item of targets) {
+                      // Keep existing revoke flow for each session.
+                      // eslint-disable-next-line no-await-in-loop
+                      await revokeSession(item.sessionId);
+                    }
+                  }}
+                  className="w-full h-9 rounded-lg border border-slate-300 bg-white font-semibold hover:bg-slate-50 disabled:opacity-50"
+                >
+                  Sign Out All Other Devices
+                </button>
+              </div>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+          <section className="relative overflow-hidden rounded-[34px] border-[3px] border-slate-900 bg-white p-4 shadow-lg h-[700px] flex flex-col">
+            <div className="pointer-events-none absolute -left-[3px] top-28 h-12 w-1.5 rounded-r bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-24 h-10 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="pointer-events-none absolute -right-[3px] top-40 h-14 w-1.5 rounded-l bg-slate-300/80" />
+            <div className="mx-auto mb-3 h-5 w-24 rounded-full bg-slate-900" />
+            <div className="flex items-center gap-2 mb-4">
+              <ShieldCheck size={17} className="text-slate-700" />
+              <h2 className="text-base font-extrabold text-slate-900">Workspace</h2>
+            </div>
+            <div className="space-y-3 flex-1 overflow-y-auto pr-1">
+              <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">Role: <span className="font-bold">{user?.role || 'Unknown role'}</span></div>
+              <select disabled={!editing} value={settings.workspace.autoLogout} onChange={(e) => update('workspace', 'autoLogout', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="15m">15 minutes</option><option value="30m">30 minutes</option><option value="1h">1 hour</option><option value="8h">8 hours</option></select>
+              <label className="rounded-xl border border-slate-300 bg-white px-3 h-10 flex items-center justify-between text-[15px] font-semibold text-slate-700"><span>Require two-factor authentication</span><input type="checkbox" disabled={!editing} checked={settings.workspace.enableTwoFactor} onChange={(e) => update('workspace', 'enableTwoFactor', e.target.checked)} /></label>
+              <button onClick={() => addToast('Data export request queued.', 'info')} className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Download size={14} />Export My Data</button>
+              <button onClick={syncLocale} className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Globe2 size={14} />Sync Locale</button>
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
+                <p className="text-sm font-bold text-rose-700 inline-flex items-center gap-1.5"><AlertTriangle size={13} />Danger Zone</p>
+                <p className="text-sm text-rose-600 mt-1">Sensitive action. Admin confirmation may be required.</p>
+                <button onClick={() => addToast('Request submitted to deactivate account. Admin review required.', 'warning')} className="mt-2 h-9 px-3 rounded-lg bg-rose-600 text-white text-sm font-bold hover:bg-rose-700">Request Deactivation</button>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                <p className="font-bold text-slate-800 mb-1">Workspace Status</p>
+                <p>Last locale sync: {settings.workspace.lastLocaleSyncAt ? new Date(settings.workspace.lastLocaleSyncAt).toLocaleString() : 'Not synced yet'}</p>
+              </div>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
+                <p className="font-bold text-slate-800">Work Preferences</p>
+                <label className="block">
+                  <span className="text-slate-700 font-medium">Working hours</span>
+                  <select value={settings.workspace.workingHours || '09:00-18:00'} onChange={(e) => update('workspace', 'workingHours', e.target.value)} className="mt-1 w-full h-9 rounded-lg border border-slate-300 bg-white px-2 font-medium">
+                    <option value="09:00-18:00">09:00 - 18:00</option>
+                    <option value="10:00-19:00">10:00 - 19:00</option>
+                    <option value="Flexible">Flexible</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-slate-700 font-medium">Alert mode</span>
+                  <select value={settings.workspace.alertMode || 'Balanced'} onChange={(e) => update('workspace', 'alertMode', e.target.value)} className="mt-1 w-full h-9 rounded-lg border border-slate-300 bg-white px-2 font-medium">
+                    <option value="Balanced">Balanced</option>
+                    <option value="Important Only">Important Only</option>
+                    <option value="All Alerts">All Alerts</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div className="pt-3">
+              <div className="mx-auto h-1.5 w-28 rounded-full bg-slate-900" />
+            </div>
+          </section>
+
+      </main>
+    </div>
+  </div>;
+}

@@ -18,10 +18,12 @@ const protect = async (req, res, next) => {
                     role: 'Delivery Team',
                     creatorCode: 'D1'
                 };
+                req.sessionId = 'dev-mode-session';
                 return next();
             }
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.sessionId = decoded?.sid || null;
 
             req.user = await User.findById(decoded.id).select('-password');
 
