@@ -320,22 +320,26 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
 
         // Check Contingency
         if (validTriggers.includes('contingency')) {
-            if (contingencyPercent <= 5) {
+            if (contingencyPercent < 5) {
                 if (!businessHead) return res.status(400).json({ message: 'No approver found for Business Head' });
                 approvalRequests.push({
                     level: 'Business Head',
                     assignedTo: businessHead._id,
-                    reason: 'Contingency <= 5%',
+                    reason: 'Contingency < 5%',
                     triggerReason: 'contingency'
                 });
             } else if (contingencyPercent < 10) {
-                if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
-                approvalRequests.push({
-                    level: 'Manager',
-                    assignedTo: manager._id,
-                    reason: 'Contingency 6-9%',
-                    triggerReason: 'contingency'
-                });
+                // If the requester is a Sales Executive, it goes to the Manager.
+                // Sales Managers and Business Heads have freedom to apply 5-15% without restriction.
+                if (req.user.role === 'Sales Executive') {
+                    if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
+                    approvalRequests.push({
+                        level: 'Manager',
+                        assignedTo: manager._id,
+                        reason: 'Contingency 5-9%',
+                        triggerReason: 'contingency'
+                    });
+                }
             }
         }
 

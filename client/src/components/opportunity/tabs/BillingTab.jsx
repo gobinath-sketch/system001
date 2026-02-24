@@ -309,14 +309,19 @@ const BillingTab = forwardRef(({
       return null;
     }
     if (type === 'contingency') {
-      if (value <= 5) return {
+      if (value < 5) return {
         level: 'Business Head',
-        range: '<= 5%'
+        range: '< 5%'
       };
-      if (value < 10) return {
-        level: 'Sales Manager',
-        range: '6-9%'
-      };
+      if (value < 10) {
+        if (user?.role === 'Sales Executive') {
+          return {
+            level: 'Sales Manager',
+            range: '5-9%'
+          };
+        }
+        return null;
+      }
       return null;
     }
     return null;
