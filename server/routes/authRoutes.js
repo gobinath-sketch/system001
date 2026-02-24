@@ -3,6 +3,8 @@ const router = express.Router();
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { randomUUID } = require('crypto');
+const { upsertLoginSession } = require('./settingsRoutes');
 
 // @route   POST /api/auth/login
 // @desc    Auth user & get token
@@ -23,18 +25,30 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ message: 'Invalid credentials' });
         }
 
+        const sessionId = randomUUID();
         const payload = {
             id: user._id,
-            role: user.role
+            role: user.role,
+            sid: sessionId
         };
 
         jwt.sign(
             payload,
             process.env.JWT_SECRET,
             { expiresIn: '12h' },
-            (err, token) => {
+            async (err, token) => {
                 if (err) throw err;
-                res.json({ token, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+                await upsertLoginSession({ userId: user._id, sessionId, req });
+                res.json({
+                    token,
+                    user: {
+                        id: user._id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role,
+                        avatarDataUrl: user.settings?.profile?.avatarDataUrl || ''
+                    }
+                });
             }
         );
     } catch (err) {

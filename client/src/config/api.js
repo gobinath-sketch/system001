@@ -63,6 +63,12 @@ export const API_ENDPOINTS = {
     gpAnalysis: '/api/reports/gp-analysis',
     vendorExpenses: '/api/reports/vendor-expenses',
   },
+  settings: {
+    me: '/api/settings/me',
+    password: '/api/settings/me/password',
+    resetPassword: '/api/settings/me/reset-password',
+    sessionById: (sessionId) => `/api/settings/me/sessions/${sessionId}`,
+  },
 };
 
 export const apiUrl = (path) => `${API_BASE}${path}`;

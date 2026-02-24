@@ -1,556 +1,187 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Download, Edit3, Globe2, KeyRound, LayoutGrid, Laptop, RotateCcw, Save, ShieldCheck, UserCircle2 } from 'lucide-react';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
-const SETTINGS_KEY_PREFIX = 'app_settings_v2';
-const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
-const MAX_AVATAR_STORAGE_BYTES = 300 * 1024;
+import { useSocket } from '../context/SocketContext';
+import { API_BASE, API_ENDPOINTS } from '../config/api';
+
 const DEFAULT_AVATAR_URL = `${import.meta.env.BASE_URL}profile-default.svg`;
-const getSettingsKey = user => {
-  const identity = user?.id || user?.email || user?.name || 'anonymous';
-  return `${SETTINGS_KEY_PREFIX}:${String(identity).toLowerCase()}`;
+const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+const defaults = (user) => ({
+  profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
+  preferences: { defaultCurrency: 'INR', defaultLanding: 'Dashboard', dateFormat: 'DD/MM/YYYY', numberFormat: 'Indian' },
+  workspace: { autoLogout: '30m', enableTwoFactor: false },
+  security: { sessions: [] }
+});
+
+const mergeSettings = (incoming, user) => {
+  const d = defaults(user);
+  return {
+    ...d,
+    ...(incoming || {}),
+    profile: { ...d.profile, ...(incoming?.profile || {}) },
+    preferences: { ...d.preferences, ...(incoming?.preferences || {}) },
+    workspace: { ...d.workspace, ...(incoming?.workspace || {}) },
+    security: { ...d.security, ...(incoming?.security || {}) }
+  };
 };
-const isQuotaExceededError = error => error?.name === 'QuotaExceededError' || error?.code === 22 || error?.code === 1014;
-const estimateDataUrlSize = dataUrl => {
-  const payload = (dataUrl || '').split(',')[1] || '';
-  return Math.ceil(payload.length * 3 / 4);
-};
-const fileToDataUrl = file => new Promise((resolve, reject) => {
+
+const toDataUrl = (file) => new Promise((resolve, reject) => {
   const reader = new FileReader();
   reader.onload = () => resolve(String(reader.result || ''));
   reader.onerror = () => reject(new Error('Failed to read image.'));
   reader.readAsDataURL(file);
 });
-const compressAvatar = file => new Promise((resolve, reject) => {
-  const objectUrl = URL.createObjectURL(file);
-  const image = new Image();
-  image.onload = () => {
-    try {
-      const maxDimension = 256;
-      const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
-      const width = Math.max(1, Math.round(image.width * scale));
-      const height = Math.max(1, Math.round(image.height * scale));
-      const canvas = document.createElement('canvas');
-      canvas.width = width;
-      canvas.height = height;
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Image processing is not supported in this browser.');
-      context.drawImage(image, 0, 0, width, height);
-      const dataUrl = canvas.toDataURL('image/webp', 0.72);
-      resolve(dataUrl);
-    } catch (error) {
-      reject(error);
-    } finally {
-      URL.revokeObjectURL(objectUrl);
-    }
+
+export default function SettingsPage() {
+  const { user, updateUser } = useAuth();
+  const { currency, setCurrency } = useCurrency();
+  const { addToast } = useToast();
+  const { socket } = useSocket();
+  const token = useMemo(() => sessionStorage.getItem('token'), [user?.id]);
+  const auth = useMemo(() => ({ headers: { Authorization: `Bearer ${token}` } }), [token]);
+  const fileInputRef = useRef(null);
+
+  const [settings, setSettings] = useState(() => defaults(user));
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [active, setActive] = useState('profile');
+  const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const syncSettings = (next) => {
+    const merged = mergeSettings(next, user);
+    setSettings(merged);
+    if (merged?.preferences?.defaultCurrency) setCurrency(merged.preferences.defaultCurrency);
+    window.dispatchEvent(new CustomEvent('settings-updated', { detail: { settings: merged } }));
   };
-  image.onerror = () => {
-    URL.revokeObjectURL(objectUrl);
-    reject(new Error('Failed to process image.'));
-  };
-  image.src = objectUrl;
-});
-const DEFAULT_SETTINGS = user => ({
-  profile: {
-    firstName: user?.name?.split(' ')?.[0] || '',
-    lastName: user?.name?.split(' ')?.slice(1).join(' ') || '',
-    email: user?.email || '',
-    backupEmail: '',
-    phone: '',
-    designation: '',
-    department: '',
-    language: 'English',
-    timezone: 'Asia/Kolkata',
-    weekStartsOn: 'Monday',
-    avatarDataUrl: ''
-  },
-  preferences: {
-    compactTables: false,
-    reducedMotion: false,
-    defaultLanding: 'Dashboard',
-    dateFormat: 'DD/MM/YYYY',
-    numberFormat: 'Indian',
-    defaultRows: '25'
-  },
-  workspace: {
-    autoLogout: '30m',
-    enableTwoFactor: false
-  }
-});
-const loadSettings = user => {
-  const raw = localStorage.getItem(getSettingsKey(user));
-  if (!raw) return DEFAULT_SETTINGS(user);
-  try {
-    const parsed = JSON.parse(raw);
-    return {
-      ...DEFAULT_SETTINGS(user),
-      ...parsed,
-      profile: {
-        ...DEFAULT_SETTINGS(user).profile,
-        ...(parsed.profile || {})
-      },
-      preferences: {
-        ...DEFAULT_SETTINGS(user).preferences,
-        ...(parsed.preferences || {})
-      },
-      workspace: {
-        ...DEFAULT_SETTINGS(user).workspace,
-        ...(parsed.workspace || {})
+
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await axios.get(`${API_BASE}${API_ENDPOINTS.settings.me}`, auth);
+        if (!cancelled) syncSettings(res?.data?.settings || {});
+      } catch {
+        if (!cancelled) addToast('Unable to load settings from server.', 'error');
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
-  } catch {
-    return DEFAULT_SETTINGS(user);
-  }
-};
-const sectionGroups = [{
-  title: 'Personal',
-  items: [{
-    id: 'profile',
-    label: 'Profile',
-    icon: UserCircle2
-  }, {
-    id: 'preferences',
-    label: 'Preferences',
-    icon: LayoutGrid
-  }]
-}, {
-  title: 'Security',
-  items: [{
-    id: 'password',
-    label: 'Password & Access',
-    icon: KeyRound
-  }, {
-    id: 'workspace',
-    label: 'Workspace Settings',
-    icon: ShieldCheck
-  }]
-}];
-const SettingsPage = () => {
-  const {
-    user
-  } = useAuth();
-  const {
-    currency,
-    setCurrency
-  } = useCurrency();
-  const {
-    addToast
-  } = useToast();
-  const fileInputRef = useRef(null);
-  const settingsKey = useMemo(() => getSettingsKey(user), [user?.id, user?.email, user?.name]);
-  const [settings, setSettings] = useState(() => loadSettings(user));
-  const [activeSection, setActiveSection] = useState('profile');
-  const [isSaving, setIsSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  });
-  const [sessions, setSessions] = useState([{
-    id: 1,
-    device: 'Windows - Chrome',
-    location: 'Chennai, IN',
-    lastSeen: 'Active now'
-  }, {
-    id: 2,
-    device: 'Android App',
-    location: 'Chennai, IN',
-    lastSeen: '2 hours ago'
-  }]);
-  const persistSettings = currentSettings => {
-    try {
-      localStorage.setItem(settingsKey, JSON.stringify(currentSettings));
-      return {
-        ok: true,
-        avatarRemoved: false
-      };
-    } catch (error) {
-      if (!isQuotaExceededError(error) || !currentSettings?.profile?.avatarDataUrl) {
-        return {
-          ok: false
-        };
-      }
-      const withoutAvatar = {
-        ...currentSettings,
-        profile: {
-          ...currentSettings.profile,
-          avatarDataUrl: ''
-        }
-      };
-      try {
-        localStorage.setItem(settingsKey, JSON.stringify(withoutAvatar));
-        setSettings(withoutAvatar);
-        return {
-          ok: true,
-          avatarRemoved: true
-        };
-      } catch {
-        return {
-          ok: false
-        };
-      }
-    }
-  };
-  const saveAll = () => {
-    setIsSaving(true);
-    const result = persistSettings(settings);
-    if (!result.ok) {
-      setIsSaving(false);
-      addToast('Unable to save settings. Browser storage is full.', 'error');
-      return;
-    }
-    window.dispatchEvent(new Event('settings-updated'));
-    setTimeout(() => {
-      setIsSaving(false);
-      setIsEditing(false);
-      if (result.avatarRemoved) {
-        addToast('Settings saved, but profile image was removed due to browser storage limits.', 'warning');
-        return;
-      }
-      addToast('Settings saved successfully.', 'success');
-    }, 300);
-  };
+    load();
+    return () => { cancelled = true; };
+  }, [token, user?.id]);
+
   useEffect(() => {
-    setSettings(loadSettings(user));
-  }, [settingsKey, user]);
-  const handleEditSave = () => {
-    if (!isEditing) {
-      setIsEditing(true);
-      return;
+    if (!socket) return undefined;
+    const onSettingsUpdated = (payload) => syncSettings(payload?.settings || {});
+    socket.on('settings_updated', onSettingsUpdated);
+    return () => socket.off('settings_updated', onSettingsUpdated);
+  }, [socket, user?.id, setCurrency]);
+
+  const update = (section, key, value) => setSettings((prev) => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
+
+  const saveAll = async () => {
+    setSaving(true);
+    try {
+      const payload = { ...settings, preferences: { ...settings.preferences, defaultCurrency: currency } };
+      const res = await axios.put(`${API_BASE}${API_ENDPOINTS.settings.me}`, payload, auth);
+      syncSettings(res?.data?.settings || payload);
+      if (res?.data?.user && typeof updateUser === 'function') updateUser(res.data.user);
+      setEditing(false);
+      addToast('Settings saved successfully.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to save settings.', 'error');
+    } finally {
+      setSaving(false);
     }
-    saveAll();
   };
-  const updateSection = (section, field, value) => {
-    setSettings(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [field]: value
-      }
-    }));
-  };
-  const onAvatarUpload = async event => {
+
+  const onUploadAvatar = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-    if (!allowed.includes(file.type)) {
-      addToast('Please upload JPG, PNG, GIF, or WEBP image.', 'warning');
-      return;
-    }
-    if (file.size > MAX_AVATAR_UPLOAD_BYTES) {
-      addToast('Image size should be less than 8MB.', 'warning');
-      return;
-    }
+    if (file.size > MAX_AVATAR_UPLOAD_BYTES) { addToast('Image size should be less than 8MB.', 'warning'); return; }
+    try { update('profile', 'avatarDataUrl', await toDataUrl(file)); addToast('Profile picture updated.', 'success'); }
+    catch { addToast('Unable to process selected image.', 'error'); }
+    finally { event.target.value = ''; }
+  };
+
+  const changePassword = async () => {
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+    if (!currentPassword || !newPassword || !confirmPassword) return addToast('Please fill all password fields.', 'warning');
+    if (newPassword.length < 8) return addToast('New password must be at least 8 characters.', 'warning');
+    if (newPassword !== confirmPassword) return addToast('Confirm password does not match.', 'error');
     try {
-      let avatarDataUrl = await compressAvatar(file);
-      if (estimateDataUrlSize(avatarDataUrl) > MAX_AVATAR_STORAGE_BYTES) {
-        avatarDataUrl = await fileToDataUrl(file);
-      }
-      if (estimateDataUrlSize(avatarDataUrl) > MAX_AVATAR_STORAGE_BYTES) {
-        addToast('Image is too large to store in browser settings. Use a smaller image.', 'warning');
-        return;
-      }
-      updateSection('profile', 'avatarDataUrl', avatarDataUrl);
-      addToast('Profile picture updated.', 'success');
-    } catch {
-      addToast('Unable to process selected image.', 'error');
-    } finally {
-      event.target.value = '';
-    }
+      await axios.put(`${API_BASE}${API_ENDPOINTS.settings.password}`, { currentPassword, newPassword, confirmPassword }, auth);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      addToast('Password updated successfully.', 'success');
+    } catch (e) { addToast(e?.response?.data?.message || 'Unable to update password.', 'error'); }
   };
-  const removeAvatar = () => {
-    if (!settings.profile.avatarDataUrl) return;
-    if (!window.confirm('Remove profile picture?')) return;
-    updateSection('profile', 'avatarDataUrl', '');
-    addToast('Profile picture removed.', 'info');
+
+  const resetPassword = async () => {
+    try { await axios.post(`${API_BASE}${API_ENDPOINTS.settings.resetPassword}`, {}, auth); addToast('Password reset request sent.', 'info'); }
+    catch (e) { addToast(e?.response?.data?.message || 'Unable to submit reset request.', 'error'); }
   };
-  const updatePassword = () => {
-    const {
-      currentPassword,
-      newPassword,
-      confirmPassword
-    } = passwordForm;
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      addToast('Please fill all password fields.', 'warning');
-      return;
-    }
-    if (newPassword.length < 8) {
-      addToast('New password must be at least 8 characters.', 'warning');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      addToast('Confirm password does not match.', 'error');
-      return;
-    }
-    if (!window.confirm('Do you want to update your password now?')) return;
-    setPasswordForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    });
-    addToast('Password updated successfully.', 'success');
+
+  const revokeSession = async (sessionId) => {
+    try {
+      const res = await axios.delete(`${API_BASE}${API_ENDPOINTS.settings.sessionById(sessionId)}`, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Session removed.', 'success');
+    } catch (e) { addToast(e?.response?.data?.message || 'Unable to remove session.', 'error'); }
   };
-  const resetPassword = () => {
-    if (!window.confirm('Send a password reset link to your email?')) return;
-    addToast(`Reset link sent to ${settings.profile.email || user?.email || 'your email'}.`, 'info');
-  };
-  const revokeSession = id => {
-    if (!window.confirm('Sign out this device session?')) return;
-    setSessions(prev => prev.filter(s => s.id !== id));
-    addToast('Session removed.', 'success');
-  };
-  return <div className="p-3 sm:p-6 bg-bg-page h-full">
-            <div className="max-w-7xl mx-auto">
-                <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                    <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] min-h-[74vh]">
-                        <aside className="border-b lg:border-b-0 lg:border-r border-gray-200 bg-gray-50/70 p-4">
-                            <h1 className="text-xl font-bold text-gray-900 mb-4">Settings</h1>
-                            {sectionGroups.map(group => <div key={group.title} className="mb-5">
-                                    <p className="text-[11px] uppercase tracking-wide text-gray-500 mb-2">{group.title}</p>
-                                    <div className="space-y-1">
-                                        {group.items.map(item => {
-                  const Icon = item.icon;
-                  const active = activeSection === item.id;
-                  return <button key={item.id} onClick={() => setActiveSection(item.id)} className={`w-full text-left rounded-lg px-3 py-2.5 flex items-center gap-2 transition ${active ? 'bg-white border border-gray-200 shadow-sm text-gray-900' : 'text-gray-700 hover:bg-white'}`}>
-                                                    <Icon size={15} />
-                                                    <span className="text-sm font-medium">{item.label}</span>
-                                                </button>;
-                })}
-                                    </div>
-                                </div>)}
-                        </aside>
 
-                        <main className="p-4 sm:p-6 lg:p-8">
-                            <div className="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                <div>
-                                    <h2 className="text-2xl font-bold text-gray-900">
-                                        {sectionGroups.flatMap(g => g.items).find(i => i.id === activeSection)?.label || 'Settings'}
-                                    </h2>
-                                </div>
-                                <button onClick={handleEditSave} className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold transition ${isEditing ? 'bg-primary-blue hover:bg-primary-blue-light' : 'bg-green-600 hover:bg-green-700'}`}>
-                                    {isEditing ? <Save size={16} /> : <Edit3 size={16} />}
-                                    {isEditing ? isSaving ? 'Saving...' : 'Save Changes' : 'Edit Changes'}
-                                </button>
-                            </div>
+  if (loading) return <div className="p-6">Loading settings...</div>;
 
-                            {activeSection === 'profile' && <section className="space-y-5">
-                                    <div className="rounded-xl border border-gray-200 p-4">
-                                        <div className="flex flex-wrap items-center gap-4">
-                                            <div className="w-20 h-20 rounded-md overflow-hidden bg-gray-200 border border-gray-300 shrink-0">
-                                                <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-full h-full object-cover" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="mt-2 flex flex-wrap items-center gap-3">
-                                                    <button onClick={() => fileInputRef.current?.click()} disabled={!isEditing} aria-label="Upload profile picture" title="Upload profile picture" className="inline-flex items-center justify-center h-10 w-10 text-gray-900 hover:opacity-80 disabled:opacity-50">
-                                                <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-6 h-6 object-contain scale-125 origin-center" />
-                                                    </button>
-                                                    <button onClick={removeAvatar} disabled={!isEditing} aria-label="Remove profile picture" title="Remove profile picture" className="inline-flex items-center justify-center h-10 w-10 text-gray-700 hover:opacity-80 disabled:opacity-50">
-                                                <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-6 h-6 object-contain scale-125 origin-center" />
-                                                    </button>
-                                                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!isEditing} onChange={onAvatarUpload} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+  return <div className="p-4 sm:p-6 bg-bg-page h-full">
+    <div className="max-w-5xl mx-auto rounded-xl border bg-white p-4 sm:p-6">
+      <div className="flex flex-wrap gap-2 mb-5">
+        {['profile', 'preferences', 'password', 'workspace'].map((id) => <button key={id} onClick={() => setActive(id)} className={`px-3 py-1.5 rounded-md text-sm ${active === id ? 'bg-primary-blue text-white' : 'border text-gray-700'}`}>{id}</button>)}
+      </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">First Name</span>
-                                            <input value={settings.profile.firstName} onChange={e => updateSection('profile', 'firstName', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Last Name</span>
-                                            <input value={settings.profile.lastName} onChange={e => updateSection('profile', 'lastName', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block md:col-span-2">
-                                            <span className="text-xs text-gray-500">Primary Email</span>
-                                            <div className="mt-1 flex items-center gap-2">
-                                                <input value={settings.profile.email} onChange={e => updateSection('profile', 'email', e.target.value)} disabled={!isEditing} className="w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                                <button onClick={() => addToast('Email change flow can be linked with backend verification.', 'info')} disabled={!isEditing} className="h-11 px-3 rounded-lg border border-gray-300 text-sm font-medium hover:bg-gray-50">
-                                                    Change
-                                                </button>
-                                            </div>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Language</span>
-                                            <select value={settings.profile.language} onChange={e => updateSection('profile', 'language', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="English">English</option>
-                                                <option value="Kannada">Kannada</option>
-                                                <option value="Telugu">Telugu</option>
-                                                <option value="Hindi">Hindi</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Preferred Timezone</span>
-                                            <select value={settings.profile.timezone} onChange={e => updateSection('profile', 'timezone', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Asia/Kolkata">Asia/Kolkata</option>
-                                                <option value="UTC">UTC</option>
-                                                <option value="America/New_York">America/New_York</option>
-                                                <option value="Europe/London">Europe/London</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Week Starts On</span>
-                                            <select value={settings.profile.weekStartsOn} onChange={e => updateSection('profile', 'weekStartsOn', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Monday">Monday</option>
-                                                <option value="Sunday">Sunday</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </section>}
+      <div className="mb-4">
+        <button onClick={() => editing ? saveAll() : setEditing(true)} className="px-4 py-2 rounded-lg bg-primary-blue text-white">{editing ? (saving ? 'Saving...' : 'Save Changes') : 'Edit Changes'}</button>
+      </div>
 
-                            {activeSection === 'preferences' && <section className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Default Currency</span>
-                                            <select value={currency} onChange={e => setCurrency(e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="INR">INR</option>
-                                                <option value="USD">USD</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Default Landing Page</span>
-                                            <select value={settings.preferences.defaultLanding} onChange={e => updateSection('preferences', 'defaultLanding', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Dashboard">Dashboard</option>
-                                                <option value="Opportunities">Opportunities</option>
-                                                <option value="Clients">Clients</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Date Format</span>
-                                            <select value={settings.preferences.dateFormat} onChange={e => updateSection('preferences', 'dateFormat', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
-                                                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                                <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                            </select>
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Number Format</span>
-                                            <select value={settings.preferences.numberFormat} onChange={e => updateSection('preferences', 'numberFormat', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="Indian">Indian (12,34,567)</option>
-                                                <option value="International">International (1,234,567)</option>
-                                            </select>
-                                        </label>
-                                    </div>
-                                </section>}
+      {active === 'profile' && <div className="space-y-3">
+        <div className="flex items-center gap-3">
+          <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-20 h-20 rounded-md border object-cover" />
+          <button onClick={() => fileInputRef.current?.click()} disabled={!editing} className="px-3 py-2 border rounded-md">Upload</button>
+          <button onClick={() => update('profile', 'avatarDataUrl', '')} disabled={!editing} className="px-3 py-2 border rounded-md">Remove</button>
+          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!editing} onChange={onUploadAvatar} />
+        </div>
+        <input disabled={!editing} value={settings.profile.firstName} onChange={(e) => update('profile', 'firstName', e.target.value)} className="w-full border rounded-md p-2" placeholder="First Name" />
+        <input disabled={!editing} value={settings.profile.lastName} onChange={(e) => update('profile', 'lastName', e.target.value)} className="w-full border rounded-md p-2" placeholder="Last Name" />
+        <input disabled={!editing} value={settings.profile.email} onChange={(e) => update('profile', 'email', e.target.value)} className="w-full border rounded-md p-2" placeholder="Email" />
+        <select disabled={!editing} value={settings.profile.language} onChange={(e) => update('profile', 'language', e.target.value)} className="w-full border rounded-md p-2"><option value="English">English</option><option value="Kannada">Kannada</option><option value="Telugu">Telugu</option><option value="Hindi">Hindi</option></select>
+        <select disabled={!editing} value={settings.profile.timezone} onChange={(e) => update('profile', 'timezone', e.target.value)} className="w-full border rounded-md p-2"><option value="Asia/Kolkata">Asia/Kolkata</option><option value="UTC">UTC</option><option value="America/New_York">America/New_York</option><option value="Europe/London">Europe/London</option></select>
+        <select disabled={!editing} value={settings.profile.weekStartsOn} onChange={(e) => update('profile', 'weekStartsOn', e.target.value)} className="w-full border rounded-md p-2"><option value="Monday">Monday</option><option value="Sunday">Sunday</option></select>
+      </div>}
 
+      {active === 'preferences' && <div className="space-y-3">
+        <select disabled={!editing} value={currency} onChange={(e) => { setCurrency(e.target.value); update('preferences', 'defaultCurrency', e.target.value); }} className="w-full border rounded-md p-2"><option value="INR">INR</option><option value="USD">USD</option></select>
+        <select disabled={!editing} value={settings.preferences.defaultLanding} onChange={(e) => update('preferences', 'defaultLanding', e.target.value)} className="w-full border rounded-md p-2"><option value="Dashboard">Dashboard</option><option value="Opportunities">Opportunities</option><option value="Clients">Clients</option></select>
+        <select disabled={!editing} value={settings.preferences.dateFormat} onChange={(e) => update('preferences', 'dateFormat', e.target.value)} className="w-full border rounded-md p-2"><option value="DD/MM/YYYY">DD/MM/YYYY</option><option value="MM/DD/YYYY">MM/DD/YYYY</option><option value="YYYY-MM-DD">YYYY-MM-DD</option></select>
+        <select disabled={!editing} value={settings.preferences.numberFormat} onChange={(e) => update('preferences', 'numberFormat', e.target.value)} className="w-full border rounded-md p-2"><option value="Indian">Indian (12,34,567)</option><option value="International">International (1,234,567)</option></select>
+      </div>}
 
+      {active === 'password' && <div className="space-y-3">
+        <input type="password" disabled={!editing} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))} className="w-full border rounded-md p-2" placeholder="Current Password" />
+        <input type="password" disabled={!editing} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} className="w-full border rounded-md p-2" placeholder="New Password" />
+        <input type="password" disabled={!editing} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="w-full border rounded-md p-2" placeholder="Confirm Password" />
+        <div className="flex gap-2"><button onClick={changePassword} disabled={!editing} className="px-3 py-2 bg-primary-blue text-white rounded-md">Update Password</button><button onClick={resetPassword} disabled={!editing} className="px-3 py-2 border rounded-md">Reset Password</button></div>
+        <div className="space-y-2">{(settings.security.sessions || []).map((s) => <div key={s.sessionId} className="flex items-center justify-between border rounded-md p-2"><div><p className="text-sm font-semibold">{s.device}{s.isCurrent ? ' (Current)' : ''}</p><p className="text-xs text-gray-500">{s.location}</p></div>{!s.isCurrent && <button onClick={() => revokeSession(s.sessionId)} disabled={!editing} className="text-red-600 text-sm">Sign out</button>}</div>)}</div>
+      </div>}
 
-                            {activeSection === 'password' && <section className="space-y-5">
-                                    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                        Use a strong password and rotate it periodically for better account security.
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block md:col-span-2">
-                                            <span className="text-xs text-gray-500">Current Password</span>
-                                            <input type="password" value={passwordForm.currentPassword} onChange={e => setPasswordForm(p => ({
-                    ...p,
-                    currentPassword: e.target.value
-                  }))} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">New Password</span>
-                                            <input type="password" value={passwordForm.newPassword} onChange={e => setPasswordForm(p => ({
-                    ...p,
-                    newPassword: e.target.value
-                  }))} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Confirm Password</span>
-                                            <input type="password" value={passwordForm.confirmPassword} onChange={e => setPasswordForm(p => ({
-                    ...p,
-                    confirmPassword: e.target.value
-                  }))} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3" />
-                                        </label>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        <button onClick={updatePassword} disabled={!isEditing} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-blue text-white font-semibold hover:bg-primary-blue-light">
-                                            <KeyRound size={16} />
-                                            Update Password
-                                        </button>
-                                        <button onClick={resetPassword} disabled={!isEditing} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50">
-                                            <RotateCcw size={16} />
-                                            Reset Password
-                                        </button>
-                                    </div>
-
-                                    <div className="rounded-lg border border-gray-200 p-4">
-                                        <h3 className="text-sm font-semibold text-gray-900 mb-3">Active Sessions</h3>
-                                        <div className="space-y-2">
-                                            {sessions.map(session => <div key={session.id} className="flex items-center justify-between border border-gray-200 rounded-lg px-3 py-2.5">
-                                                    <div className="flex items-center gap-2">
-                                                        <Laptop size={15} className="text-gray-600" />
-                                                        <div>
-                                                            <p className="text-sm font-semibold text-gray-800">{session.device}</p>
-                                                            <p className="text-xs text-gray-500">{session.location} â€¢ {session.lastSeen}</p>
-                                                        </div>
-                                                    </div>
-                                                    <button onClick={() => revokeSession(session.id)} disabled={!isEditing} className="text-xs font-semibold text-red-600 hover:underline">
-                                                        Sign out
-                                                    </button>
-                                                </div>)}
-                                        </div>
-                                    </div>
-                                </section>}
-
-                            {activeSection === 'workspace' && <section className="space-y-4">
-                                    <div className="border border-blue-100 bg-blue-50 rounded-lg p-3 text-sm text-blue-900 flex items-start gap-2">
-                                        <ShieldCheck size={16} className="mt-0.5 shrink-0" />
-                                        <div>
-                                            <p className="font-semibold">Role & Access</p>
-                                            <p>{user?.role || 'Unknown role'}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <label className="block">
-                                            <span className="text-xs text-gray-500">Auto Logout</span>
-                                            <select value={settings.workspace.autoLogout} onChange={e => updateSection('workspace', 'autoLogout', e.target.value)} disabled={!isEditing} className="mt-1 w-full h-11 border border-gray-300 rounded-lg px-3">
-                                                <option value="15m">15 minutes</option>
-                                                <option value="30m">30 minutes</option>
-                                                <option value="1h">1 hour</option>
-                                                <option value="8h">8 hours</option>
-                                            </select>
-                                        </label>
-                                        <div className="block">
-                                            <span className="text-xs text-transparent select-none">Auto Logout</span>
-                                            <label className="mt-1 flex items-center justify-between border border-gray-300 rounded-lg px-3 h-11">
-                                                <span className="text-sm font-medium text-gray-700">Require two-factor authentication</span>
-                                                <input type="checkbox" checked={settings.workspace.enableTwoFactor} onChange={e => updateSection('workspace', 'enableTwoFactor', e.target.checked)} disabled={!isEditing} />
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <button onClick={() => addToast('Data export has been queued. You will receive an email shortly.', 'info')} className="h-11 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50">
-                                            <Download size={16} />
-                                            Export My Data
-                                        </button>
-                                        <button onClick={() => addToast('Locale sync updated for your workspace.', 'success')} className="h-11 inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 font-semibold text-gray-700 hover:bg-gray-50">
-                                            <Globe2 size={16} />
-                                            Sync Locale Settings
-                                        </button>
-                                    </div>
-
-                                    <div className="border border-red-200 bg-red-50 rounded-lg p-3">
-                                        <p className="text-sm font-semibold text-red-700 inline-flex items-center gap-2">
-                                            <AlertTriangle size={14} />
-                                            Danger Zone
-                                        </p>
-                                        <p className="text-xs text-red-600 mt-1">These actions are sensitive and may require admin confirmation.</p>
-                                        <button onClick={() => addToast('Request submitted to deactivate account. Admin review required.', 'warning')} className="mt-3 px-3 py-1.5 rounded-md bg-red-600 text-white text-sm font-semibold hover:bg-red-700">
-                                            Request Account Deactivation
-                                        </button>
-                                    </div>
-                                </section>}
-                        </main>
-                    </div>
-                </div>
-            </div>
-        </div>;
-};
-export default SettingsPage;
+      {active === 'workspace' && <div className="space-y-3">
+        <select disabled={!editing} value={settings.workspace.autoLogout} onChange={(e) => update('workspace', 'autoLogout', e.target.value)} className="w-full border rounded-md p-2"><option value="15m">15 minutes</option><option value="30m">30 minutes</option><option value="1h">1 hour</option><option value="8h">8 hours</option></select>
+        <label className="flex items-center gap-2"><input type="checkbox" disabled={!editing} checked={settings.workspace.enableTwoFactor} onChange={(e) => update('workspace', 'enableTwoFactor', e.target.checked)} /><span>Require two-factor authentication</span></label>
+        <div className="flex gap-2"><button onClick={() => addToast('Data export request queued.', 'info')} className="px-3 py-2 border rounded-md">Export My Data</button><button onClick={() => addToast('Locale sync updated.', 'success')} className="px-3 py-2 border rounded-md">Sync Locale Settings</button></div>
+      </div>}
+    </div>
+  </div>;
+}

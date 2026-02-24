@@ -54,6 +54,15 @@ export const AuthProvider = ({
       });
     }
   };
+  const updateUser = patch => {
+    if (!user) return;
+    const nextUser = {
+      ...user,
+      ...(patch || {})
+    };
+    setUser(nextUser);
+    sessionStorage.setItem('user', JSON.stringify(nextUser));
+  };
   const logout = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
@@ -64,6 +73,7 @@ export const AuthProvider = ({
     login,
     logout,
     updateUserRole,
+    updateUser,
     loading
   }}>
             {!loading && children}

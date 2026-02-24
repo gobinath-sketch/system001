@@ -28,30 +28,22 @@ const Sidebar = ({
   const location = useLocation();
   const navigate = useNavigate();
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const settingsKey = `app_settings_v2:${String(user?.id || user?.email || user?.name || 'anonymous').toLowerCase()}`;
+  const [avatarUrl, setAvatarUrl] = useState(user?.avatarDataUrl || '');
   useEffect(() => {
-    const loadAvatar = () => {
-      try {
-        const raw = localStorage.getItem(settingsKey);
-        if (!raw) {
-          setAvatarUrl('');
-          return;
-        }
-        const parsed = JSON.parse(raw);
-        setAvatarUrl(parsed?.profile?.avatarDataUrl || '');
-      } catch {
-        setAvatarUrl('');
+    setAvatarUrl(user?.avatarDataUrl || '');
+  }, [user?.avatarDataUrl]);
+  useEffect(() => {
+    const loadAvatar = event => {
+      const nextAvatar = event?.detail?.settings?.profile?.avatarDataUrl;
+      if (typeof nextAvatar === 'string') {
+        setAvatarUrl(nextAvatar);
       }
     };
-    loadAvatar();
     window.addEventListener('settings-updated', loadAvatar);
-    window.addEventListener('storage', loadAvatar);
     return () => {
       window.removeEventListener('settings-updated', loadAvatar);
-      window.removeEventListener('storage', loadAvatar);
     };
-  }, [settingsKey]);
+  }, []);
   const handleLogout = () => {
     logout();
     navigate('/login', {
