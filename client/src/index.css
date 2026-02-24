@@ -163,26 +163,23 @@ svg {
 /* Hide Number Input Arrows */
 .no-arrows::-webkit-outer-spin-button,
 .no-arrows::-webkit-inner-spin-button {
-  appearance: none;
   -webkit-appearance: none;
   margin: 0;
 }
 
 .no-arrows {
-  appearance: textfield;
   -moz-appearance: textfield;
 }
 
 /* Globally hide spin buttons for all number inputs */
 input[type="number"]::-webkit-outer-spin-button,
 input[type="number"]::-webkit-inner-spin-button {
-  appearance: none;
   -webkit-appearance: none;
   margin: 0;
 }
 
 input[type="number"] {
-  appearance: textfield;
+
   -moz-appearance: textfield;
 }
 
