@@ -11,9 +11,10 @@ const { upsertLoginSession } = require('./settingsRoutes');
 // @access  Public
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
+    const sanitizedEmail = email ? email.trim().toLowerCase() : '';
 
     try {
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ email: sanitizedEmail });
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid credentials' });
@@ -37,8 +38,16 @@ router.post('/login', async (req, res) => {
             process.env.JWT_SECRET,
             { expiresIn: '12h' },
             async (err, token) => {
-                if (err) throw err;
-                await upsertLoginSession({ userId: user._id, sessionId, req });
+                if (err) {
+                    console.error('JWT Sign Error:', err);
+                    return res.status(500).json({ message: 'Token generation failed' });
+                }
+                try {
+                    await upsertLoginSession({ userId: user._id, sessionId, req });
+                } catch (sessionErr) {
+                    console.error('Failed to upsert login session, continuing login anyway:', sessionErr);
+                }
+
                 res.json({
                     token,
                     user: {

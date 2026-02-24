@@ -37,12 +37,18 @@ const EscalationWidget = ({
     // Let's assume the parent component handles the logic of "Actable" items or we just show them and handle error on duplicate escalate.
   });
   const handlePush = async opp => {
-    calculateGP(opp);
-    opp.commonDetails?.tov || 0;
-    opp.financials?.totalExpense || 0;
+    const gp = calculateGP(opp);
+    const tov = opp.commonDetails?.tov || 0;
+    const totalExp = opp.financials?.totalExpense || 0;
     try {
       const token = sessionStorage.getItem('token');
-      await axios.post(`${API_BASE}/api/opportunities/${opp._id}/escalate`, {}, {
+      await axios.post(`${API_BASE}/api/approvals/escalate`, {
+        opportunityId: opp._id,
+        gpPercent: gp,
+        tov: tov,
+        totalExpense: totalExp,
+        contingencyPercent: opp.expenses?.contingencyPercent ?? 15
+      }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -55,25 +61,25 @@ const EscalationWidget = ({
   };
   if (lowGPOpps.length === 0) return null;
   return <div className="bg-white p-6 rounded-lg shadow-sm border border-red-100">
-            <div className="flex items-center mb-4 text-red-600">
-                <AlertCircle className="mr-2" size={20} />
-                <h3 className="text-lg font-bold">GP Alert (10% - 15%)</h3>
-            </div>
-            <div className="space-y-4">
-                {lowGPOpps.map(opp => {
+    <div className="flex items-center mb-4 text-red-600">
+      <AlertCircle className="mr-2" size={20} />
+      <h3 className="text-lg font-bold">GP Alert (10% - 15%)</h3>
+    </div>
+    <div className="space-y-4">
+      {lowGPOpps.map(opp => {
         const gp = calculateGP(opp);
         return <div key={opp._id} className="border border-red-100 rounded-lg p-3 bg-red-50 flex justify-between items-center">
-                            <div>
-                                <div className="font-bold text-gray-800">{opp.opportunityNumber}</div>
-                                <div className="text-sm text-gray-600">{opp.client?.companyName}</div>
-                                <div className="text-xs font-bold text-red-600">GP: {gp.toFixed(1)}%</div>
-                            </div>
-                            <button onClick={() => handlePush(opp)} className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 flex items-center">
-                                Push to Manager <ArrowRight size={12} className="ml-1" />
-                            </button>
-                        </div>;
-      })}
-            </div>
+          <div>
+            <div className="font-bold text-gray-800">{opp.opportunityNumber}</div>
+            <div className="text-sm text-gray-600">{opp.client?.companyName}</div>
+            <div className="text-xs font-bold text-red-600">GP: {gp.toFixed(1)}%</div>
+          </div>
+          <button onClick={() => handlePush(opp)} className="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 flex items-center">
+            Push to Manager <ArrowRight size={12} className="ml-1" />
+          </button>
         </div>;
+      })}
+    </div>
+  </div>;
 };
 export default EscalationWidget;

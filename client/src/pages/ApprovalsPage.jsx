@@ -63,33 +63,30 @@ const ApprovalsPage = () => {
       addToast(err.response?.data?.message || 'Failed to approve', 'error');
     }
   };
-  const handleApprove = id => {
-    setAlertConfig({
-      isOpen: true,
-      title: 'Confirm Approval',
-      message: 'Are you sure you want to approve this opportunity?',
-      confirmText: 'Approve',
-      type: 'success',
-      onConfirm: () => {
-        setAlertConfig(prev => ({
-          ...prev,
-          isOpen: false
-        }));
-        executeApprove(id);
-      }
-    });
-  };
+  const [previewModal, setPreviewModal] = useState({
+    isOpen: false,
+    approval: null
+  });
+
   const [rejectionModal, setRejectionModal] = useState({
     isOpen: false,
     id: null,
     reason: ''
   });
-  const handleReject = id => {
+  const handleReject = () => {
+    if (!previewModal.approval) return;
     setRejectionModal({
       isOpen: true,
-      id: id,
+      id: previewModal.approval._id,
       reason: ''
     });
+    setPreviewModal({ isOpen: false, approval: null });
+  };
+  const handleApprove = () => {
+    if (!previewModal.approval) return;
+    const id = previewModal.approval._id;
+    setPreviewModal({ isOpen: false, approval: null });
+    executeApprove(id);
   };
   const confirmRejection = async () => {
     if (!rejectionModal.reason.trim()) {
@@ -136,34 +133,34 @@ const ApprovalsPage = () => {
   };
   if (loading) return <div className="p-5">Loading approvals...</div>;
   return <div className="p-5 relative">
-            <h1 className="text-3xl font-bold text-primary-blue mb-8">Approvals Management</h1>
+    <h1 className="text-3xl font-bold text-primary-blue mb-8">Approvals Management</h1>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-100 bg-red-50 flex items-center justify-between">
-                    <h3 className="text-lg font-bold text-gray-800">Pending Approvals</h3>
-                    <span className="px-3 py-1 bg-red-600 text-white rounded-full text-sm font-bold">
-                        {approvals.filter(a => a.status === 'Pending').length}
-                    </span>
-                </div>
+    <div className="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-100 bg-red-50 flex items-center justify-between">
+        <h3 className="text-lg font-bold text-gray-800">Approval Requests</h3>
+        <span className="px-3 py-1 bg-red-600 text-white rounded-full text-sm font-bold" title="Pending Count">
+          {approvals.filter(a => a.status === 'Pending').length}
+        </span>
+      </div>
 
-                {approvals.length === 0 ? <div className="p-8 text-center text-gray-500">
-                        <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
-                        <p>No pending approvals</p>
-                    </div> : <div className="overflow-x-auto">
-                        <table className="min-w-full text-left text-sm">
-                            <thead className="bg-gray-50 border-b-2 border-gray-100">
-                                <tr>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">Opp ID</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">Created By</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">TOV</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">Total Expense</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">GKT Revenue</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">GP</th>
-                                    <th className="px-6 py-3 font-semibold text-gray-600">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-100">
-                                {approvals.map(approval => {
+      {approvals.length === 0 ? <div className="p-8 text-center text-gray-500">
+        <CheckCircle size={48} className="mx-auto mb-3 text-green-500" />
+        <p>No approval requests found</p>
+      </div> : <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-gray-50 border-b-2 border-gray-100">
+            <tr>
+              <th className="px-6 py-3 font-semibold text-gray-600">Opp ID</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">Created By</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">TOV</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">Total Expense</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">GKT Revenue</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">GP</th>
+              <th className="px-6 py-3 font-semibold text-gray-600">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {approvals.map(approval => {
               const snap = approval.snapshot || {};
 
               // Logic for TOV Display:
@@ -184,92 +181,164 @@ const ApprovalsPage = () => {
               // Fallback to 'gktRevenue' only if 'grossProfit' is missing (unlikely) AND we have 'tov' (Newest).
               const displayGktRevenue = snap.grossProfit !== undefined ? snap.grossProfit : snap.tov !== undefined ? snap.gktRevenue : 0;
               return <tr key={approval._id} className={`hover:bg-blue-50 transition ${!approval.isRead ? 'bg-blue-50' : ''}`} onMouseEnter={() => markAsRead(approval._id, approval.isRead)}>
-                                            <td className="px-6 py-4 font-mono text-brand-blue font-medium">
-                                                {approval.opportunity?.opportunityNumber}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                {approval.requestedBy?.name}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                ₹{parseFloat(displayTov || 0).toLocaleString()}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600">
-                                                ₹{parseFloat(snap.totalExpense || 0).toLocaleString()}
-                                            </td>
-                                            <td className="px-6 py-4 text-gray-600 font-medium text-gray-800">
-                                                ₹{parseFloat(displayGktRevenue || 0).toLocaleString()}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`px-2 py-1 rounded text-xs font-bold ${approval.gpPercent < 10 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-800'}`}>
-                                                    {approval.gpPercent.toFixed(1)}%
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                {approval.status === 'Pending' && <div className="flex space-x-2">
-                                                        <button onClick={() => handleApprove(approval._id)} className="px-3 py-1 bg-green-600 text-white rounded text-xs hover:bg-green-700 flex items-center space-x-1">
-                                                            <CheckCircle size={14} />
-                                                            <span>Approve</span>
-                                                        </button>
-                                                        <button onClick={() => handleReject(approval._id)} className="px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 flex items-center space-x-1">
-                                                            <XCircle size={14} />
-                                                            <span>Reject</span>
-                                                        </button>
-                                                    </div>}
-                                            </td>
-                                        </tr>;
+                <td className="px-6 py-4 font-mono text-brand-blue font-medium">
+                  {approval.opportunity?.opportunityNumber}
+                </td>
+                <td className="px-6 py-4 text-gray-600">
+                  {approval.requestedBy?.name}
+                </td>
+                <td className="px-6 py-4 text-gray-600">
+                  ₹{parseFloat(displayTov || 0).toLocaleString()}
+                </td>
+                <td className="px-6 py-4 text-gray-600">
+                  ₹{parseFloat(snap.totalExpense || 0).toLocaleString()}
+                </td>
+                <td className="px-6 py-4 text-gray-600 font-medium text-gray-800">
+                  ₹{parseFloat(displayGktRevenue || 0).toLocaleString()}
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`px-2 py-1 rounded text-xs font-bold ${approval.gpPercent < 10 ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {approval.gpPercent.toFixed(1)}%
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  {approval.status === 'Pending' ? <div className="flex space-x-2">
+                    <button onClick={() => setPreviewModal({ isOpen: true, approval })} className="px-3 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 flex items-center space-x-1">
+                      <span>Review</span>
+                    </button>
+                  </div> : <span className={`px-2 py-1 rounded text-xs font-bold ${approval.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                    {approval.status}
+                  </span>}
+                </td>
+              </tr>;
             })}
-                            </tbody>
-                        </table>
-                    </div>}
-            </div>
+          </tbody>
+        </table>
+      </div>}
+    </div>
 
-            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p className="text-sm text-gray-700">
-                    <strong>Note:</strong> Sales Profit and Contingency thresholds drive approval routing (Manager, Business Head, Director) based on configured bands.
-                </p>
-            </div>
-
-            <AlertModal isOpen={alertConfig.isOpen} onClose={() => setAlertConfig(prev => ({
+    <AlertModal isOpen={alertConfig.isOpen} onClose={() => setAlertConfig(prev => ({
       ...prev,
       isOpen: false
     }))} title={alertConfig.title} message={alertConfig.message} onConfirm={alertConfig.onConfirm} confirmText={alertConfig.confirmText} type={alertConfig.type} />
-
-            {/* Custom Rejection Modal */}
-            {rejectionModal.isOpen && <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{
+    {/* Custom Review Modal */}
+    {previewModal.isOpen && previewModal.approval && <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{
       backgroundColor: 'rgba(0, 0, 0, 0.4)'
     }}>
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all animate-in fade-in zoom-in-95 duration-200">
-                        <div className="flex justify-between items-center p-4 border-b bg-red-50 rounded-t-lg">
-                            <h3 className="text-lg font-semibold text-red-800">Reject Opportunity</h3>
-                            <button onClick={() => setRejectionModal({
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-lg transform transition-all animate-in fade-in zoom-in-95 duration-200 overflow-hidden">
+        <div className="flex justify-between items-center p-4 border-b bg-blue-50">
+          <h3 className="text-lg font-semibold text-blue-900">
+            Review {previewModal.approval.triggerReason === 'gp' ? 'Sales Profit' : 'Contingency'} Approval
+          </h3>
+          <button onClick={() => setPreviewModal({ isOpen: false, approval: null })} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <XCircle size={20} />
+          </button>
+        </div>
+        {(() => {
+          const snap = previewModal.approval.snapshot || {};
+          const exp = previewModal.approval.opportunity?.expenses || {};
+          const tov = parseFloat(snap.tov) || parseFloat(previewModal.approval.opportunity?.commonDetails?.tov) || 0;
+          const totalExpense = parseFloat(snap.totalExpense) || parseFloat(exp.totalExpenses) || 0;
+
+          // Exact Values based on the state at the time
+          const gpPercent = previewModal.approval.gpPercent ?? exp.targetGpPercent ?? 0;
+          const contPercent = previewModal.approval.contingencyPercent ?? exp.contingencyPercent ?? 0;
+          const mktPercent = exp.marketingPercent ?? 0;
+
+          const contAmount = (totalExpense * contPercent) / 100;
+          const mktAmount = (tov * mktPercent) / 100;
+
+          // Recalculating Overall and GP Amount exactly as the UI does
+          const overallExp = totalExpense + contAmount + mktAmount;
+          const gpAmount = tov - overallExp;
+
+          const highlightGp = previewModal.approval.triggerReason === 'gp';
+          const highlightCont = previewModal.approval.triggerReason === 'contingency';
+
+          return <div className="p-6 space-y-5">
+            <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-2 shadow-sm">
+              <p className="text-sm font-semibold text-amber-800 mb-1 uppercase tracking-wider">Requested Exception:</p>
+              <p className="text-2xl font-bold text-amber-900">
+                {highlightGp ? `Sales Profit: ${gpPercent.toFixed(1)}%` : `Contingency: ${contPercent.toFixed(1)}%`}
+              </p>
+            </div>
+
+            <div className="space-y-3 text-[15px] text-gray-700 bg-gray-50 rounded-lg p-5 border border-gray-200 shadow-inner">
+              <div className="flex justify-between items-center pb-3 border-b border-gray-200">
+                <span className="font-medium text-gray-600">Proposal Value (TOV)</span>
+                <span className="text-lg font-bold text-gray-900">₹{tov.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+
+              <div className={`flex justify-between items-center py-1 ${highlightGp ? 'bg-amber-100/50 -mx-2 px-2 rounded font-medium' : ''}`}>
+                <span className={highlightGp ? 'text-amber-900' : 'text-gray-500'}>Sales Profit ({gpPercent.toFixed(1)}%)</span>
+                <span className={highlightGp ? 'text-amber-900' : 'text-gray-900'}>₹{Math.max(0, gpAmount).toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+
+              <div className={`flex justify-between items-center py-1 ${highlightCont ? 'bg-amber-100/50 -mx-2 px-2 rounded font-medium' : ''}`}>
+                <span className={highlightCont ? 'text-amber-900' : 'text-gray-500'}>Contingency ({contPercent.toFixed(1)}%)</span>
+                <span className={highlightCont ? 'text-amber-900' : 'text-gray-900'}>₹{contAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-1">
+                <span className="text-gray-500">Marketing ({mktPercent.toFixed(1)}%)</span>
+                <span className="text-gray-900">₹{mktAmount.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+
+              <div className="flex justify-between items-center pt-3 border-t border-gray-200 mt-2">
+                <span className="font-semibold text-gray-700">Overall Expenses</span>
+                <span className="text-lg font-bold text-red-600">₹{overallExp.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <button onClick={handleReject} className="px-5 py-2 text-sm font-medium text-red-600 bg-white border-2 border-red-200 rounded-lg hover:bg-red-50 hover:border-red-600 transition-all flex items-center space-x-1 shadow-sm">
+                <XCircle size={18} className="mr-1" /> Reject
+              </button>
+              <button onClick={handleApprove} className="px-6 py-2 text-sm font-medium text-white bg-green-600 border-2 border-green-600 rounded-lg hover:bg-green-700 hover:border-green-700 transition-all flex items-center space-x-1 shadow-sm">
+                <CheckCircle size={18} className="mr-1" /> Approve
+              </button>
+            </div>
+          </div>;
+        })()}
+      </div>
+    </div>}
+
+    {/* Custom Rejection Modal */}
+    {rejectionModal.isOpen && <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{
+      backgroundColor: 'rgba(0, 0, 0, 0.4)'
+    }}>
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all animate-in fade-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center p-4 border-b bg-red-50 rounded-t-lg">
+          <h3 className="text-lg font-semibold text-red-800">Reject Opportunity</h3>
+          <button onClick={() => setRejectionModal({
             ...rejectionModal,
             isOpen: false
           })} className="text-gray-400 hover:text-gray-600 transition-colors">
-                                <XCircle size={20} />
-                            </button>
-                        </div>
-                        <div className="p-6">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Reason for Rejection <span className="text-red-500">*</span>
-                            </label>
-                            <textarea value={rejectionModal.reason} onChange={e => setRejectionModal({
+            <XCircle size={20} />
+          </button>
+        </div>
+        <div className="p-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Reason for Rejection <span className="text-red-500">*</span>
+          </label>
+          <textarea value={rejectionModal.reason} onChange={e => setRejectionModal({
             ...rejectionModal,
             reason: e.target.value
           })} className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none h-32 text-sm" placeholder="Please explain why this opportunity is being rejected..." autoFocus />
-                        </div>
-                        <div className="flex justify-end gap-3 p-4 border-t bg-gray-50 rounded-b-lg">
-                            <button onClick={() => setRejectionModal({
+        </div>
+        <div className="flex justify-end gap-3 p-4 border-t bg-gray-50 rounded-b-lg">
+          <button onClick={() => setRejectionModal({
             ...rejectionModal,
             isOpen: false
           })} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors">
-                                Cancel
-                            </button>
-                            <button onClick={confirmRejection} disabled={!rejectionModal.reason.trim()} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                                Confirm Rejection
-                            </button>
-                        </div>
-                    </div>
-                </div>}
-        </div>;
+            Cancel
+          </button>
+          <button onClick={confirmRejection} disabled={!rejectionModal.reason.trim()} className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            Confirm Rejection
+          </button>
+        </div>
+      </div>
+    </div>}
+  </div>;
 };
 export default ApprovalsPage;

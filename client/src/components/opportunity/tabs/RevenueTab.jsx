@@ -100,7 +100,7 @@ const RevenueTab = forwardRef(({
             endpoint = `${API_BASE}/api/opportunities/${opportunity._id}/upload-po`;
             specificTypFormData.append('po', file);
             const poVal = formData.poValue !== undefined && formData.poValue !== '' ? formData.poValue : opportunity.poValue || 0;
-            const poDt = formData.poDate || opportunity.poDate || opportunity.commonDetails?.clientPODate || '';
+            const poDt = formData.poDate || opportunity.commonDetails?.clientPODate || '';
             specificTypFormData.append('poValue', poVal);
             specificTypFormData.append('poDate', poDt);
         } else if (type === 'proposal') {

@@ -30,6 +30,7 @@ const BillingTab = forwardRef(({
   const [pendingProposalFile, setPendingProposalFile] = useState(null);
   const [pendingInvoiceFile, setPendingInvoiceFile] = useState(null);
   const [pendingExpenseDocs, setPendingExpenseDocs] = useState({});
+  const [pendingApprovals, setPendingApprovals] = useState([]);
   const [escalating, setEscalating] = useState(false);
   const [formData, setFormData] = useState({});
 
@@ -40,7 +41,8 @@ const BillingTab = forwardRef(({
     message: '',
     type: 'info',
     onConfirm: null,
-    confirmText: 'Send for Approval'
+    confirmText: 'Send for Approval',
+    cancelText: 'Cancel'
   });
 
   const normalizeDateOnly = value => {
@@ -124,6 +126,89 @@ const BillingTab = forwardRef(({
       commonDetails: common
     };
   };
+  const formatApprovalAmount = amount => `${CURRENCY_SYMBOL} ${(Number(amount || 0) / CONVERSION_RATE).toLocaleString(undefined, {
+    maximumFractionDigits: 0
+  })}`;
+  const getApproverFromLevel = level => {
+    const createdBy = opportunity?.createdBy || {};
+    const salesManagerUser = createdBy?.reportingManager && typeof createdBy.reportingManager === 'object' ? createdBy.reportingManager : null;
+    const businessHeadUser = salesManagerUser?.reportingManager && typeof salesManagerUser.reportingManager === 'object' ? salesManagerUser.reportingManager : null;
+    const directorUser = businessHeadUser?.reportingManager && typeof businessHeadUser.reportingManager === 'object' ? businessHeadUser.reportingManager : null;
+    if (level === 'Sales Manager') return salesManagerUser;
+    if (level === 'Business Head') return businessHeadUser;
+    if (level === 'Director') return directorUser;
+    return null;
+  };
+  const getApprovalRequirements = draft => {
+    const gpValue = Number(draft?.expenses?.targetGpPercent ?? DEFAULT_PROFIT_PERCENT);
+    const contingencyValue = Number(draft?.expenses?.contingencyPercent ?? DEFAULT_CONTINGENCY_PERCENT);
+    const gpTarget = getApprovalTarget('gp', gpValue);
+    const contingencyTarget = getApprovalTarget('contingency', contingencyValue);
+    const requirements = [];
+    if (gpTarget) {
+      requirements.push({
+        trigger: 'gp',
+        metricLabel: 'Sales profit(%)',
+        value: `${gpValue}%`,
+        ...gpTarget
+      });
+    }
+    if (contingencyTarget) {
+      requirements.push({
+        trigger: 'contingency',
+        metricLabel: 'Contingency(%)',
+        value: `${contingencyValue}%`,
+        ...contingencyTarget
+      });
+    }
+    return requirements;
+  };
+  const getApprovalPreview = ({
+    draft,
+    requirements
+  }) => {
+    const calculated = recalculateTotals(JSON.parse(JSON.stringify(draft)));
+    const exp = calculated.expenses || {};
+    const proposalValue = calculated.commonDetails?.tov || 0;
+    const expenseTypesList = ['trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs', 'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance'];
+    const opEx = expenseTypesList.reduce((sum, key) => sum + (Number(exp[key]) || 0), 0);
+    const contingencyPercent = Number(exp.contingencyPercent ?? 15);
+    const marketingPercent = Number(exp.marketingPercent ?? 0);
+    const overallExpenses = opEx + opEx * contingencyPercent / 100 + opEx * marketingPercent / 100;
+    return <div className="space-y-3">
+      <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Check details before sending for approval.</p>
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2 text-[17px]">
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-600">Proposal value</span>
+          <span className="font-semibold text-gray-900">{formatApprovalAmount(proposalValue)}</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-600">Sales profit(%)</span>
+          <span className="font-semibold text-gray-900">{Number(exp.targetGpPercent ?? 30)}%</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-600">Contingency(%)</span>
+          <span className="font-semibold text-gray-900">{contingencyPercent}%</span>
+        </div>
+        <div className="flex justify-between gap-3">
+          <span className="text-gray-600">Marketing(%)</span>
+          <span className="font-semibold text-gray-900">{marketingPercent}%</span>
+        </div>
+        <div className="flex justify-between gap-3 border-t border-gray-200 pt-1.5">
+          <span className="text-gray-600">Overall expenses</span>
+          <span className="font-semibold text-gray-900">{formatApprovalAmount(overallExpenses)}</span>
+        </div>
+      </div>
+      {requirements.length > 0 && <div className="rounded-md border border-orange-200 bg-orange-50 px-3 py-2 text-sm space-y-1">
+        {requirements.map(req => {
+          const approver = getApproverFromLevel(req.level);
+          return <p key={`${req.trigger}-${req.range}`} className="text-gray-700">
+            {req.metricLabel} {req.value} &rarr; <span className="font-semibold">{approver?.name || req.level}</span> ({approver?.role || req.level})
+          </p>;
+        })}
+      </div>}
+    </div>;
+  };
 
   // Handle Escalation (Push to Manager)
   const handleEscalate = async (triggerType = 'gp', overrides = {}) => {
@@ -196,7 +281,7 @@ const BillingTab = forwardRef(({
       await refreshData();
     } catch (error) {
       const msg = error.response?.data?.message || 'Failed to send approval request';
-      if (msg === 'Approval already pending for this opportunity') {
+      if (msg === 'Approval already pending for this criteria' || msg === 'Approval already pending for this opportunity') {
         addToast(msg, 'info');
         await refreshData();
       } else {
@@ -213,85 +298,32 @@ const BillingTab = forwardRef(({
   };
   const getApprovalTarget = (type, value) => {
     if (type === 'gp') {
-      if (value < 5) return {
+      if (value <= 5) return {
         level: 'Director',
-        range: '< 5%'
-      };
-      if (value < 10) return {
-        level: 'Business Head',
-        range: '5-9%'
+        range: '<= 5%'
       };
       if (value < 15) return {
         level: 'Sales Manager',
-        range: '10-14%'
+        range: '6-14%'
       };
       return null;
     }
     if (type === 'contingency') {
-      if (value < 5) return {
+      if (value <= 5) return {
         level: 'Business Head',
-        range: '< 5%'
+        range: '<= 5%'
       };
       if (value < 10) return {
         level: 'Sales Manager',
-        range: '5-9%'
+        range: '6-9%'
       };
       return null;
     }
     return null;
   };
 
-  const handleGpChange = value => {
-    // Immediate State Update for UI responsiveness
-    handleChange('expenses', 'targetGpPercent', value);
-
-    const approvalTarget = getApprovalTarget('gp', value);
-    if (approvalTarget) {
-      setAlertConfig({
-        isOpen: true,
-        title: 'Send for Approval?',
-        message: `Sales Profit ${value}% falls in ${approvalTarget.range}. Send this request to ${approvalTarget.level}?`,
-        type: 'warning',
-        confirmText: 'Send',
-        onConfirm: () => {
-          setAlertConfig(prev => ({
-            ...prev,
-            isOpen: false
-          }));
-          handleEscalate('gp', {
-            targetGpPercent: value,
-            gpPercent: value
-          });
-        },
-        onCancel: () => handleChange('expenses', 'targetGpPercent', DEFAULT_PROFIT_PERCENT)
-      });
-    }
-  };
-  const handleContingencyChange = value => {
-    // Immediate Update
-    handleChange('expenses', 'contingencyPercent', value);
-
-    const approvalTarget = getApprovalTarget('contingency', value);
-    if (approvalTarget) {
-      setAlertConfig({
-        isOpen: true,
-        title: 'Send for Approval?',
-        message: `Contingency ${value}% falls in ${approvalTarget.range}. Send this request to ${approvalTarget.level}?`,
-        type: 'warning',
-        confirmText: 'Send',
-        onConfirm: () => {
-          setAlertConfig(prev => ({
-            ...prev,
-            isOpen: false
-          }));
-          handleEscalate('contingency', {
-            contingencyPercent: value
-          });
-        },
-        onCancel: () => handleChange('expenses', 'contingencyPercent', DEFAULT_CONTINGENCY_PERCENT)
-      });
-    }
-  };
+  const handleGpChange = value => handleChange('expenses', 'targetGpPercent', value);
+  const handleContingencyChange = value => handleChange('expenses', 'contingencyPercent', value);
 
   // Permissions Logic
   const isSales = user?.role === 'Sales Executive' || user?.role === 'Sales Manager';
@@ -344,6 +376,26 @@ const BillingTab = forwardRef(({
       setFormData(calculatedData);
     }
   }, [opportunity]);
+  useEffect(() => {
+    const fetchApprovals = async () => {
+      if (!opportunity?._id) {
+        setPendingApprovals([]);
+        return;
+      }
+      try {
+        const token = sessionStorage.getItem('token');
+        const res = await axios.get(`${API_BASE}/api/approvals/opportunity/${opportunity._id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setPendingApprovals(Array.isArray(res.data) ? res.data : []);
+      } catch (error) {
+        setPendingApprovals([]);
+      }
+    };
+    fetchApprovals();
+  }, [opportunity?._id, opportunity?.approvalStatus]);
 
   // Expose handleSave and handleCancel to parent
   useImperativeHandle(ref, () => ({
@@ -383,7 +435,7 @@ const BillingTab = forwardRef(({
           // Recalculate based on existing Tax/TDS settings
           const gstType = cat.gstType || '';
           let gstRate = 0;
-          if (gstType.includes('18%')) gstRate = 18;else if (gstType.includes('9%')) gstRate = 9; // Simple check for calc
+          if (gstType.includes('18%')) gstRate = 18; else if (gstType.includes('9%')) gstRate = 9; // Simple check for calc
 
           const gstAmount = expenseVal * gstRate / 100;
           const invoiceValueWithTax = expenseVal + gstAmount;
@@ -427,48 +479,152 @@ const BillingTab = forwardRef(({
           return false;
         }
 
-        await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
-          headers: {
-            Authorization: `Bearer ${token}`
+        let requirements = getApprovalRequirements(formData);
+
+        // Prevent showing the modal if the approval-triggering values haven't changed from the database
+        // OR if they completely match the currently pending workflow.
+        const oldSavedGp = Number(opportunity.expenses?.targetGpPercent ?? DEFAULT_PROFIT_PERCENT);
+        const oldSavedCont = Number(opportunity.expenses?.contingencyPercent ?? DEFAULT_CONTINGENCY_PERCENT);
+        const newGp = Number(formData.expenses?.targetGpPercent ?? DEFAULT_PROFIT_PERCENT);
+        const newCont = Number(formData.expenses?.contingencyPercent ?? DEFAULT_CONTINGENCY_PERCENT);
+
+        const gpChangedFromSaved = Math.abs(oldSavedGp - newGp) > 0.01;
+        const contChangedFromSaved = Math.abs(oldSavedCont - newCont) > 0.01;
+
+        const isAlreadyInApprovalWorkflow = typeof opportunity?.approvalStatus === 'string' &&
+          (opportunity.approvalStatus.includes('Pending') || opportunity.approvalStatus === 'Approved');
+
+        if (isAlreadyInApprovalWorkflow && pendingApprovals.length > 0) {
+          // Check GP Requirement against pending
+          const currentPendingGp = pendingApprovals.find(req => req.triggerReason === 'gp' || req.gpPercent !== undefined)?.gpPercent;
+          if (currentPendingGp !== undefined) {
+            const gpChangedFromPending = Math.abs(currentPendingGp - newGp) > 0.01;
+            if (!gpChangedFromPending || !gpChangedFromSaved) {
+              requirements = requirements.filter(req => req.trigger !== 'gp');
+            }
           }
-        });
+
+          // Check Contingency Requirement against pending
+          const currentPendingCont = pendingApprovals.find(req => req.triggerReason === 'contingency' || req.contingencyPercent !== undefined)?.contingencyPercent;
+          if (currentPendingCont !== undefined) {
+            const contChangedFromPending = Math.abs(currentPendingCont - newCont) > 0.01;
+            if (!contChangedFromPending || !contChangedFromSaved) {
+              requirements = requirements.filter(req => req.trigger !== 'contingency');
+            }
+          }
+        } else if (!isAlreadyInApprovalWorkflow) {
+          // If not in workflow at all, but the values haven't changed from saved, don't trigger
+          if (!gpChangedFromSaved) {
+            requirements = requirements.filter(req => req.trigger !== 'gp');
+          }
+          if (!contChangedFromSaved) {
+            requirements = requirements.filter(req => req.trigger !== 'contingency');
+          }
+        }
+
+        if (requirements.length > 0) {
+          const proceed = await new Promise(resolve => {
+            setAlertConfig({
+              isOpen: true,
+              title: 'Send for Approval?',
+              message: getApprovalPreview({ draft: formData, requirements }),
+              type: 'warning',
+              confirmText: 'Send',
+              cancelText: 'Cancel',
+              onConfirm: () => { setAlertConfig(prev => ({ ...prev, isOpen: false })); resolve(true); },
+              onCancel: () => { setAlertConfig(prev => ({ ...prev, isOpen: false })); resolve(false); }
+            });
+          });
+          if (!proceed) return false;
+        }
+
+        await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, { headers: { Authorization: `Bearer ${token}` } });
+
         if (pendingInvoiceFile) {
           const invoiceData = new FormData();
           invoiceData.append('invoice', pendingInvoiceFile);
           await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-invoice`, invoiceData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
           });
         }
         if (pendingProposalFile) {
           const proposalData = new FormData();
           proposalData.append('proposal', pendingProposalFile);
           await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-proposal`, proposalData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
           });
         }
-        for (const [category, file] of Object.entries(pendingExpenseDocs)) {
-          if (!file) continue;
-          const expenseData = new FormData();
-          expenseData.append('document', file);
-          expenseData.append('category', category);
-          await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'multipart/form-data'
-            }
-          });
+
+        if (pendingExpenseDocs && typeof pendingExpenseDocs === 'object') {
+          for (const [category, file] of Object.entries(pendingExpenseDocs)) {
+            if (!file) continue;
+            const expenseData = new FormData();
+            expenseData.append('document', file);
+            expenseData.append('category', category);
+            await axios.post(`${API_BASE}/api/opportunities/${opportunity._id}/upload-expense-doc`, expenseData, {
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+            });
+          }
         }
         setPendingInvoiceFile(null);
         setPendingProposalFile(null);
         setPendingExpenseDocs({});
-
-        addToast('Changes saved successfully', 'success');
+        if (requirements.length > 0) {
+          const expenseTypesForApproval = [{
+            key: 'trainerCost'
+          }, {
+            key: 'vouchersCost'
+          }, {
+            key: 'marketing'
+          }, {
+            key: 'contingency'
+          }, {
+            key: 'gkRoyalty'
+          }, {
+            key: 'material'
+          }, {
+            key: 'labs'
+          }, {
+            key: 'venue'
+          }, {
+            key: 'travel'
+          }, {
+            key: 'accommodation'
+          }, {
+            key: 'perDiem'
+          }, {
+            key: 'localConveyance'
+          }];
+          const currentTov = Number(formData.commonDetails?.tov) || 0;
+          const currentTotalExpenses = expenseTypesForApproval.reduce((sum, type) => sum + (Number(formData.expenses?.[type.key]) || 0), 0);
+          const gpPercentForApproval = Number(formData.expenses?.targetGpPercent ?? DEFAULT_PROFIT_PERCENT);
+          const contingencyForApproval = Number(formData.expenses?.contingencyPercent ?? DEFAULT_CONTINGENCY_PERCENT);
+          try {
+            const escalationRes = await axios.post(`${API_BASE}/api/approvals/escalate`, {
+              opportunityId: opportunity._id,
+              gpPercent: gpPercentForApproval,
+              contingencyPercent: contingencyForApproval,
+              tov: currentTov,
+              totalExpense: currentTotalExpenses,
+              triggers: requirements.map(r => r.trigger)
+            }, {
+              headers: {
+                Authorization: `Bearer ${token}`
+              }
+            });
+            addToast('Changes saved and sent for approval successfully', 'success');
+          } catch (escError) {
+            const msg = escError.response?.data?.message || 'Failed to send approval request';
+            if (msg.includes('already pending')) {
+              addToast(msg, 'info');
+              // It's technically successful in saving the opportunity data, just skipped duplicate workflow
+            } else {
+              addToast(msg, 'error');
+            }
+          }
+        } else {
+          addToast('Changes saved successfully', 'success');
+        }
         refreshData();
         return true;
       } catch (error) {
@@ -492,11 +648,11 @@ const BillingTab = forwardRef(({
       const newState = {
         ...prev
       };
+
       if (section === 'root') {
         newState[field] = value;
       } else {
-        // CRITICAL FIX: Create a copy of the nested object to ensure React detects the change
-        // This fixes the issue where FinancialSummary wouldn't update because the 'expenses' reference didn't change
+        // Create a copy of the nested object to ensure React detects the change
         newState[section] = {
           ...(prev[section] || {})
         };
@@ -504,9 +660,6 @@ const BillingTab = forwardRef(({
       }
 
       // Trigger Recalculation if modifying calculation inputs
-      ['marketingPercent', 'contingencyPercent', 'targetGpPercent', 'trainerCost', 'vouchersCost', 'gkRoyalty', 'material', 'labs', 'venue', 'travel', 'accommodation', 'perDiem', 'localConveyance', 'tovUnit']; // Also re-calc rate if unit changes
-      // Or if modifying days/participants (which are root or commonDetails?)
-      // We can just always recalculate to be safe and simple.
       return recalculateTotals(newState);
     });
   };
@@ -615,7 +768,7 @@ const BillingTab = forwardRef(({
     key: 'localConveyance',
     label: 'Local Conveyance'
   }
-  // Marketing and Contingency removed from breakdown as requested
+    // Marketing and Contingency removed from breakdown as requested
   ];
 
   // Use formData for calculations if it has expenses, else fallback to opportunity
@@ -675,115 +828,120 @@ const BillingTab = forwardRef(({
   });
   `w-full text-right bg-transparent border-none focus:ring-0 p-0 text-sm ${!isEditing ? 'cursor-not-allowed text-gray-500' : 'text-gray-900 font-medium'}`;
   return <div className="space-y-6">
-            {/* Grid Layout: Sales gets OpEx/Billing (Left 2/3). Execution (Right 1/3). Delivery gets BillingDetails (Full) */}
-            <div className={`grid grid-cols-1 ${!isDelivery ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
+    {/* Grid Layout: Sales gets OpEx/Billing (Left 2/3). Execution (Right 1/3). Delivery gets BillingDetails (Full) */}
+    <div className={`grid grid-cols-1 ${!isDelivery ? 'lg:grid-cols-3' : 'lg:grid-cols-1'} gap-6`}>
 
-                {/* Left/Main Column: Operational Expenses (Sales) OR Billing Details (Delivery) */}
-                <div className={`${!isDelivery ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
-                    {/* Sales View: Operational Expenses */}
-                    {!isDelivery && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={uploading} isEditing={isEditing} canEdit={canEditOpExpenses} opportunity={opportunity} pendingDocs={pendingExpenseDocs} />}
+      {/* Left/Main Column: Operational Expenses (Sales) OR Billing Details (Delivery) */}
+      <div className={`${!isDelivery ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
+        {/* Sales View: Operational Expenses */}
+        {!isDelivery && <OperationalExpensesBreakdown activeData={activeData} handleChange={handleChange} handleProposalUpload={handleProposalUpload} uploading={uploading} isEditing={isEditing} canEdit={canEditOpExpenses} opportunity={opportunity} pendingDocs={pendingExpenseDocs} />}
 
-                    {/* Delivery View: Billing Details (Moved from Requirements) */}
-                    {isDelivery && <div className="flex flex-col gap-6">
-                            <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass="" canUploadInvoice={isEditing && isDelivery} onInvoiceUpload={handleInvoiceUploadFromBilling} uploadingInvoice={uploading === 'invoice'} canEditInvoiceDetails={canEditInvoiceDetails} pendingInvoiceFile={pendingInvoiceFile} onInvoiceDateInvalid={showInvoiceDateValidationToast} />
-                            <Card>
-                                <FinancialSummary opportunity={activeData} poValue={activeData.poValue} />
-                            </Card>
-                        </div>}
-                </div>
+        {/* Delivery View: Billing Details (Moved from Requirements) */}
+        {isDelivery && <div className="flex flex-col gap-6">
+          <BillingDetails opportunity={opportunity} formData={formData} handleChange={handleChange} isEditing={isEditing} inputClass="" canUploadInvoice={isEditing && isDelivery} onInvoiceUpload={handleInvoiceUploadFromBilling} uploadingInvoice={uploading === 'invoice'} canEditInvoiceDetails={canEditInvoiceDetails} pendingInvoiceFile={pendingInvoiceFile} onInvoiceDateInvalid={showInvoiceDateValidationToast} />
+          <Card>
+            <FinancialSummary opportunity={activeData} poValue={activeData.poValue} />
+          </Card>
+        </div>}
+      </div>
 
-                {/* Right Column: Execution Details (Hidden for Delivery) */}
-                {!isDelivery && <div className="lg:col-span-1">
-                        <div className="flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-                            <div className="flex justify-between items-center mb-5">
-                                <h3 className="text-lg sm:text-xl leading-tight font-semibold tracking-tight text-blue-900">Execution Details</h3>
-                            </div>
+      {/* Right Column: Execution Details (Hidden for Delivery) */}
+      {!isDelivery && <div className="lg:col-span-1">
+        <div className="flex flex-col rounded-3xl border border-slate-200/80 bg-gradient-to-br from-white/90 to-[#f4fbf8] p-6 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
+          <div className="flex justify-between items-center mb-5">
+            <h3 className="text-lg sm:text-xl leading-tight font-semibold tracking-tight text-blue-900">Execution Details</h3>
+          </div>
 
-                            {/* Proposal Value - Restored */}
-                            <div className="mb-5 relative rounded-3xl border border-[#c8ddd9] bg-[linear-gradient(135deg,#d8efe9_0%,#d6dcee_52%,#dcf3e8_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] text-center">
-                                <label className="block text-[11px] font-bold text-green-700 uppercase tracking-wide mb-1">Proposal Value</label>
-                                <div className="text-4xl font-extrabold text-green-700 leading-none">
-                                    {CURRENCY_SYMBOL}{((formData.commonDetails?.tov || 0) / CONVERSION_RATE).toLocaleString(undefined, {
+          {/* Proposal Value - Restored */}
+          <div className="mb-5 relative rounded-3xl border border-[#c8ddd9] bg-[linear-gradient(135deg,#d8efe9_0%,#d6dcee_52%,#dcf3e8_100%)] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] text-center">
+            <label className="block text-[11px] font-bold text-green-700 uppercase tracking-wide mb-1">Proposal Value</label>
+            <div className="text-4xl font-extrabold text-green-700 leading-none">
+              {CURRENCY_SYMBOL}{((formData.commonDetails?.tov || 0) / CONVERSION_RATE).toLocaleString(undefined, {
                 maximumFractionDigits: 0
               })}
-                                </div>
-                                {/* Proposal Document Action */}
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                                    {isEditing && pendingProposalFile ? <div className="flex flex-col items-end gap-1">
-                                            <span className="inline-flex items-center text-[10px] font-semibold text-blue-600 bg-white/80 border border-blue-200 rounded px-2 py-0.5">
-                                                <CheckCircle size={12} className="mr-1" /> Uploaded
-                                            </span>
-                                            {canEditExecution && <div>
-                                                    <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
-                                                    <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap">
-                                                        Replace
-                                                    </button>
-                                                </div>}
-                                        </div> : opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
-                                            <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-semibold text-blue-600 hover:underline bg-white/80 rounded px-2 py-1 border border-blue-200" title="View Proposal">
-                                                <CheckCircle size={12} className="mr-1" /> View
-                                            </a>
-                                            {canEditExecution && <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
-                                                    <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap">
-                                                        Replace
-                                                    </button>
-                                                </div>}
-                                        </div> : canEditExecution && <div>
-                                                <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
-                                                <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap" title="Upload Proposal">
-                                                    Upload
-                                                </button>
-                                            </div>}
-                                </div>
-                            </div>
+            </div>
+            {/* Proposal Document Action */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              {isEditing && pendingProposalFile ? <div className="flex flex-col items-end gap-1">
+                <span className="inline-flex items-center text-[10px] font-semibold text-blue-600 bg-white/80 border border-blue-200 rounded px-2 py-0.5">
+                  <CheckCircle size={12} className="mr-1" /> Uploaded
+                </span>
+                {canEditExecution && <div>
+                  <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
+                  <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap">
+                    Replace
+                  </button>
+                </div>}
+              </div> : opportunity.proposalDocument ? <div className="flex flex-col items-center group relative">
+                <a href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-xs font-semibold text-blue-600 hover:underline bg-white/80 rounded px-2 py-1 border border-blue-200" title="View Proposal">
+                  <CheckCircle size={12} className="mr-1" /> View
+                </a>
+                {canEditExecution && <div className="absolute -bottom-8 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
+                  <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap">
+                    Replace
+                  </button>
+                </div>}
+              </div> : canEditExecution && <div>
+                <input type="file" id="proposal-upload-mini" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
+                <button onClick={() => document.getElementById('proposal-upload-mini').click()} className="text-[10px] bg-white border border-slate-200 px-2 py-0.5 rounded shadow-sm hover:bg-slate-50 text-slate-600 whitespace-nowrap" title="Upload Proposal">
+                  Upload
+                </button>
+              </div>}
+            </div>
+          </div>
 
-                            {/* Approval Status */}
-                            <div className="mb-7 pb-5 border-b border-slate-200/70">
-                                <div className="flex justify-between items-center mb-3">
-                                    <span className="text-[15px] font-medium text-blue-900">Approval Status</span>
-                                    {opportunity.approvalStatus === 'Pending' || opportunity.approvalStatus?.includes('Pending') ? <div className="flex items-center space-x-2">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200">
-                                                {opportunity.approvalStatus === 'Pending Manager' ? 'Pending - Manager' : opportunity.approvalStatus === 'Pending Business Head' ? 'Pending - Business Head' : opportunity.approvalStatus === 'Pending Director' ? 'Pending - Director' : opportunity.approvalStatus}
-                                            </span>
-                                            {/* Allow Escalation if pending */}
-                                            {canEditExecution && <button onClick={() => handleEscalate('manual')} disabled={escalating} className="text-xs text-primary-blue hover:underline font-medium">
-                                                    {escalating ? 'Pushing...' : 'Resend'}
-                                                </button>}
-                                        </div> : <div>
-                                            {opportunity.approvalStatus === 'Not Required' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                                                    No Approval Required
-                                                </span>}
-                                            {opportunity.approvalStatus === 'Draft' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                                                    Draft
-                                                </span>}
-                                            {opportunity.approvalStatus === 'Approved' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                                                    Approved
-                                                </span>}
-                                            {opportunity.approvalStatus === 'Rejected' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
-                                                    Rejected
-                                                </span>}
-                                        </div>}
-                                </div>
+          {/* Approval Status */}
+          <div className="mb-7 pb-5 border-b border-slate-200/70">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-sm font-semibold text-blue-900">Approval Status</span>
+              <div className="flex gap-2">
+                {pendingApprovals.some(a => a.status === 'Pending') && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200 shadow-sm animate-pulse flex-1 text-center justify-center">
+                  Pending
+                </span>}
+                {opportunity.approvalStatus === 'Not Required' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                  No Approval Required
+                </span>}
+                {opportunity.approvalStatus === 'Draft' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-800 border border-gray-200">
+                  Draft
+                </span>}
+                {opportunity.approvalStatus === 'Approved' && !pendingApprovals.some(a => a.status === 'Pending') && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-800 border border-green-200">
+                  Approved
+                </span>}
+                {opportunity.approvalStatus === 'Rejected' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-red-100 text-red-800 border border-red-200">
+                  Rejected
+                </span>}
+              </div>
+            </div>
+            {pendingApprovals.length > 0 && <div className="mb-2 space-y-3">
+              {pendingApprovals.map(item => {
+                const isContingency = item.triggerReason === 'contingency';
+                const metricLabel = isContingency ? 'Contingency' : 'Sales Profit';
+                return <div key={item._id} className="flex justify-between text-[15px] font-medium text-emerald-700">
+                  <span>{metricLabel}:</span>
+                  <span className={`font-bold ml-1 ${item.status === 'Approved' ? 'text-green-600' : 'text-amber-600'}`}>{item.status}</span>
+                </div>;
+              })}
+            </div>}
 
-                                {/* Breakdown */}
-                                <div className="space-y-3 pt-3 border-t border-emerald-200/70">
-                                    <div className="flex justify-between text-base text-emerald-700 font-medium">
-                                        <span>Cost / Day:</span>
-                                        <span>{CURRENCY_SYMBOL} {costPerDay ? (Number(costPerDay) / CONVERSION_RATE).toLocaleString(undefined, {
-                    maximumFractionDigits: 0
-                  }) : '0'}</span>
-                                    </div>
-                                    <div className="flex justify-between text-base text-emerald-700 font-medium">
-                                        <span>Cost / Pax:</span>
-                                        <span>{CURRENCY_SYMBOL} {costPerParticipant ? (Number(costPerParticipant) / CONVERSION_RATE).toLocaleString(undefined, {
-                    maximumFractionDigits: 0
-                  }) : '0'}</span>
-                                    </div>
-                                    <div className="flex justify-between text-base text-emerald-700 font-bold border-t border-emerald-200/70 pt-3 mt-2">
-                                        <span>GP %:</span>
-                                        <span>
-                                            {(() => {
+            {/* Breakdown */}
+            <div className="space-y-3 pt-3 border-t border-emerald-200/70">
+              <div className="flex justify-between text-base text-emerald-700 font-medium">
+                <span>Cost / Day:</span>
+                <span>{CURRENCY_SYMBOL} {costPerDay ? (Number(costPerDay) / CONVERSION_RATE).toLocaleString(undefined, {
+                  maximumFractionDigits: 0
+                }) : '0'}</span>
+              </div>
+              <div className="flex justify-between text-base text-emerald-700 font-medium">
+                <span>Cost / Pax:</span>
+                <span>{CURRENCY_SYMBOL} {costPerParticipant ? (Number(costPerParticipant) / CONVERSION_RATE).toLocaleString(undefined, {
+                  maximumFractionDigits: 0
+                }) : '0'}</span>
+              </div>
+              <div className="flex justify-between text-base text-emerald-700 font-bold border-t border-emerald-200/70 pt-3 mt-2">
+                <span>GP %:</span>
+                <span>
+                  {(() => {
                     const tov = formData.commonDetails?.tov || 0;
                     const opEx = expenseTypes.reduce((sum, type) => sum + (parseFloat(activeData.expenses?.[type.key]) || 0), 0);
                     const contPerc = activeData.expenses?.contingencyPercent ?? 15;
@@ -794,25 +952,25 @@ const BillingTab = forwardRef(({
                     const profit = tov - totalExp;
                     return tov > 0 ? (profit / tov * 100).toFixed(2) : '0.00';
                   })()}%
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                </span>
+              </div>
+            </div>
+          </div>
 
-                            <div className="flex flex-col flex-grow min-h-0">
-                                {/* Calculation Controls */}
-                                <div className="grid grid-cols-1 gap-5">
-                                    {/* Profit (%) */}
-                                    <div>
-                                        <label className="block text-[15px] font-medium text-gray-700 mb-1.5">Sales Profit (%)</label>
-                                        <div className="flex space-x-2">
-                                            <select value={formData.expenses?.targetGpPercent ?? 30} onChange={e => handleGpChange(parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
-                                                {Array.from({
+          <div className="flex flex-col flex-grow min-h-0">
+            {/* Calculation Controls */}
+            <div className="grid grid-cols-1 gap-5">
+              {/* Profit (%) */}
+              <div>
+                <label className="block text-[15px] font-medium text-gray-700 mb-1.5">Sales Profit (%)</label>
+                <div className="flex space-x-2">
+                  <select value={formData.expenses?.targetGpPercent ?? 30} onChange={e => handleGpChange(parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
+                    {Array.from({
                       length: 30
                     }, (_, i) => i + 1).map(p => <option key={p} value={p}>{p}%</option>)}
-                                            </select>
-                                            <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
-                                                {CURRENCY_SYMBOL} {(() => {
+                  </select>
+                  <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
+                    {CURRENCY_SYMBOL} {(() => {
                       formData.commonDetails?.tov || 0;
                       const opEx = expenseTypes.reduce((sum, type) => sum + (parseFloat(activeData.expenses?.[type.key]) || 0), 0);
                       const contPerc = activeData.expenses?.contingencyPercent ?? 15;
@@ -826,49 +984,49 @@ const BillingTab = forwardRef(({
                         maximumFractionDigits: 0
                       });
                     })()}
-                                            </div>
-                                        </div>
-                                    </div>
+                  </div>
+                </div>
+              </div>
 
-                                    {/* Contingency */}
-                                    <div>
-                                        <label className="block text-[15px] font-medium text-gray-700 mb-1.5">Contingency (%)</label>
-                                        <div className="flex space-x-2">
-                                            <select value={formData.expenses?.contingencyPercent ?? 15} onChange={e => handleContingencyChange(parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
-                                                {Array.from({
+              {/* Contingency */}
+              <div>
+                <label className="block text-[15px] font-medium text-gray-700 mb-1.5">Contingency (%)</label>
+                <div className="flex space-x-2">
+                  <select value={formData.expenses?.contingencyPercent ?? 15} onChange={e => handleContingencyChange(parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
+                    {Array.from({
                       length: 15
                     }, (_, i) => i + 1).map(p => <option key={p} value={p}>{p}%</option>)}
-                                            </select>
-                                            <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
-                                                {CURRENCY_SYMBOL} {((formData.expenses?.contingency || 0) / CONVERSION_RATE).toLocaleString(undefined, {
+                  </select>
+                  <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
+                    {CURRENCY_SYMBOL} {((formData.expenses?.contingency || 0) / CONVERSION_RATE).toLocaleString(undefined, {
                       maximumFractionDigits: 0
                     })}
-                                            </div>
-                                        </div>
-                                    </div>
+                  </div>
+                </div>
+              </div>
 
-                                    {/* Marketing */}
-                                    <div>
-                                        <label className="block text-[15px] font-medium text-gray-700 mb-1.5">Marketing (%)</label>
-                                        <div className="flex space-x-2">
-                                            <select value={formData.expenses?.marketingPercent ?? 0} onChange={e => handleChange('expenses', 'marketingPercent', parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
-                                                {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => <option key={p} value={p}>{p}%</option>)}
-                                            </select>
-                                            <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
-                                                {CURRENCY_SYMBOL} {((formData.expenses?.marketing || 0) / CONVERSION_RATE).toLocaleString(undefined, {
+              {/* Marketing */}
+              <div>
+                <label className="block text-[15px] font-medium text-gray-700 mb-1.5">Marketing (%)</label>
+                <div className="flex space-x-2">
+                  <select value={formData.expenses?.marketingPercent ?? 0} onChange={e => handleChange('expenses', 'marketingPercent', parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
+                    {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(p => <option key={p} value={p}>{p}%</option>)}
+                  </select>
+                  <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
+                    {CURRENCY_SYMBOL} {((formData.expenses?.marketing || 0) / CONVERSION_RATE).toLocaleString(undefined, {
                       maximumFractionDigits: 0
                     })}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
-                                {/* Total Expenses - Display Only */}
-                                <div className="mt-auto pt-4 border-t border-slate-200/70">
-                                    <div className="flex justify-between items-center bg-gradient-to-r from-slate-100 to-slate-50 p-3 rounded-xl border border-slate-200">
-                                        <span className="text-sm font-semibold text-slate-700">Overall Expenses</span>
-                                        <span className="text-2xl font-bold text-slate-800">
-                                            {CURRENCY_SYMBOL} {(() => {
+            {/* Total Expenses - Display Only */}
+            <div className="mt-auto pt-4 border-t border-slate-200/70">
+              <div className="flex justify-between items-center bg-gradient-to-r from-slate-100 to-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-sm font-semibold text-slate-700">Overall Expenses</span>
+                <span className="text-2xl font-bold text-slate-800">
+                  {CURRENCY_SYMBOL} {(() => {
                     const opEx = expenseTypes.reduce((sum, type) => sum + (parseFloat(activeData.expenses?.[type.key]) || 0), 0);
                     const contPerc = activeData.expenses?.contingencyPercent ?? 15;
                     const markPerc = activeData.expenses?.marketingPercent ?? 0;
@@ -879,23 +1037,23 @@ const BillingTab = forwardRef(({
                       maximumFractionDigits: 0
                     });
                   })()}
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>}
+                </span>
+              </div>
             </div>
+          </div>
+        </div>
+      </div>}
+    </div>
 
 
 
-            <AlertModal isOpen={alertConfig.isOpen} onClose={() => {
+    <AlertModal isOpen={alertConfig.isOpen} onClose={() => {
       if (alertConfig.onCancel) alertConfig.onCancel();
       setAlertConfig(prev => ({
         ...prev,
         isOpen: false
       }));
-    }} title={alertConfig.title} message={alertConfig.message} onConfirm={alertConfig.onConfirm} type={alertConfig.type} confirmText={alertConfig.confirmText || 'Send for Approval'} />
-        </div>;
+    }} title={alertConfig.title} message={alertConfig.message} onConfirm={alertConfig.onConfirm} type={alertConfig.type} confirmText={alertConfig.confirmText || 'Send for Approval'} cancelText={alertConfig.cancelText || 'Cancel'} maxWidthClass="max-w-xl" />
+  </div>;
 });
 export default BillingTab;
