@@ -4,6 +4,7 @@ import axios from 'axios';
 import { PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
 import { useToast } from '../../context/ToastContext';
 import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
+import AnimatedNumber from '../../components/common/AnimatedNumber';
 const shiftColor = (hex, amount) => {
   const safeHex = hex.replace('#', '');
   const fullHex = safeHex.length === 3 ? safeHex.split('').map(c => c + c).join('') : safeHex;
@@ -352,7 +353,7 @@ const RevenueAnalyticsRow = ({
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Target</p>
                         <p className="font-bold text-blue-600 truncate text-lg" title={formatMoney(filteredData.adjustedTarget)}>
-                            {formatMoney(filteredData.adjustedTarget)} <span className="text-xs text-gray-500">(100%)</span>
+                            <AnimatedNumber value={filteredData.adjustedTarget} formatValue={(v) => formatMoney(v)} /> <span className="text-xs text-gray-500">(100%)</span>
                         </p>
                     </div>
                     <div>
@@ -360,7 +361,7 @@ const RevenueAnalyticsRow = ({
                         <p className="font-bold truncate text-lg" style={{
             color: '#d946ef'
           }} title={formatMoney(filteredData.achievedRevenue)}>
-                            {formatMoney(filteredData.achievedRevenue)} <span className="text-xs text-gray-500">
+                            <AnimatedNumber value={filteredData.achievedRevenue} formatValue={(v) => formatMoney(v)} /> <span className="text-xs text-gray-500">
                                 ({filteredData.adjustedTarget > 0 ? (filteredData.achievedRevenue / filteredData.adjustedTarget * 100).toFixed(0) : 0}%)
                             </span>
                         </p>
@@ -368,7 +369,7 @@ const RevenueAnalyticsRow = ({
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Difference</p>
                         <p className={`font-bold truncate text-lg ${filteredData.achievedRevenue >= filteredData.adjustedTarget ? 'text-green-600' : 'text-red-500'}`} title={formatMoney(Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget))}>
-                            {formatMoney(Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget))} <span className="text-xs text-gray-500">
+                            <AnimatedNumber value={Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget)} formatValue={(v) => formatMoney(v)} /> <span className="text-xs text-gray-500">
                                 ({filteredData.adjustedTarget > 0 ? (Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget) / filteredData.adjustedTarget * 100).toFixed(0) : 0}%)
                             </span>
                         </p>

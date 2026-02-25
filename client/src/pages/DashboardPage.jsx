@@ -6,6 +6,7 @@ import { useSocket } from '../context/SocketContext';
 import { Users, Briefcase, Activity, Clock } from 'lucide-react';
 import TargetProgress from '../components/dashboard/TargetProgress';
 import EscalationWidget from '../components/dashboard/EscalationWidget';
+import AnimatedNumber from '../components/common/AnimatedNumber';
 import SalesExecutiveDashboard from './dashboard/SalesExecutiveDashboard';
 import { API_BASE } from '../config/api';
 const DashboardPage = () => {
@@ -96,7 +97,9 @@ const DashboardPage = () => {
             </div>
             <div>
                 <p className="text-sm text-gray-500 font-medium">{title}</p>
-                <p className="text-2xl font-bold text-gray-800">{value}</p>
+                <p className="text-2xl font-bold text-gray-800">
+                  <AnimatedNumber value={value} />
+                </p>
                 {subtext && <p className="text-xs text-gray-400">{subtext}</p>}
             </div>
         </div>;

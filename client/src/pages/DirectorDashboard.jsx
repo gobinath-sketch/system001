@@ -1,5 +1,6 @@
 import { TrendingUp, TrendingDown, DollarSign, AlertCircle } from 'lucide-react';
 import { useCurrency } from '../context/CurrencyContext';
+import AnimatedNumber from '../components/common/AnimatedNumber';
 const DirectorDashboard = () => {
   const {
     currency
@@ -67,7 +68,9 @@ const DirectorDashboard = () => {
                     </div>}
             </div>
             <div className="text-sm text-gray-500 mb-1">{title}</div>
-            <div className="text-3xl font-bold text-gray-900">{format(convert(value))}</div>
+            <div className="text-3xl font-bold text-gray-900">
+              <AnimatedNumber value={convert(value)} formatValue={(v) => format(v)} />
+            </div>
         </div>;
   return <div className="p-5">
             {/* Header Removed */}
@@ -84,17 +87,17 @@ const DirectorDashboard = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div style={glassCardStyle} className="p-6">
                     <div className="text-sm text-gray-500 mb-1">Total Revenue (MTD)</div>
-                    <div className="text-2xl font-bold text-gray-900">{format(convert(450000))}</div>
+                    <div className="text-2xl font-bold text-gray-900"><AnimatedNumber value={convert(450000)} formatValue={(v) => format(v)} /></div>
                     <div className="text-xs text-green-600 mt-1">+18% from last month</div>
                 </div>
                 <div style={glassCardStyle} className="p-6">
                     <div className="text-sm text-gray-500 mb-1">Total Expenses (MTD)</div>
-                    <div className="text-2xl font-bold text-gray-900">{format(convert(280000))}</div>
+                    <div className="text-2xl font-bold text-gray-900"><AnimatedNumber value={convert(280000)} formatValue={(v) => format(v)} /></div>
                     <div className="text-xs text-red-600 mt-1">+8% from last month</div>
                 </div>
                 <div style={glassCardStyle} className="p-6">
                     <div className="text-sm text-gray-500 mb-1">Profit Margin</div>
-                    <div className="text-2xl font-bold text-green-600">37.8%</div>
+                    <div className="text-2xl font-bold text-green-600"><AnimatedNumber value={37.8} formatValue={(v) => `${v.toFixed(1)}%`} /></div>
                     <div className="text-xs text-gray-500 mt-1">Healthy margin</div>
                 </div>
             </div>

@@ -9,6 +9,7 @@ import { useSocket } from '../../context/SocketContext';
 import AlertModal from '../../components/ui/AlertModal';
 import { PieChart, Pie, Cell } from 'recharts';
 import { useCurrency } from '../../context/CurrencyContext';
+import AnimatedNumber from '../../components/common/AnimatedNumber';
 import { API_BASE } from '../../config/api';
 const SalesManagerTeamView = () => {
   const navigate = useNavigate();
@@ -289,11 +290,11 @@ const SalesManagerTeamView = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="text-center border-r border-gray-200">
-                            <p className="text-2xl font-bold text-blue-600">{stats?.totalClients || 0}</p>
+                            <p className="text-2xl font-bold text-blue-600"><AnimatedNumber value={stats?.totalClients || 0} /></p>
                             <p className="text-xs text-gray-400 mt-1">Total Clients</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-bold text-green-600">{stats?.teamMembersCount || 0}</p>
+                            <p className="text-2xl font-bold text-green-600"><AnimatedNumber value={stats?.teamMembersCount || 0} /></p>
                             <p className="text-xs text-gray-400 mt-1">Team Members</p>
                         </div>
                     </div>
@@ -309,11 +310,11 @@ const SalesManagerTeamView = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                         <div className="text-center border-r border-gray-200">
-                            <p className="text-2xl font-bold text-yellow-600">{stats?.inProgressOpportunities || 0}</p>
+                            <p className="text-2xl font-bold text-yellow-600"><AnimatedNumber value={stats?.inProgressOpportunities || 0} /></p>
                             <p className="text-xs text-gray-400 mt-1">In Progress</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-bold text-green-600">{stats?.completedOpportunities || 0}</p>
+                            <p className="text-2xl font-bold text-green-600"><AnimatedNumber value={stats?.completedOpportunities || 0} /></p>
                             <p className="text-xs text-gray-400 mt-1">Completed</p>
                         </div>
                     </div>
@@ -334,11 +335,11 @@ const SalesManagerTeamView = () => {
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="text-center border-r border-gray-200">
-                            <p className="text-2xl font-bold text-blue-600">{documentStats.poCount}</p>
+                            <p className="text-2xl font-bold text-blue-600"><AnimatedNumber value={documentStats.poCount} /></p>
                             <p className="text-xs text-gray-400 mt-1">POs Uploaded</p>
                         </div>
                         <div className="text-center">
-                            <p className="text-2xl font-bold text-green-600">{documentStats.invoiceCount}</p>
+                            <p className="text-2xl font-bold text-green-600"><AnimatedNumber value={documentStats.invoiceCount} /></p>
                             <p className="text-xs text-gray-400 mt-1">Invoices</p>
                         </div>
                     </div>
