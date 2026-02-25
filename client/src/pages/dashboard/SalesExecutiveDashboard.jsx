@@ -7,6 +7,7 @@ import { useNavigate } from 'react-router-dom';
 import RevenueAnalyticsRow from './RevenueAnalyticsRow';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
+import AnimatedNumber from '../../components/common/AnimatedNumber';
 import SafeResponsiveContainer from '../../components/charts/SafeResponsiveContainer';
 import { API_BASE } from '../../config/api';
 const OPPORTUNITY_TYPES = ['Training', 'Product Support', 'Resource Support', 'Vouchers', 'Content Development', 'Lab Support'];
@@ -485,19 +486,19 @@ const SalesExecutiveDashboard = ({
                         <div className="p-1.5 rounded-full bg-blue-100">
                             <Users size={16} className="text-blue-600" />
                         </div>
-                        <span className="text-base text-black font-bold">Clients (Total: {clientHealth.active + clientHealth.mid + clientHealth.inactive})</span>
+                        <span className="text-base text-black font-bold">Clients (Total: <AnimatedNumber value={clientHealth.active + clientHealth.mid + clientHealth.inactive} />)</span>
                     </div>
                     <div className="grid grid-cols-3 gap-1 text-center">
                         <div>
-                            <p className="text-3xl font-bold text-emerald-600">{clientHealth.active}</p>
+                            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={clientHealth.active} /></p>
                             <p className="text-base text-black font-bold">Active</p>
                         </div>
                         <div className="border-l border-r border-gray-100">
-                            <p className="text-3xl font-bold text-yellow-500">{clientHealth.mid}</p>
+                            <p className="text-3xl font-bold text-yellow-500"><AnimatedNumber value={clientHealth.mid} /></p>
                             <p className="text-base text-black font-bold">Mild</p>
                         </div>
                         <div>
-                            <p className="text-3xl font-bold text-red-600">{clientHealth.inactive}</p>
+                            <p className="text-3xl font-bold text-red-600"><AnimatedNumber value={clientHealth.inactive} /></p>
                             <p className="text-base text-black font-bold">Inactive</p>
                         </div>
                     </div>
@@ -509,12 +510,12 @@ const SalesExecutiveDashboard = ({
                         <div className="p-1.5 rounded-full bg-purple-100">
                             <Briefcase size={16} className="text-purple-600" />
                         </div>
-                        <span className="text-base text-black font-bold">Opportunities (Total: {filteredStats.totalOpportunities})</span>
+                        <span className="text-base text-black font-bold">Opportunities (Total: <AnimatedNumber value={filteredStats.totalOpportunities} />)</span>
                     </div>
                     <div className="grid grid-cols-4 gap-1 text-center">
                         <div onClick={() => openProgressModal('30%', filteredOpps.filter(o => o.progressPercentage < 50))} className="progress-stage-group group flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors">
                             <span className="progress-stage-tip">Opportunity created</span>
-                            <p className="text-3xl font-bold text-red-600">{filteredStats.progress30}</p>
+                            <p className="text-3xl font-bold text-red-600"><AnimatedNumber value={filteredStats.progress30} /></p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 30%
                                 <span className="inline-flex items-center leading-none text-red-700 transition-transform group-hover:translate-x-0.5">
@@ -530,7 +531,7 @@ const SalesExecutiveDashboard = ({
                         </div>
                         <div onClick={() => openProgressModal('50%', filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
                             <span className="progress-stage-tip">Expenses filled</span>
-                            <p className="text-3xl font-bold text-yellow-500">{filteredStats.progress50}</p>
+                            <p className="text-3xl font-bold text-yellow-500"><AnimatedNumber value={filteredStats.progress50} /></p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 50%
                                 <span className="inline-flex items-center leading-none text-yellow-700 transition-transform group-hover:translate-x-0.5">
@@ -546,7 +547,7 @@ const SalesExecutiveDashboard = ({
                         </div>
                         <div onClick={() => openProgressModal('80%', filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
                             <span className="progress-stage-tip">Client Proposal uploaded</span>
-                            <p className="text-3xl font-bold text-indigo-600">{filteredStats.progress80}</p>
+                            <p className="text-3xl font-bold text-indigo-600"><AnimatedNumber value={filteredStats.progress80} /></p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 80%
                                 <span className="inline-flex items-center leading-none text-indigo-700 transition-transform group-hover:translate-x-0.5">
@@ -562,7 +563,7 @@ const SalesExecutiveDashboard = ({
                         </div>
                         <div onClick={() => openProgressModal('100%', filteredOpps.filter(o => o.progressPercentage === 100))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
                             <span className="progress-stage-tip">Completed</span>
-                            <p className="text-3xl font-bold text-emerald-600">{filteredStats.progress100}</p>
+                            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={filteredStats.progress100} /></p>
                             <p className="inline-flex items-center gap-1 text-base text-black font-bold">
                                 100%
                                 <span className="inline-flex items-center leading-none text-emerald-700 transition-transform group-hover:translate-x-0.5">
@@ -598,19 +599,19 @@ const SalesExecutiveDashboard = ({
                     <div className="grid grid-cols-3 gap-2 text-center">
                         <div>
                             <p className="text-3xl font-bold text-gray">
-                                {filteredOpps.length}
+                                <AnimatedNumber value={filteredOpps.length} />
                             </p>
                             <p className="text-base text-black font-bold">Total</p>
                         </div>
                         <div className="border-l border-gray-100">
                             <p className="text-3xl font-bold text-blue-600">
-                                {filteredOpps.filter(opp => opp.poDocument).length}
+                                <AnimatedNumber value={filteredOpps.filter(opp => opp.poDocument).length} />
                             </p>
                             <p className="text-base text-black font-bold">POs</p>
                         </div>
                         <div className="border-l border-gray-100">
                             <p className="text-3xl font-bold text-slate-600">
-                                {filteredOpps.filter(opp => opp.invoiceDocument).length}
+                                <AnimatedNumber value={filteredOpps.filter(opp => opp.invoiceDocument).length} />
                             </p>
                             <p className="text-base text-black font-bold">Invoices</p>
                         </div>

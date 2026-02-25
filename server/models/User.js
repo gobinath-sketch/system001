@@ -40,7 +40,14 @@ const WorkspaceSettingsSchema = new mongoose.Schema({
     enableTwoFactor: { type: Boolean, default: false },
     workingHours: { type: String, default: '09:00-18:00' },
     alertMode: { type: String, default: 'Balanced' },
-    lastLocaleSyncAt: { type: Date, default: null }
+    lastLocaleSyncAt: { type: Date, default: null },
+    lastDataExportAt: { type: Date, default: null },
+    deactivationStatus: {
+        type: String,
+        enum: ['none', 'pending', 'approved', 'rejected'],
+        default: 'none'
+    },
+    deactivationRequestedAt: { type: Date, default: null }
 }, { _id: false });
 
 const SessionSchema = new mongoose.Schema({
@@ -72,7 +79,7 @@ const UserSchema = new mongoose.Schema({
         enum: ['Director', 'Business Head', 'Sales Manager', 'Sales Executive', 'Delivery Team', 'Finance'],
         required: true
     },
-    creatorCode: { type: String, enum: ['B1', 'B2', 'B3', 'M1', 'M2', 'M3', 'M4', 'M5', 'M6', 'M7', 'M8', 'M9', 'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7', 'E8', 'E9', 'D1', 'F1'], required: true },
+    creatorCode: { type: String, required: true },
     reportingManager: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
@@ -112,4 +119,3 @@ UserSchema.post('save', function (doc) {
 });
 
 module.exports = mongoose.model('User', UserSchema);
-

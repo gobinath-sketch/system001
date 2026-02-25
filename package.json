@@ -9,7 +9,8 @@
         "install-all": "cd server && npm install && cd ../client && npm install",
         "audit": "npm audit && node scripts/generate-audit-log.js",
         "audit:log": "node scripts/generate-audit-log.js",
-        "audit:full": "npm run audit && npm --prefix client audit && npm --prefix server audit && node scripts/generate-audit-log.js"
+        "audit:full": "npm run audit && npm --prefix client audit && npm --prefix server audit && node scripts/generate-audit-log.js",
+        "audit:single": "powershell -ExecutionPolicy Bypass -File scripts/full-audit-log.ps1"
     },
     "devDependencies": {
         "concurrently": "^8.2.2"

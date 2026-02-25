@@ -5,6 +5,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import AnimatedNumber from '../components/common/AnimatedNumber';
 import SetTargetModal from '../components/dashboard/SetTargetModal';
 import DocumentTracking from '../components/dashboard/DocumentTracking';
 import { API_BASE } from '../config/api';
@@ -102,7 +103,9 @@ const ManagerDashboard = ({
             </div>
             <div>
                 <p className="text-sm text-gray-500 font-medium">{title}</p>
-                <p className="text-2xl font-bold text-gray-800">{value}</p>
+                <p className="text-2xl font-bold text-gray-800">
+                  <AnimatedNumber value={value} />
+                </p>
                 {subtext && <p className="text-xs text-gray-400">{subtext}</p>}
             </div>
         </div>;
@@ -130,12 +133,12 @@ const ManagerDashboard = ({
                     </div>
                     <div className="flex items-center justify-between mt-2 px-2">
                         <div className="text-center">
-                            <p className="text-xl font-bold text-yellow-600">{stats?.inProgressOpportunities || 0}</p>
+                            <p className="text-xl font-bold text-yellow-600"><AnimatedNumber value={stats?.inProgressOpportunities || 0} /></p>
                             <p className="text-xs text-gray-400">In Progress</p>
                         </div>
                         <div className="h-8 w-px bg-gray-200"></div>
                         <div className="text-center">
-                            <p className="text-xl font-bold text-green-600">{stats?.completedOpportunities || 0}</p>
+                            <p className="text-xl font-bold text-green-600"><AnimatedNumber value={stats?.completedOpportunities || 0} /></p>
                             <p className="text-xs text-gray-400">Completed</p>
                         </div>
                     </div>
@@ -209,24 +212,24 @@ const ManagerDashboard = ({
                             <div className="pt-4 border-t border-gray-300 space-y-3">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Team Members:</span>
-                                    <span className="font-semibold text-gray-800">{teamPerformance.length}</span>
+                                    <span className="font-semibold text-gray-800"><AnimatedNumber value={teamPerformance.length} /></span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Total Target:</span>
                                     <span className="font-semibold text-yellow-600">
-                                        ₹{teamPerformance.reduce((sum, m) => sum + m.target, 0).toLocaleString()}
+                                        <AnimatedNumber value={teamPerformance.reduce((sum, m) => sum + m.target, 0)} formatValue={(v) => `₹${Math.round(v).toLocaleString('en-IN')}`} />
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
                                     <span className="text-gray-600">Total Achieved:</span>
                                     <span className="font-semibold text-blue-600">
-                                        ₹{teamPerformance.reduce((sum, m) => sum + m.achieved, 0).toLocaleString()}
+                                        <AnimatedNumber value={teamPerformance.reduce((sum, m) => sum + m.achieved, 0)} formatValue={(v) => `₹${Math.round(v).toLocaleString('en-IN')}`} />
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm pt-2 border-t border-gray-300">
                                     <span className="text-gray-600">Team Achievement:</span>
                                     <span className={`font-bold ${teamPerformance.reduce((sum, m) => sum + m.achieved, 0) / teamPerformance.reduce((sum, m) => sum + m.target, 0) * 100 >= 100 ? 'text-green-600' : 'text-gray-800'}`}>
-                                        {(teamPerformance.reduce((sum, m) => sum + m.achieved, 0) / teamPerformance.reduce((sum, m) => sum + m.target, 0) * 100 || 0).toFixed(1)}%
+                                        <AnimatedNumber value={teamPerformance.reduce((sum, m) => sum + m.achieved, 0) / teamPerformance.reduce((sum, m) => sum + m.target, 0) * 100 || 0} formatValue={(v) => `${v.toFixed(1)}%`} />
                                     </span>
                                 </div>
                             </div>
@@ -246,3 +249,4 @@ const ManagerDashboard = ({
         </div>;
 };
 export default ManagerDashboard;
+

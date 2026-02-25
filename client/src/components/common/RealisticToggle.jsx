@@ -25,7 +25,8 @@ const RealisticToggle = ({
             height: 20px; /* Reduced from 25px */
             width: 40px;  /* Reduced from 50px */
             background-color: #ffffff;
-            border-radius: 10px; /* Reduced from 12.5px */
+            border: 1px solid rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
             box-shadow: 
                 inset 0 0 5px 4px rgba(255, 255, 255, 1),
                 inset 0 0 10px 1px rgba(0, 0, 0, 0.488), 
@@ -35,15 +36,7 @@ const RealisticToggle = ({
             align-items: center;
             cursor: pointer;
             position: relative;
-            transition: transform 0.4s;
-        }
-
-        .realistic-toggle-wrapper .label:hover {
-            transform: perspective(100px) rotateX(5deg) rotateY(-5deg);
-        }
-
-        .realistic-toggle-wrapper #currency-checkbox:checked ~ .label:hover {
-            transform: perspective(100px) rotateX(-5deg) rotateY(5deg);
+            overflow: hidden;
         }
 
         .realistic-toggle-wrapper #currency-checkbox {
@@ -57,23 +50,21 @@ const RealisticToggle = ({
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            color: #140707ef;
-            font-size: 9px; /* Reduced from 11px */
+            font-family: "Segoe UI Symbol", "Segoe UI", sans-serif;
+            font-weight: 700;
+            color: #1f1f1f;
+            font-size: 12px;
+            line-height: 1;
             
             height: 16px; /* Reduced from 19px */
             width: 16px;  /* Reduced from 19px */
-            border-radius: 50%;
-            background-color: #000000;
-            background-image: linear-gradient(
-                130deg,
-                #757272 10%,
-                #ffffff 11%,
-                #726f6f 62%
-            );
+            border-radius: 3px;
+            border: 1px solid rgba(0, 0, 0, 0.25);
+            background-color: #bfbfbf;
+            background-image: linear-gradient(145deg, #f4f4f4 0%, #d8d8d8 55%, #bdbdbd 100%);
             left: 2px; /* Adjust for padding */
-            box-shadow: 0 2px 1px rgba(0, 0, 0, 0.3), 5px 5px 5px rgba(0, 0, 0, 0.3);
-            transition: 0.4s;
+            box-shadow: 0 2px 1px rgba(0, 0, 0, 0.25), 5px 5px 5px rgba(0, 0, 0, 0.2);
+            transition: left 0.4s ease, background-image 0.2s ease, color 0.2s ease;
         }
 
         /* Checked State (Knob Move) */

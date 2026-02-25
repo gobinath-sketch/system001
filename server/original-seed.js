@@ -53,13 +53,22 @@ const PEOPLE = [
     email: 'Indu.V@gktech.ai',
     reportingManager: 'Chetana PN',
     accessToBeGiven: 'Sales Manager'
+  },
+  {
+    department: 'delivery',
+    name: 'Lakshmi Prasanna',
+    designation: 'Delivery & Operations Head',
+    email: 'lakshmi.p@gktech.ai',
+    reportingManager: 'Senthil Kumar S / Lakshmi S',
+    accessToBeGiven: 'Delivery Team'
   }
 ];
 
 const ROLE_BY_ACCESS = {
   'Sales Executive': 'Sales Executive',
   'Sales Manager': 'Sales Manager',
-  'Business Head': 'Business Head'
+  'Business Head': 'Business Head',
+  'Delivery Team': 'Delivery Team'
 };
 
 const normalizeName = (value = '') =>
@@ -77,6 +86,7 @@ const splitManagerCandidates = (value = '') =>
 const buildCreatorCode = (role, index) => {
   if (role === 'Business Head') return `B${index}`;
   if (role === 'Sales Manager') return `M${index}`;
+  if (role === 'Delivery Team') return `D${index}`;
   return `E${index}`;
 };
 
@@ -84,15 +94,29 @@ const seedFromSheet = async () => {
   await mongoose.connect(process.env.MONGODB_URI);
 
   const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash('password@123', salt);
-
-  const counters = {
-    'Business Head': 1,
-    'Sales Manager': 1,
-    'Sales Executive': 1
-  };
+  const hashedPassword = await bcrypt.hash('password123', salt);
 
   const allUsers = await User.find({}).select('_id name email creatorCode role');
+
+  // Find maximum existing creator code numbers
+  const maxCounters = { 'B': 0, 'M': 0, 'E': 0, 'D': 0 };
+  allUsers.forEach(u => {
+    if (u.creatorCode) {
+      const prefix = u.creatorCode.charAt(0);
+      const num = parseInt(u.creatorCode.substring(1), 10);
+      if (!isNaN(num) && maxCounters[prefix] !== undefined) {
+        if (num > maxCounters[prefix]) maxCounters[prefix] = num;
+      }
+    }
+  });
+
+  const counters = {
+    'Business Head': maxCounters['B'] + 1,
+    'Sales Manager': maxCounters['M'] + 1,
+    'Sales Executive': maxCounters['E'] + 1,
+    'Delivery Team': maxCounters['D'] + 1
+  };
+
   const byName = new Map(allUsers.map((u) => [normalizeName(u.name), u]));
   const createdOrUpdated = [];
 
@@ -113,6 +137,7 @@ const seedFromSheet = async () => {
     } else {
       user.name = person.name;
       user.role = role;
+      user.password = hashedPassword; // Overwrite old passwords
       if (!user.creatorCode) {
         user.creatorCode = buildCreatorCode(role, counters[role]++);
       }

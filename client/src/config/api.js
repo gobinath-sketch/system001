@@ -70,6 +70,8 @@ export const API_ENDPOINTS = {
     sessionById: (sessionId) => `/api/settings/me/sessions/${sessionId}`,
     savePreset: '/api/settings/me/preferences/presets',
     syncLocale: '/api/settings/me/sync-locale',
+    exportData: '/api/settings/me/export-data',
+    requestDeactivation: '/api/settings/me/request-deactivation',
     exportProfileCard: '/api/settings/me/export-profile-card',
   },
 };

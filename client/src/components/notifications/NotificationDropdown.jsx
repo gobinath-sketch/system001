@@ -7,6 +7,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { API_BASE } from '../../config/api';
 
+const FILTER_TYPE_GROUPS = {
+    approvals: ['approval_request', 'approval_granted', 'approval_rejected', 'approval_status_change', 'gp_approval_request'],
+    opportunities: ['opportunity_created', 'opportunity_update'],
+    documents: ['document_upload'],
+    expenses: ['expense_edit'],
+    gp_approvals: ['approval_request', 'gp_approval_request']
+};
+
 const safeStringify = (value) => {
     try {
         return typeof value === 'string' ? value : JSON.stringify(value);
@@ -36,31 +44,31 @@ const NotificationDropdown = () => {
 
         const roleSpecificFilters = {
             'Sales Executive': [
-                { id: 'opportunity_created', label: 'Opportunities', icon: Briefcase },
-                { id: 'approval_status_change', label: 'Approvals', icon: CheckCheck },
-                { id: 'document_upload', label: 'Documents', icon: FileText },
+                { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
+                { id: 'approvals', label: 'Approvals', icon: CheckCheck },
+                { id: 'documents', label: 'Documents', icon: FileText },
             ],
             'Sales Manager': [
-                { id: 'gp_approval_request', label: 'GP Approvals', icon: DollarSign },
-                { id: 'opportunity_created', label: 'Opportunities', icon: Briefcase },
+                { id: 'gp_approvals', label: 'GP Approvals', icon: DollarSign },
+                { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
                 { id: 'approval_granted', label: 'Approved', icon: Check },
             ],
             'Operations Manager': [
-                { id: 'document_upload', label: 'Documents', icon: FileText },
-                { id: 'expense_edit', label: 'Expenses', icon: DollarSign },
+                { id: 'documents', label: 'Documents', icon: FileText },
+                { id: 'expenses', label: 'Expenses', icon: DollarSign },
             ],
             'Business Head': [
-                { id: 'gp_approval_request', label: 'GP Approvals', icon: DollarSign },
-                { id: 'approval_status_change', label: 'Status Changes', icon: CheckCheck },
+                { id: 'gp_approvals', label: 'GP Approvals', icon: DollarSign },
+                { id: 'approvals', label: 'Status Changes', icon: CheckCheck },
             ],
             'Finance Manager': [
-                { id: 'expense_edit', label: 'Expenses', icon: DollarSign },
-                { id: 'gp_approval_request', label: 'GP Approvals', icon: DollarSign },
+                { id: 'expenses', label: 'Expenses', icon: DollarSign },
+                { id: 'gp_approvals', label: 'GP Approvals', icon: DollarSign },
             ],
             'Director': [
-                { id: 'gp_approval_request', label: 'GP Approvals', icon: DollarSign },
-                { id: 'approval_status_change', label: 'Approvals', icon: CheckCheck },
-                { id: 'opportunity_created', label: 'Opportunities', icon: Briefcase },
+                { id: 'gp_approvals', label: 'GP Approvals', icon: DollarSign },
+                { id: 'approvals', label: 'Approvals', icon: CheckCheck },
+                { id: 'opportunities', label: 'Opportunities', icon: Briefcase },
             ],
         };
 
@@ -82,6 +90,7 @@ const NotificationDropdown = () => {
     const getStyleConfig = (type) => {
         switch (type) {
             case 'approval_granted':
+            case 'approval_request':
             case 'document_upload':
                 return {
                     bg: 'bg-emerald-50',
@@ -89,6 +98,14 @@ const NotificationDropdown = () => {
                     iconColor: 'text-emerald-700',
                     icon: Check,
                     borderColor: 'border-l-emerald-500'
+                };
+            case 'approval_rejected':
+                return {
+                    bg: 'bg-rose-50',
+                    iconBg: 'bg-rose-100',
+                    iconColor: 'text-rose-700',
+                    icon: X,
+                    borderColor: 'border-l-rose-500'
                 };
             case 'expense_edit':
             case 'gp_approval_request':
@@ -194,7 +211,10 @@ const NotificationDropdown = () => {
         if (activeFilter === 'unread') {
             filtered = filtered.filter(n => !n.isRead);
         } else if (activeFilter !== 'all') {
-            filtered = filtered.filter(n => n.type === activeFilter);
+            const groupTypes = FILTER_TYPE_GROUPS[activeFilter];
+            filtered = Array.isArray(groupTypes)
+                ? filtered.filter(n => groupTypes.includes(n.type))
+                : filtered.filter(n => n.type === activeFilter);
         }
 
         // Apply search filter
@@ -206,6 +226,14 @@ const NotificationDropdown = () => {
 
         return filtered;
     }, [notifications, activeFilter, searchQuery]);
+
+    const filterOptions = useMemo(() => getFilterOptions(), [user?.role]);
+
+    useEffect(() => {
+        if (!filterOptions.some((option) => option.id === activeFilter)) {
+            setActiveFilter('all');
+        }
+    }, [filterOptions, activeFilter]);
 
     const handleMarkAsRead = async (id, e) => {
         if (e) e.stopPropagation();
@@ -254,7 +282,7 @@ const NotificationDropdown = () => {
         navigationTimerRef.current = setTimeout(() => {
             if (notification.opportunityId) {
                 navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
-            } else if (notification.type === 'gp_approval_request' || notification.type === 'approval_status_change') {
+            } else if (['approval_request', 'approval_granted', 'approval_rejected', 'approval_status_change', 'gp_approval_request'].includes(notification.type)) {
                 navigate('/approvals');
             } else {
                 navigate('/dashboard');
@@ -263,8 +291,6 @@ const NotificationDropdown = () => {
             navigationTimerRef.current = null;
         }, 1000);
     };
-
-    const filterOptions = getFilterOptions();
 
     return (
         <>
@@ -515,12 +541,20 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
     const getStyleConfig = (type) => {
         switch (type) {
             case 'approval_granted':
+            case 'approval_request':
             case 'document_upload':
                 return {
                     bg: 'bg-emerald-50/65',
                     iconBg: 'bg-emerald-100',
                     iconColor: 'text-emerald-700',
                     icon: Check
+                };
+            case 'approval_rejected':
+                return {
+                    bg: 'bg-rose-50/70',
+                    iconBg: 'bg-rose-100',
+                    iconColor: 'text-rose-700',
+                    icon: X
                 };
             case 'expense_edit':
             case 'gp_approval_request':

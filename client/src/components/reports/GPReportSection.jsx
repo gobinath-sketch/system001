@@ -4,6 +4,7 @@ import { Download, TrendingUp, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
+import AnimatedNumber from '../common/AnimatedNumber';
 import { API_BASE } from '../../config/api';
 const GPReportSection = () => {
   const {
@@ -294,7 +295,7 @@ const GPReportSection = () => {
                             <span className="text-sm text-blue-700 font-medium uppercase tracking-wider">Total Revenue</span>
                         </div>
                         <div className="text-3xl font-bold text-blue-900 mb-1">
-                            {formatCurrency(summary.totalRevenue)}
+                            <AnimatedNumber value={summary.totalRevenue} formatValue={(v) => formatCurrency(v)} />
                         </div>
                     </div>
 
@@ -307,7 +308,7 @@ const GPReportSection = () => {
                             <span className="text-sm text-gray-600 font-medium uppercase tracking-wider">Total Expenses</span>
                         </div>
                         <div className="text-3xl font-bold text-gray-900 mb-1">
-                            {formatCurrency(summary.totalExpenses)}
+                            <AnimatedNumber value={summary.totalExpenses} formatValue={(v) => formatCurrency(v)} />
                         </div>
                     </div>
 
@@ -318,10 +319,10 @@ const GPReportSection = () => {
                             <span className="text-sm text-blue-100 font-medium uppercase tracking-wider">Gross Profit</span>
                         </div>
                         <div className="text-3xl font-bold text-white mb-2">
-                            {formatCurrency(summary.grossProfit)}
+                            <AnimatedNumber value={summary.grossProfit} formatValue={(v) => formatCurrency(v)} />
                         </div>
                         <div className="inline-block bg-yellow-400 text-gray-900 px-3 py-1 rounded-full text-sm font-bold">
-                            {summary.gpPercent.toFixed(1)}% GP%
+                            <AnimatedNumber value={summary.gpPercent} formatValue={(v) => `${v.toFixed(1)}%`} /> GP%
                         </div>
                     </div>
 
@@ -334,7 +335,7 @@ const GPReportSection = () => {
                             <span className="text-sm text-green-700 font-medium uppercase tracking-wider">Opportunities</span>
                         </div>
                         <div className="text-3xl font-bold text-green-900 mb-1">
-                            {summary.totalOpportunities}
+                            <AnimatedNumber value={summary.totalOpportunities} />
                         </div>
                     </div>
                 </div>}
