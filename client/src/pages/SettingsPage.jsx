@@ -74,6 +74,7 @@ export default function SettingsPage() {
   const [devBypass, setDevBypass] = useState(ENV_DEV_BYPASS);
   const [exportingData, setExportingData] = useState(false);
   const [requestingDeactivation, setRequestingDeactivation] = useState(false);
+  const [deletingPresetIndex, setDeletingPresetIndex] = useState(null);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -149,12 +150,26 @@ export default function SettingsPage() {
 
   const savePreferencePreset = async () => {
     try {
-      const newPreset = {
-        name: `Preset ${new Date().toLocaleString('en-IN')}`,
+      const currentPresetSignature = {
         defaultCurrency: currency,
         defaultLanding: settings.preferences.defaultLanding,
         dateFormat: settings.preferences.dateFormat,
-        numberFormat: settings.preferences.numberFormat,
+        numberFormat: settings.preferences.numberFormat
+      };
+
+      const alreadyExists = (settings.preferences.savedPresets || []).some((preset) => preset.defaultCurrency === currentPresetSignature.defaultCurrency
+        && preset.defaultLanding === currentPresetSignature.defaultLanding
+        && preset.dateFormat === currentPresetSignature.dateFormat
+        && preset.numberFormat === currentPresetSignature.numberFormat);
+
+      if (alreadyExists) {
+        addToast('Same preset already saved.', 'info');
+        return;
+      }
+
+      const newPreset = {
+        name: `Preset ${new Date().toLocaleString('en-IN')}`,
+        ...currentPresetSignature,
         createdAt: new Date().toISOString()
       };
       const nextPresets = [newPreset, ...(settings.preferences.savedPresets || [])].slice(0, 10);
@@ -169,6 +184,26 @@ export default function SettingsPage() {
       addToast('Preference preset saved.', 'success');
     } catch (e) {
       addToast(e?.response?.data?.message || 'Unable to save preset.', 'error');
+    }
+  };
+
+  const removeSavedPreset = async (presetIndex) => {
+    try {
+      setDeletingPresetIndex(presetIndex);
+      const updatedPresets = (settings.preferences.savedPresets || []).filter((_, idx) => idx !== presetIndex);
+      const res = await axios.put(`${API_BASE}${API_ENDPOINTS.settings.me}`, {
+        preferences: {
+          ...settings.preferences,
+          defaultCurrency: currency,
+          savedPresets: updatedPresets
+        }
+      }, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast('Preset deleted.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to delete preset.', 'error');
+    } finally {
+      setDeletingPresetIndex(null);
     }
   };
 
@@ -342,7 +377,6 @@ export default function SettingsPage() {
   return <div className="relative p-3 sm:p-6 bg-bg-page h-full">
     <div className={`w-full max-w-[1500px] mx-auto space-y-4 transition ${isSettingsLocked ? 'blur-[2px] pointer-events-none select-none opacity-80' : ''}`}>
       <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm px-5 py-5">
-        <p className="text-[11px] tracking-[0.2em] text-slate-500 uppercase font-semibold">Settings</p>
         <div className="mt-1 flex items-center justify-between gap-3">
           <h1 className="text-xl font-extrabold text-slate-900">Account Controls</h1>
           <button
@@ -367,11 +401,11 @@ export default function SettingsPage() {
           <div className="space-y-4 flex-1 overflow-y-auto pr-1">
             <div className="flex items-center gap-3">
               <img src={settings.profile.avatarDataUrl || DEFAULT_AVATAR_URL} alt="Profile" className="w-16 h-16 rounded-xl border border-slate-300 object-cover" />
-              <button onClick={() => fileInputRef.current?.click()} disabled={!editing} aria-label="Upload profile picture" className="h-9 w-9 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
-                <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-4 h-4 object-contain" />
+              <button onClick={() => fileInputRef.current?.click()} disabled={!editing} aria-label="Upload profile picture" className="h-7 w-7 disabled:opacity-50 inline-flex items-center justify-center">
+                <img src={`${import.meta.env.BASE_URL}upload-icon.svg`} alt="Upload" className="w-5 h-5 object-contain" />
               </button>
-              <button onClick={() => update('profile', 'avatarDataUrl', '')} disabled={!editing} aria-label="Remove profile picture" className="h-9 w-9 rounded-lg border border-slate-300 bg-white disabled:opacity-50 hover:bg-slate-50 inline-flex items-center justify-center">
-                <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-4 h-4 object-contain" />
+              <button onClick={() => update('profile', 'avatarDataUrl', '')} disabled={!editing} aria-label="Remove profile picture" className="h-7 w-7 disabled:opacity-50 inline-flex items-center justify-center">
+                <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-5 h-5 object-contain" />
               </button>
               <input ref={fileInputRef} type="file" accept="image/*" className="hidden" disabled={!editing} onChange={onUploadAvatar} />
             </div>
@@ -473,20 +507,29 @@ export default function SettingsPage() {
               <p className="text-sm font-bold text-slate-800">Saved Presets</p>
               <div className="space-y-2">
                 {(settings.preferences.savedPresets || []).slice(0, 3).map((preset, idx) => (
-                  <button
-                    key={`${preset.name}-${idx}`}
-                    onClick={() => {
-                      update('preferences', 'defaultCurrency', preset.defaultCurrency);
-                      setCurrency(preset.defaultCurrency);
-                      update('preferences', 'defaultLanding', preset.defaultLanding);
-                      update('preferences', 'dateFormat', preset.dateFormat);
-                      update('preferences', 'numberFormat', preset.numberFormat);
-                      addToast(`Applied preset: ${preset.name}`, 'success');
-                    }}
-                    className="w-full h-9 rounded-lg border border-slate-300 bg-white text-sm font-semibold hover:bg-slate-50 text-left px-2"
-                  >
-                    {preset.name}
-                  </button>
+                  <div key={`${preset.name}-${idx}`} className="w-full h-9 rounded-lg border border-slate-300 bg-white px-2 flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        update('preferences', 'defaultCurrency', preset.defaultCurrency);
+                        setCurrency(preset.defaultCurrency);
+                        update('preferences', 'defaultLanding', preset.defaultLanding);
+                        update('preferences', 'dateFormat', preset.dateFormat);
+                        update('preferences', 'numberFormat', preset.numberFormat);
+                        addToast(`Applied preset: ${preset.name}`, 'success');
+                      }}
+                      className="flex-1 text-left text-sm font-semibold hover:text-slate-900"
+                    >
+                      {preset.name}
+                    </button>
+                    <button
+                      onClick={() => removeSavedPreset(idx)}
+                      disabled={deletingPresetIndex === idx}
+                      aria-label={`Delete ${preset.name}`}
+                      className="h-7 w-7 inline-flex items-center justify-center disabled:opacity-50"
+                    >
+                      <img src={`${import.meta.env.BASE_URL}delete-icon.svg`} alt="Delete" className="w-5 h-5 object-contain" />
+                    </button>
+                  </div>
                 ))}
                 {(settings.preferences.savedPresets || []).length === 0 && (
                   <p className="text-xs text-slate-500">No saved presets yet.</p>
