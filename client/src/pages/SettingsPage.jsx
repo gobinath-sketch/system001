@@ -542,8 +542,8 @@ export default function SettingsPage() {
         <video autoPlay loop muted playsInline className="mx-auto w-72 h-44 sm:w-[460px] sm:h-[280px] object-cover rounded-2xl border border-white/70 shadow-lg">
           <source src={SETTINGS_LOCK_VIDEO_SRC} type="video/mp4" />
         </video>
-        <p className="mt-3 text-sm font-semibold text-slate-800">Settings is temporarily unavailable.</p>
-        <p className="text-xs text-slate-600 mt-1">This is temporary while updates are in progress.</p>
+        <p className="mt-4 text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">Settings is temporarily unavailable.</p>
+        <p className="text-sm sm:text-base font-semibold text-slate-700 mt-2">This is temporary while updates are in progress.</p>
       </div>
     </div>}
   </div>;
