@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const { protect } = require('../middleware/authMiddleware');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 const router = express.Router();
 
@@ -286,6 +287,104 @@ router.post('/me/sync-locale', protect, async (req, res) => {
     } catch (err) {
         console.error('Error syncing locale:', err);
         res.status(500).json({ message: 'Failed to sync locale' });
+    }
+});
+
+router.get('/me/export-data', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        ensureSettingsShape(user);
+
+        const exportedAt = new Date();
+        user.settings.workspace.lastDataExportAt = exportedAt;
+        await user.save();
+
+        const payload = {
+            exportedAt: exportedAt.toISOString(),
+            user: {
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                creatorCode: user.creatorCode,
+                reportingManager: user.reportingManager
+            },
+            settings: user.settings,
+            targets: user.targets || [],
+            achievedTargets: user.achievedTargets || [],
+            createdAt: user.createdAt
+        };
+
+        if (global.io) {
+            global.io.to(user._id.toString()).emit('settings_updated', {
+                settings: toSettingsResponse(user, req.sessionId || null),
+                updatedAt: new Date().toISOString()
+            });
+        }
+
+        res.setHeader('Content-Type', 'application/json');
+        res.setHeader('Content-Disposition', `attachment; filename="my-data-${user._id}.json"`);
+        res.status(200).send(JSON.stringify(payload, null, 2));
+    } catch (err) {
+        console.error('Error exporting user data:', err);
+        res.status(500).json({ message: 'Failed to export user data' });
+    }
+});
+
+router.post('/me/request-deactivation', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        ensureSettingsShape(user);
+
+        if (user.settings.workspace.deactivationStatus === 'pending') {
+            return res.status(400).json({ message: 'Deactivation request is already pending review' });
+        }
+
+        user.settings.workspace.deactivationStatus = 'pending';
+        const requestedAt = new Date();
+        user.settings.workspace.deactivationRequestedAt = requestedAt;
+        await user.save();
+
+        const approvers = await User.find({
+            role: { $in: ['Business Head', 'Director'] },
+            _id: { $ne: user._id }
+        }).select('_id');
+
+        if (approvers.length > 0) {
+            const notifications = approvers.map((approver) => ({
+                recipientId: approver._id,
+                type: 'general',
+                message: `Deactivation request raised by ${user.name} (${user.email})`,
+                triggeredBy: user._id,
+                triggeredByName: user.name,
+                changes: {
+                    requestType: 'account_deactivation',
+                    requesterId: user._id,
+                    requesterRole: user.role,
+                    requestedAt: requestedAt.toISOString()
+                },
+                targetTab: 'settings'
+            }));
+
+            await Notification.insertMany(notifications);
+        }
+
+        if (global.io) {
+            global.io.to(user._id.toString()).emit('settings_updated', {
+                settings: toSettingsResponse(user, req.sessionId || null),
+                updatedAt: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            message: 'Deactivation request submitted for admin review',
+            settings: toSettingsResponse(user, req.sessionId || null)
+        });
+    } catch (err) {
+        console.error('Error requesting deactivation:', err);
+        res.status(500).json({ message: 'Failed to request deactivation' });
     }
 });
 

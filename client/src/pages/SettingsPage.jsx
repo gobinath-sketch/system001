@@ -25,7 +25,16 @@ const PROFILE_COMPLETENESS_FIELDS = [
 const defaults = (user) => ({
   profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
   preferences: { defaultCurrency: 'INR', defaultLanding: 'Dashboard', dateFormat: 'DD/MM/YYYY', numberFormat: 'Indian', savedPresets: [] },
-  workspace: { autoLogout: '30m', enableTwoFactor: false, workingHours: '09:00-18:00', alertMode: 'Balanced', lastLocaleSyncAt: null },
+  workspace: {
+    autoLogout: '30m',
+    enableTwoFactor: false,
+    workingHours: '09:00-18:00',
+    alertMode: 'Balanced',
+    lastLocaleSyncAt: null,
+    lastDataExportAt: null,
+    deactivationStatus: 'none',
+    deactivationRequestedAt: null
+  },
   security: { sessions: [] }
 });
 
@@ -63,6 +72,8 @@ export default function SettingsPage() {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [devBypass, setDevBypass] = useState(ENV_DEV_BYPASS);
+  const [exportingData, setExportingData] = useState(false);
+  const [requestingDeactivation, setRequestingDeactivation] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -189,6 +200,52 @@ export default function SettingsPage() {
       addToast('Profile card exported.', 'success');
     } catch (e) {
       addToast(e?.response?.data?.message || 'Unable to export profile card.', 'error');
+    }
+  };
+
+  const exportMyData = async () => {
+    setExportingData(true);
+    try {
+      const res = await axios.get(`${API_BASE}${API_ENDPOINTS.settings.exportData}`, {
+        ...auth,
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([res.data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `my-data-${user?.id || 'user'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+
+      const refreshed = await axios.get(`${API_BASE}${API_ENDPOINTS.settings.me}`, auth);
+      syncSettings(refreshed?.data?.settings || {});
+      addToast('Your data export is downloaded.', 'success');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to export your data.', 'error');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
+  const requestDeactivation = async () => {
+    if (settings.workspace.deactivationStatus === 'pending') {
+      addToast('Deactivation request is already pending.', 'info');
+      return;
+    }
+
+    setRequestingDeactivation(true);
+    try {
+      const res = await axios.post(`${API_BASE}${API_ENDPOINTS.settings.requestDeactivation}`, {}, auth);
+      syncSettings(res?.data?.settings || {});
+      addToast(res?.data?.message || 'Deactivation request submitted.', 'warning');
+    } catch (e) {
+      addToast(e?.response?.data?.message || 'Unable to request deactivation.', 'error');
+    } finally {
+      setRequestingDeactivation(false);
     }
   };
 
@@ -519,17 +576,35 @@ export default function SettingsPage() {
               <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">Role: <span className="font-bold">{user?.role || 'Unknown role'}</span></div>
               <select disabled={!editing} value={settings.workspace.autoLogout} onChange={(e) => update('workspace', 'autoLogout', e.target.value)} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100"><option value="15m">15 minutes</option><option value="30m">30 minutes</option><option value="1h">1 hour</option><option value="8h">8 hours</option></select>
               <label className="rounded-xl border border-slate-300 bg-white px-3 h-10 flex items-center justify-between text-[15px] font-semibold text-slate-700"><span>Require two-factor authentication</span><input type="checkbox" disabled={!editing} checked={settings.workspace.enableTwoFactor} onChange={(e) => update('workspace', 'enableTwoFactor', e.target.checked)} /></label>
-              <button onClick={() => addToast('Data export request queued.', 'info')} className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Download size={14} />Export My Data</button>
+              <button
+                onClick={exportMyData}
+                disabled={exportingData}
+                className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2 disabled:opacity-60"
+              >
+                <Download size={14} />
+                {exportingData ? 'Exporting...' : 'Export My Data'}
+              </button>
               <button onClick={syncLocale} className="w-full h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 inline-flex items-center justify-center gap-2"><Globe2 size={14} />Sync Locale</button>
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3">
                 <p className="text-sm font-bold text-rose-700 inline-flex items-center gap-1.5"><AlertTriangle size={13} />Danger Zone</p>
                 <p className="text-sm text-rose-600 mt-1">Sensitive action. Admin confirmation may be required.</p>
-                <button onClick={() => addToast('Request submitted to deactivate account. Admin review required.', 'warning')} className="mt-2 h-9 px-3 rounded-lg bg-rose-600 text-white text-sm font-bold hover:bg-rose-700">Request Deactivation</button>
+                <button
+                  onClick={requestDeactivation}
+                  disabled={requestingDeactivation || settings.workspace.deactivationStatus === 'pending'}
+                  className="mt-2 h-9 px-3 rounded-lg bg-rose-600 text-white text-sm font-bold hover:bg-rose-700 disabled:opacity-60"
+                >
+                  {settings.workspace.deactivationStatus === 'pending'
+                    ? 'Deactivation Pending'
+                    : requestingDeactivation ? 'Submitting...' : 'Request Deactivation'}
+                </button>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
                 <p className="font-bold text-slate-800 mb-1">Workspace Status</p>
                 <p>Last locale sync: {settings.workspace.lastLocaleSyncAt ? new Date(settings.workspace.lastLocaleSyncAt).toLocaleString() : 'Not synced yet'}</p>
+                <p>Last data export: {settings.workspace.lastDataExportAt ? new Date(settings.workspace.lastDataExportAt).toLocaleString() : 'Not exported yet'}</p>
+                <p className="capitalize">Deactivation status: {settings.workspace.deactivationStatus || 'none'}</p>
+                <p>Requested at: {settings.workspace.deactivationRequestedAt ? new Date(settings.workspace.deactivationRequestedAt).toLocaleString() : 'Not requested'}</p>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">

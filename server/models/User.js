@@ -40,7 +40,14 @@ const WorkspaceSettingsSchema = new mongoose.Schema({
     enableTwoFactor: { type: Boolean, default: false },
     workingHours: { type: String, default: '09:00-18:00' },
     alertMode: { type: String, default: 'Balanced' },
-    lastLocaleSyncAt: { type: Date, default: null }
+    lastLocaleSyncAt: { type: Date, default: null },
+    lastDataExportAt: { type: Date, default: null },
+    deactivationStatus: {
+        type: String,
+        enum: ['none', 'pending', 'approved', 'rejected'],
+        default: 'none'
+    },
+    deactivationRequestedAt: { type: Date, default: null }
 }, { _id: false });
 
 const SessionSchema = new mongoose.Schema({
@@ -112,4 +119,3 @@ UserSchema.post('save', function (doc) {
 });
 
 module.exports = mongoose.model('User', UserSchema);
-
