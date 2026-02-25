@@ -11,6 +11,7 @@ const DEFAULT_AVATAR_URL = `${import.meta.env.BASE_URL}profile-default.svg`;
 const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
 const SETTINGS_TEMPORARILY_LOCKED = true;
 const SETTINGS_LOCK_VIDEO_SRC = `${import.meta.env.BASE_URL}settings-lock.mp4`;
+const ENV_DEV_BYPASS = import.meta.env.VITE_SETTINGS_DEV_MODE === '1';
 
 const defaults = (user) => ({
   profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
@@ -52,14 +53,14 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [devBypass, setDevBypass] = useState(false);
+  const [devBypass, setDevBypass] = useState(ENV_DEV_BYPASS);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const byQuery = params.get('devSettings') === '1';
     const byLocalStorage = window.localStorage.getItem('settings_dev_mode') === '1';
-    setDevBypass(byQuery || byLocalStorage);
+    setDevBypass(ENV_DEV_BYPASS || byQuery || byLocalStorage);
   }, []);
 
   const isSettingsLocked = SETTINGS_TEMPORARILY_LOCKED && !devBypass;
