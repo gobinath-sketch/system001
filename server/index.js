@@ -16,7 +16,11 @@ app.use(cors());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI)
+const dbUri = process.env.MONGO_URI
+    ? `${process.env.MONGO_URI}${process.env.MONGO_DB_NAME || ''}`
+    : process.env.MONGODB_URI;
+
+mongoose.connect(dbUri)
     .then(() => console.log('✅ MongoDB Connected (Dashboard Updated)'))
     .catch(err => console.log(err));
 
