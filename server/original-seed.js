@@ -86,13 +86,26 @@ const seedFromSheet = async () => {
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash('password@123', salt);
 
+  const allUsers = await User.find({}).select('_id name email creatorCode role');
+
+  // Find maximum existing creator code numbers
+  const maxCounters = { 'B': 0, 'M': 0, 'E': 0 };
+  allUsers.forEach(u => {
+    if (u.creatorCode) {
+      const prefix = u.creatorCode.charAt(0);
+      const num = parseInt(u.creatorCode.substring(1), 10);
+      if (!isNaN(num) && maxCounters[prefix] !== undefined) {
+        if (num > maxCounters[prefix]) maxCounters[prefix] = num;
+      }
+    }
+  });
+
   const counters = {
-    'Business Head': 1,
-    'Sales Manager': 1,
-    'Sales Executive': 1
+    'Business Head': maxCounters['B'] + 1,
+    'Sales Manager': maxCounters['M'] + 1,
+    'Sales Executive': maxCounters['E'] + 1
   };
 
-  const allUsers = await User.find({}).select('_id name email creatorCode role');
   const byName = new Map(allUsers.map((u) => [normalizeName(u.name), u]));
   const createdOrUpdated = [];
 
