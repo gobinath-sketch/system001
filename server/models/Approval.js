@@ -10,7 +10,13 @@ const ApprovalSchema = new mongoose.Schema({
     },
 
     // Approval details
+    triggerReason: {
+        type: String,
+        enum: ['gp', 'contingency'],
+        required: true
+    },
     gpPercent: { type: Number, required: true },
+    contingencyPercent: { type: Number }, // added to track contingency natively
     approvalLevel: {
         type: String,
         enum: ['Manager', 'Business Head', 'Director'],

@@ -11,7 +11,7 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 // @access  Private (Director, Sales Manager)
 router.get('/', protect, authorize('Director', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
-        let filter = { status: 'Pending' };
+        let filter = {};
 
         if (req.user.role === 'Director') {
             filter.approvalLevel = 'Director';
@@ -25,16 +25,51 @@ router.get('/', protect, authorize('Director', 'Sales Manager', 'Business Head')
         }
 
         const approvals = await Approval.find(filter)
-            .populate('opportunity', 'opportunityNumber type client participants days')
+            .populate('opportunity', 'opportunityNumber type client participants days expenses commonDetails')
             .populate({
                 path: 'opportunity',
                 populate: { path: 'client', select: 'companyName' }
             })
-
             .populate('requestedBy', 'name email')
             .sort({ requestedAt: -1 });
 
         res.json(approvals);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   GET /api/approvals/opportunity/:opportunityId
+// @desc    Get approvals for specific opportunity (matches real-time opportunity state)
+// @access  Private
+router.get('/opportunity/:opportunityId', protect, async (req, res) => {
+    try {
+        const opportunity = await Opportunity.findById(req.params.opportunityId);
+        if (!opportunity) return res.json([]);
+
+        const gpValue = Number(opportunity.expenses?.targetGpPercent ?? 30);
+        const contValue = Number(opportunity.expenses?.contingencyPercent ?? 15);
+
+        const latestGP = await Approval.findOne({ opportunity: req.params.opportunityId, triggerReason: 'gp' })
+            .sort({ createdAt: -1 }).populate('assignedTo', 'name role');
+        const latestContingency = await Approval.findOne({ opportunity: req.params.opportunityId, triggerReason: 'contingency' })
+            .sort({ createdAt: -1 }).populate('assignedTo', 'name role');
+
+        const activeApprovals = [];
+        // As long as there is a latest request and it isn't ancient, push it so the UI can draw its status
+        if (latestGP) {
+            activeApprovals.push(latestGP);
+        }
+        if (latestContingency) {
+            activeApprovals.push(latestContingency);
+        }
+
+        // Only return if the opportunity is actually tracked in an approval flow (Not Draft or Not Required)
+        if (activeApprovals.length > 0 && typeof opportunity.approvalStatus === 'string' && opportunity.approvalStatus !== 'Draft' && opportunity.approvalStatus !== 'Not Required') {
+            return res.json(activeApprovals.reverse());
+        }
+
+        return res.json([]);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
@@ -75,31 +110,34 @@ router.post('/:id/approve', protect, authorize('Director', 'Sales Manager', 'Bus
         approval.approvedAt = new Date();
         await approval.save();
 
-        // Close any other pending requests for the same opportunity.
-        await Approval.updateMany({
+        // Check if there are any other pending requests for the same opportunity
+        const pendingApprovals = await Approval.countDocuments({
             opportunity: approval.opportunity,
             status: 'Pending',
             _id: { $ne: approval._id }
-        }, {
-            $set: {
-                status: 'Rejected',
-                rejectedBy: req.user._id,
-                rejectedAt: new Date(),
-                rejectionReason: 'Superseded by another processed approval request'
-            }
         });
 
-        // Update Opportunity Status
         const opportunity = await Opportunity.findById(approval.opportunity);
-        if (opportunity) {
-            opportunity.approvalStatus = 'Approved';
-            opportunity.approvalRequired = false;
-            opportunity.approvedBy = req.user._id;
-            opportunity.approvedAt = new Date();
-            await opportunity.save();
+
+        if (pendingApprovals === 0) {
+            // All required approvals obtained
+            if (opportunity) {
+                opportunity.approvalStatus = 'Approved';
+                opportunity.approvalRequired = false;
+                opportunity.approvedBy = req.user._id; // The last person to approve
+                opportunity.approvedAt = new Date();
+                await opportunity.save();
+            }
         }
+        // If pendingApprovals > 0, we don't change opportunity status, it stays 'Pending'.
 
-
+        // Determine specific metric for notification Message
+        let metricTitle = 'Approval';
+        if (approval.triggerReason === 'gp') {
+            metricTitle = 'Sales Profit Approval';
+        } else if (approval.triggerReason === 'contingency') {
+            metricTitle = 'Contingency Approval';
+        }
 
         // Notification for Requester
         const Notification = require('../models/Notification');
@@ -108,7 +146,7 @@ router.post('/:id/approve', protect, authorize('Director', 'Sales Manager', 'Bus
             triggeredBy: req.user._id,
             triggeredByName: req.user.name,
             type: 'approval_granted',
-            message: `Approval Granted: Opportunity ${approval.snapshot?.gktRevenue ? 'GP ' + approval.gpPercent.toFixed(1) + '%' : ''} approved by ${req.user.name}`,
+            message: `${metricTitle} Granted: Opportunity ${opportunity ? opportunity.opportunityNumber : 'Unknown'} approved by ${req.user.name}`,
             opportunityId: approval.opportunity,
             opportunityNumber: opportunity ? opportunity.opportunityNumber : 'Unknown',
             isRead: false,
@@ -207,147 +245,178 @@ router.post('/:id/reject', protect, authorize('Director', 'Sales Manager', 'Busi
 
 
 // @route   POST /api/approvals/escalate
-// @desc    Escalate opportunity based on Sales Profit% or Contingency%
+// @desc    Escalate opportunity based on Sales Profit% and Contingency%
 // @access  Private (Sales Executive)
 router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
     try {
-        const { opportunityId, gpPercent, tov, totalExpense, contingencyPercent, triggerReason } = req.body;
+        const { opportunityId, gpPercent, tov, totalExpense, contingencyPercent, triggers } = req.body;
 
         // Verify opportunity ownership
         const opportunity = await Opportunity.findById(opportunityId);
         if (!opportunity) {
             return res.status(404).json({ message: 'Opportunity not found' });
         }
-        if (opportunity.createdBy.toString() !== req.user._id.toString()) {
+        if (opportunity.createdBy.toString() !== req.user._id.toString() && req.user.role !== 'Sales Manager' && req.user.role !== 'Business Head') {
             return res.status(403).json({ message: 'Not authorized' });
         }
 
-        const existingPendingApproval = await Approval.findOne({
+        const validTriggers = Array.isArray(triggers) && triggers.length > 0 ? triggers : ['gp', 'contingency'];
+
+        // Prevent duplicate approval cycle unless values actually changed
+        const existingPending = await Approval.find({
             opportunity: opportunityId,
-            status: 'Pending'
-        });
-        const opportunityIsPending = typeof opportunity.approvalStatus === 'string' && opportunity.approvalStatus.includes('Pending');
-        if (existingPendingApproval && opportunityIsPending) {
-            return res.status(200).json({
-                message: 'Approval already pending for this opportunity',
-                approval: existingPendingApproval
-            });
-        }
-        if (existingPendingApproval && !opportunityIsPending) {
-            await Approval.updateMany({
-                opportunity: opportunityId,
-                status: 'Pending'
-            }, {
-                $set: {
-                    status: 'Rejected',
-                    rejectedBy: req.user._id,
-                    rejectedAt: new Date(),
-                    rejectionReason: `Auto-closed after opportunity moved to ${opportunity.approvalStatus || 'non-pending'}`
-                }
-            });
+            status: 'Pending',
+            triggerReason: { $in: validTriggers }
+        }).sort({ createdAt: 1 });
+
+        if (existingPending && existingPending.length > 0) {
+            // Check if the new values differ from the pending cycle
+            const lastPending = existingPending[existingPending.length - 1]; // they were all created together
+            const gpChanged = validTriggers.includes('gp') && Math.abs((lastPending.gpPercent || 0) - gpPercent) > 0.01;
+            const contingencyChanged = validTriggers.includes('contingency') && Math.abs((lastPending.contingencyPercent || 0) - contingencyPercent) > 0.01;
+
+            if (!gpChanged && !contingencyChanged) {
+                return res.status(400).json({
+                    message: 'An active approval cycle is already pending for these requested parameters.'
+                });
+            } else {
+                // Values changed! Mark the old pending ones as superseded (Rejected)
+                await Approval.updateMany({
+                    opportunity: opportunityId,
+                    status: 'Pending',
+                    triggerReason: { $in: validTriggers }
+                }, {
+                    $set: {
+                        status: 'Rejected',
+                        rejectedBy: req.user._id,
+                        rejectedAt: new Date(),
+                        rejectionReason: 'Superseded by updated financial values before approval'
+                    }
+                });
+            }
         }
 
-        const requester = await User.findById(req.user._id).populate('reportingManager');
-        if (!requester?.reportingManager) {
-            return res.status(400).json({ message: 'No reporting manager assigned' });
-        }
-        const manager = requester.reportingManager?.role === 'Sales Manager' ? requester.reportingManager : null;
-        if (!manager) {
-            return res.status(400).json({ message: 'No Sales Manager assigned in reporting chain' });
-        }
-        let businessHead = null;
-        if (manager.reportingManager) {
-            const managerHead = await User.findById(manager.reportingManager);
-            if (managerHead?.role === 'Business Head') {
-                businessHead = managerHead;
+        const manager = await User.findOne({
+            role: 'Sales Manager',
+            territory: req.user.territory || opportunity.region
+        });
+
+        // Determine Business Head correctly
+        let businessHeadRole = 'Business Head'; // default fallback
+        if (opportunity.type) {
+            if (opportunity.type === 'Corporate Training' || opportunity.type === 'Retail Training') {
+                businessHeadRole = 'Business Head LC';
+            } else if (opportunity.type === 'HTD' || opportunity.type === 'Product Support') {
+                businessHeadRole = 'Business Head HTD';
             }
+        }
+        let businessHead = await User.findOne({ role: businessHeadRole });
+        if (!businessHead) {
+            businessHead = await User.findOne({ role: 'Business Head' });
         }
         const director = await User.findOne({ role: 'Director' });
 
-        // Identify Approval Level & Assignee from requested trigger.
-        const mode = triggerReason === 'contingency' ? 'contingency' : 'gp';
-        let approvalLevel = 'Manager';
-        let assignedTo = null;
-        let nextStatus = 'Pending Manager';
-        let approvalReason = '';
+        const approvalRequests = [];
 
-        if (mode === 'contingency') {
+        // Check Contingency
+        if (validTriggers.includes('contingency')) {
             if (contingencyPercent < 5) {
-                approvalLevel = 'Business Head';
-                nextStatus = 'Pending Business Head';
-                approvalReason = 'Contingency < 5%';
-                assignedTo = businessHead?._id;
+                if (!businessHead) return res.status(400).json({ message: 'No approver found for Business Head' });
+                approvalRequests.push({
+                    level: 'Business Head',
+                    assignedTo: businessHead._id,
+                    reason: 'Contingency < 5%',
+                    triggerReason: 'contingency'
+                });
             } else if (contingencyPercent < 10) {
-                approvalLevel = 'Manager';
-                nextStatus = 'Pending Manager';
-                approvalReason = 'Contingency 5-9%';
-                assignedTo = manager?._id;
-            } else {
-                return res.status(400).json({ message: 'Contingency is within allowed range. Approval not required.' });
+                // If the requester is a Sales Executive, it goes to the Manager.
+                // Sales Managers and Business Heads have freedom to apply 5-15% without restriction.
+                if (req.user.role === 'Sales Executive') {
+                    if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
+                    approvalRequests.push({
+                        level: 'Manager',
+                        assignedTo: manager._id,
+                        reason: 'Contingency 5-9%',
+                        triggerReason: 'contingency'
+                    });
+                }
             }
-        } else {
-            if (gpPercent < 5) {
-                approvalLevel = 'Director';
-                nextStatus = 'Pending Director';
-                approvalReason = 'Sales Profit < 5%';
-                assignedTo = director?._id;
-            } else if (gpPercent < 10) {
-                approvalLevel = 'Business Head';
-                nextStatus = 'Pending Business Head';
-                approvalReason = 'Sales Profit 5-9%';
-                assignedTo = businessHead?._id;
+        }
+
+        // Check GP
+        if (validTriggers.includes('gp')) {
+            if (gpPercent <= 5) {
+                if (!director) return res.status(400).json({ message: 'No approver found for Director' });
+                approvalRequests.push({
+                    level: 'Director',
+                    assignedTo: director._id,
+                    reason: 'Sales Profit <= 5%',
+                    triggerReason: 'gp'
+                });
             } else if (gpPercent < 15) {
-                approvalLevel = 'Manager';
-                nextStatus = 'Pending Manager';
-                approvalReason = 'Sales Profit 10-14%';
-                assignedTo = manager?._id;
-            } else {
-                return res.status(400).json({ message: 'Sales Profit is within allowed range. Approval not required.' });
+                if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
+
+                approvalRequests.push({
+                    level: 'Manager',
+                    assignedTo: manager._id,
+                    reason: 'Sales Profit 5-14%',
+                    triggerReason: 'gp'
+                });
             }
         }
 
-        if (!assignedTo) {
-            return res.status(400).json({ message: `No approver found for ${approvalLevel}` });
+        if (approvalRequests.length === 0) {
+            return res.status(400).json({ message: 'No approval required based on current parameters.' });
         }
 
-        // Create approval request
-        const approval = new Approval({
-            opportunity: opportunityId,
-            gpPercent,
-            approvalLevel,
-            assignedTo,
-            requestedBy: req.user._id,
-            snapshot: {
-                totalExpense,
-                tov,
-                gktRevenue: tov - totalExpense,
-                grossProfit: tov - totalExpense,
-                contingencyPercent // Optional: store it
-            }
-        });
+        const createdApprovals = [];
+        const Notification = require('../models/Notification');
 
-        await approval.save();
+        for (const reqData of approvalRequests) {
+            let metricTitle = 'Approval Request';
+            if (reqData.triggerReason === 'gp') metricTitle = 'Sales Profit Approval Request';
+            if (reqData.triggerReason === 'contingency') metricTitle = 'Contingency Approval Request';
 
-        // Force Update Opportunity Status to match the Escalation
-        opportunity.approvalStatus = nextStatus;
+            const approval = new Approval({
+                opportunity: opportunityId,
+                gpPercent,
+                contingencyPercent,
+                triggerReason: reqData.triggerReason, // Used as primary trigger, even if combo
+                approvalLevel: reqData.level,
+                assignedTo: reqData.assignedTo,
+                requestedBy: req.user._id,
+                snapshot: {
+                    totalExpense,
+                    tov,
+                    gktRevenue: tov - totalExpense,
+                    grossProfit: tov - totalExpense,
+                    contingencyPercent
+                }
+            });
+            await approval.save();
+            createdApprovals.push(approval);
+
+            // Notification for Approver
+            await Notification.create({
+                recipientId: reqData.assignedTo,
+                triggeredBy: req.user._id,
+                triggeredByName: req.user.name,
+                type: 'approval_request',
+                message: `${metricTitle}: Opportunity ${opportunity.opportunityNumber} by ${req.user.name}`,
+                opportunityId: opportunity._id,
+                opportunityNumber: opportunity.opportunityNumber,
+                isRead: false,
+                createdAt: Date.now()
+            });
+        }
+
+        // Update Opportunity Status to pending multi-level
+        // We set to 'Pending' overall. Individual statuses are fetched via GET /opportunity/:id
+        opportunity.approvalStatus = 'Pending';
         opportunity.approvalRequired = true;
         await opportunity.save();
 
-        // Notification for Approver (Manager or Director)
-        const Notification = require('../models/Notification');
-        await Notification.create({
-            recipientId: assignedTo,
-            triggeredBy: req.user._id,
-            triggeredByName: req.user.name,
-            type: 'approval_request',
-            message: `Approval Request: Opportunity ${opportunity.opportunityNumber} by ${req.user.name} (${approvalReason})`,
-            opportunityId: opportunity._id,
-            opportunityNumber: opportunity.opportunityNumber,
-            isRead: false,
-            createdAt: Date.now()
-        });
-
-        res.status(201).json({ message: `Approval sent ${approvalLevel}`, approval });
+        res.status(201).json({ message: 'Approval requests sent successfully', approvals: createdApprovals });
     } catch (error) {
         console.error('Approval error:', error);
         res.status(500).json({ message: error.message });

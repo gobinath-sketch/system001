@@ -7,13 +7,14 @@ const AlertModal = ({
   onConfirm,
   confirmText = 'Confirm',
   cancelText = 'Cancel',
-  type = 'info'
+  type = 'info',
+  maxWidthClass = 'max-w-md'
 }) => {
   if (!isOpen) return null;
   return <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{
     backgroundColor: 'rgba(0, 0, 0, 0.4)'
   }}>
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
+            <div className={`bg-white rounded-lg shadow-xl w-full ${maxWidthClass} transform transition-all`}>
                 {/* Header */}
                 <div className={`flex justify-between items-center p-4 border-b ${type === 'warning' ? 'bg-orange-50' : 'bg-blue-50'} rounded-t-lg`}>
                     <h3 className={`text-lg font-semibold ${type === 'warning' ? 'text-orange-700' : 'text-blue-700'}`}>
@@ -26,7 +27,7 @@ const AlertModal = ({
 
                 {/* Body */}
                 <div className="p-6">
-                    <p className="text-gray-700">{message}</p>
+                    {typeof message === 'string' ? <p className="text-gray-700">{message}</p> : <div className="text-gray-700">{message}</div>}
                 </div>
 
                 {/* Footer */}

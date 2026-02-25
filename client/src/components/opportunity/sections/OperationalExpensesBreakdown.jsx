@@ -163,11 +163,14 @@ const OperationalExpensesBreakdown = ({
     }
   };
   const calculateTotal = (category, data) => {
-    if (!data) return 0;
-    const type = data.type;
-    const rate = parseFloat(data.rate) || 0;
-    const hours = parseFloat(data.hours) || 0;
-    const subPax = parseFloat(data.pax) || pax; // Default to global pax if row-level pax not set
+    const config = expenseConfig.find(c => c.key === category);
+
+    // Ensure we handle when data is missing completely or fields are undefined
+    const safeData = data || {};
+    const type = safeData.type || (config?.options ? config.options[0].value : '');
+    const rate = parseFloat(safeData.rate) || 0;
+    const hours = parseFloat(safeData.hours) || 0;
+    const subPax = parseFloat(safeData.pax) || pax; // Default to global pax if row-level pax not set
 
     switch (category) {
       case 'trainerCost':
@@ -314,19 +317,16 @@ const EditRow = ({
     icon: Icon
   } = config;
 
-  // Initialize default type if missing
-  useEffect(() => {
-    if (!data.type && options) {
-      // Default to first option
-      onUpdate('type', options[0].value);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   const selectedType = data.type || (options ? options[0].value : '');
 
   // Helper to pass updates correctly
   const handleUpdate = (field, val) => {
-    onUpdate(field, val);
+    if (!data.type && options && field !== 'type') {
+      // If type is not set in state yet but they edit rate/hours, save default type too
+      onUpdate({ type: options[0].value, [field]: val });
+    } else {
+      onUpdate(field, val);
+    }
   };
   const handleTypeChange = e => {
     onUpdate('type', e.target.value);
@@ -382,13 +382,13 @@ const EditRow = ({
     {/* Upload Action */}
     <div className="flex justify-center">
       <div className="flex items-center gap-2">
-      {hasPending && <span className="inline-flex items-center text-blue-600 text-sm font-semibold">
+        {hasPending && <span className="inline-flex items-center text-blue-600 text-sm font-semibold">
           <CheckCircle size={14} className="mr-1" /> Uploaded
-      </span>}
-      <input type="file" id={`upload-${category}`} className="hidden" onChange={e => onUpload(e)} disabled={uploading === category} />
-      <UploadButton onClick={() => document.getElementById(`upload-${category}`).click()} disabled={uploading === category}>
-        {hasUploaded || hasPending ? 'Replace' : 'Upload'}
-      </UploadButton>
+        </span>}
+        <input type="file" id={`upload-${category}`} className="hidden" onChange={e => onUpload(e)} disabled={uploading === category} />
+        <UploadButton onClick={() => document.getElementById(`upload-${category}`).click()} disabled={uploading === category}>
+          {hasUploaded || hasPending ? 'Replace' : 'Upload'}
+        </UploadButton>
       </div>
     </div>
 

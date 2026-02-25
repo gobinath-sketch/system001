@@ -244,7 +244,19 @@ router.get('/', protect, async (req, res) => {
 
         const opportunities = await Opportunity.find(filter)
             .populate('client', 'companyName location sector contactPersons')
-            .populate('createdBy', 'name role creatorCode')
+            .populate({
+                path: 'createdBy',
+                select: 'name role creatorCode reportingManager',
+                populate: {
+                    path: 'reportingManager',
+                    select: 'name role reportingManager',
+                    populate: {
+                        path: 'reportingManager',
+                        select: 'name role reportingManager',
+                        populate: { path: 'reportingManager', select: 'name role' }
+                    }
+                }
+            })
             .populate('commonDetails.sales', 'name email')
             .sort({ createdAt: -1 });
 
@@ -261,7 +273,19 @@ router.get('/:id', protect, async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id)
             .populate('client')
-            .populate('createdBy', 'name role creatorCode')
+            .populate({
+                path: 'createdBy',
+                select: 'name role creatorCode reportingManager',
+                populate: {
+                    path: 'reportingManager',
+                    select: 'name role reportingManager',
+                    populate: {
+                        path: 'reportingManager',
+                        select: 'name role reportingManager',
+                        populate: { path: 'reportingManager', select: 'name role' }
+                    }
+                }
+            })
             .populate('commonDetails.sales', 'name email')
             .populate('approvedBy', 'name role')
             .populate('rejectedBy', 'name role')
@@ -1037,7 +1061,6 @@ router.post('/:id/upload-po', protect, authorize('Sales Executive', 'Sales Manag
 
         opportunity.poDocument = req.file.path;
         opportunity.poValue = Number(poValue);
-        opportunity.poDate = new Date(poDate);
         opportunity.commonDetails.clientPODate = new Date(poDate);
 
         opportunity.activityLog.push({

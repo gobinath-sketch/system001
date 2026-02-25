@@ -9,6 +9,8 @@ import { API_BASE, API_ENDPOINTS } from '../config/api';
 
 const DEFAULT_AVATAR_URL = `${import.meta.env.BASE_URL}profile-default.svg`;
 const MAX_AVATAR_UPLOAD_BYTES = 8 * 1024 * 1024;
+const SETTINGS_TEMPORARILY_LOCKED = true;
+const SETTINGS_LOCK_VIDEO_SRC = `${import.meta.env.BASE_URL}settings-lock.mp4`;
 
 const defaults = (user) => ({
   profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
@@ -50,6 +52,17 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [devBypass, setDevBypass] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const byQuery = params.get('devSettings') === '1';
+    const byLocalStorage = window.localStorage.getItem('settings_dev_mode') === '1';
+    setDevBypass(byQuery || byLocalStorage);
+  }, []);
+
+  const isSettingsLocked = SETTINGS_TEMPORARILY_LOCKED && !devBypass;
 
   const profileCompletion = useMemo(() => {
     const checks = [
@@ -247,8 +260,8 @@ export default function SettingsPage() {
     </div>;
   }
 
-  return <div className="p-3 sm:p-6 bg-bg-page h-full">
-    <div className="w-full max-w-[1500px] mx-auto space-y-4">
+  return <div className="relative p-3 sm:p-6 bg-bg-page h-full">
+    <div className={`w-full max-w-[1500px] mx-auto space-y-4 transition ${isSettingsLocked ? 'blur-[2px] pointer-events-none select-none opacity-80' : ''}`}>
       <div className="rounded-[24px] border border-slate-200 bg-white shadow-sm px-5 py-5">
           <p className="text-[11px] tracking-[0.2em] text-slate-500 uppercase font-semibold">Settings</p>
           <div className="mt-1 flex items-center justify-between gap-3">
@@ -523,5 +536,14 @@ export default function SettingsPage() {
 
       </main>
     </div>
+    {isSettingsLocked && <div className="absolute inset-0 z-30 flex items-center justify-center p-4">
+      <div className="w-full max-w-md rounded-3xl border border-white/60 bg-white/35 backdrop-blur-xl shadow-2xl p-4 text-center">
+        <video autoPlay loop muted playsInline className="mx-auto w-72 h-44 sm:w-[460px] sm:h-[280px] object-cover rounded-2xl border border-white/70 shadow-lg">
+          <source src={SETTINGS_LOCK_VIDEO_SRC} type="video/mp4" />
+        </video>
+        <p className="mt-3 text-sm font-semibold text-slate-800">Settings is temporarily unavailable.</p>
+        <p className="text-xs text-slate-600 mt-1">This is temporary while updates are in progress.</p>
+      </div>
+    </div>}
   </div>;
 }

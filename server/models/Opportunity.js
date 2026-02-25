@@ -79,10 +79,6 @@ const OpportunitySchema = new mongoose.Schema({
         default: 0
     },
 
-    poDate: {
-        type: Date
-    },
-
     invoiceDocument: {
         type: String // File path or URL
     },
@@ -313,7 +309,7 @@ const OpportunitySchema = new mongoose.Schema({
 
     approvalStatus: {
         type: String,
-        enum: ['Not Required', 'Pending Manager', 'Pending Business Head', 'Pending Director', 'Approved', 'Rejected'],
+        enum: ['Not Required', 'Pending', 'Pending Manager', 'Pending Business Head', 'Pending Director', 'Approved', 'Rejected'],
         default: 'Not Required'
     },
 
@@ -446,13 +442,18 @@ OpportunitySchema.pre('save', async function () {
             : 30;
 
         // Only auto-update approval status if it hasn't been manually set to Approved or Rejected
-        if (this.approvalStatus !== 'Approved' && this.approvalStatus !== 'Rejected') {
+        // and if it's currently Not Required. If it's already Pending, don't revert it automatically
+        // just because values changed (the frontend handles re-triggering logic).
+        if (this.approvalStatus !== 'Approved' && this.approvalStatus !== 'Rejected' && this.approvalStatus !== 'Pending') {
             const contingencyPercent = (this.expenses && this.expenses.contingencyPercent !== undefined) ? this.expenses.contingencyPercent : 15;
 
+            // Mark as requiring approval if thresholds are met, but do NOT auto-escalate.
             if (gpPercent < 15) {
                 this.approvalRequired = true;
+                this.approvalStatus = 'Not Required'; // Frontend will trigger escalation
             } else if (contingencyPercent < 10) {
                 this.approvalRequired = true;
+                this.approvalStatus = 'Not Required';
             } else {
                 this.approvalRequired = false;
                 this.approvalStatus = 'Not Required';
@@ -507,7 +508,7 @@ OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
         'poVerified', // Added for Sales Manager to verify
         'selectedContactPerson',
         'financeDetails', // ALLOW SALES TO EDIT FINANCE
-        'poValue', 'poDate', 'poDocument', // PO Details
+        'poValue', 'poDocument', // PO Details
         'invoiceValue', 'invoiceDocument' // Invoice Details (for viewing)
     ];
 
