@@ -103,90 +103,92 @@ const SMEManagement = () => {
     }
   };
   return <div className="p-3 sm:p-5">
-            <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-3">
-                <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
-                    <button onClick={() => navigate('/dashboard/delivery')} className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0" aria-label="Back">
-                        <ArrowLeft size={24} />
-                    </button>
-                    <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue truncate">SME Management</h1>
-                </div>
-                <button onClick={handleAddClick} className="bg-brand-blue text-white px-6 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-opacity-90 shadow-md transition-colors w-full sm:w-auto">
-                    <Plus size={18} /> Add SME
-                </button>
+    <div className="flex flex-col sm:flex-row justify-between sm:items-center mb-6 gap-3">
+      <div className="flex items-center space-x-3 sm:space-x-4 min-w-0">
+        <button onClick={() => navigate('/dashboard/delivery')} className="h-10 w-10 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 hover:text-gray-900 shadow-sm transition-colors shrink-0" aria-label="Back">
+          <ArrowLeft size={24} />
+        </button>
+        <h1 className="text-2xl sm:text-3xl font-bold text-primary-blue truncate">SME Management</h1>
+      </div>
+      <button onClick={handleAddClick} className="bg-primary-blue text-white px-5 sm:px-7 py-3 sm:py-3.5 rounded-lg flex items-center justify-center space-x-2 hover:bg-opacity-90 shadow-md w-full sm:w-auto">
+        <Plus size={18} />
+        <span className="font-bold text-[15px]">Add SME</span>
+      </button>
+    </div>
+
+    {/* List View */}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      {/* Table Header with Search & Filters */}
+      <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
+        <h2 className="text-[18px] font-semibold text-gray-900">
+          All SMEs <span className="text-gray-500">({smes.length})</span>
+        </h2>
+        <div className="flex flex-1 items-center justify-end gap-3 w-full md:w-auto flex-wrap">
+          <div className="relative w-full sm:w-64 md:max-w-md">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+            <input name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search SMEs..." className="w-full pl-11 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px]" />
+          </div>
+          <div className="flex gap-2 flex-wrap w-full sm:w-auto">
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <select name="type" value={filters.type} onChange={handleFilterChange} className="pl-10 pr-9 py-2.5 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-[14px] cursor-pointer hover:bg-gray-50">
+                <option value="">All Types</option>
+                <option value="Company">Company</option>
+                <option value="Freelancer">Freelancer</option>
+              </select>
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* List View */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                {/* Table Header with Search & Filters */}
-                <div className="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
-                    <div className="text-gray-600 font-semibold">
-                        All SMEs <span className="bg-gray-100 px-2 py-0.5 rounded-full text-xs text-brand-blue ml-1">{smes.length}</span>
-                    </div>
-
-                    <div className="flex flex-1 items-center justify-end gap-3 w-full md:w-auto flex-wrap">
-                        <div className="relative w-full sm:w-64 md:max-w-md">
-                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-                            <input name="search" value={filters.search} onChange={handleFilterChange} placeholder="Search SMEs..." className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm" />
-                        </div>
-                        <div className="relative w-full sm:w-48">
-                            <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-                            <select name="type" value={filters.type} onChange={handleFilterChange} className="w-full pl-9 pr-8 py-2 border border-gray-200 rounded-lg appearance-none bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue text-sm cursor-pointer hover:bg-gray-50">
-                                <option value="">All Types</option>
-                                <option value="Company">Company</option>
-                                <option value="Freelancer">Freelancer</option>
-                            </select>
-                        </div>
-                    </div>
+      {/* Table */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-left text-[16px] relative">
+          <thead className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <tr>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Type</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">SME Name</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Company Name</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Contact</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Email</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Location</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">Loading...</td></tr> : smes.length === 0 ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No SMEs found</td></tr> : smes.map(sme => <tr key={sme._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={e => handleViewClick(sme, e)}>
+              <td className="px-6 py-2 text-center">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-[14px] font-medium border ${sme.smeType === 'Company' ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-green-100 text-green-800 border-green-200'}`}>
+                  {sme.smeType || 'Freelancer'}
+                </span>
+              </td>
+              <td className="px-6 py-2 font-bold text-gray-900 text-center">{sme.name}</td>
+              <td className="px-6 py-2 text-gray-700 text-center">
+                {sme.smeType === 'Company' ? sme.companyName || 'N/A' : '-'}
+              </td>
+              <td className="px-6 py-2 text-gray-700 text-center">{sme.contactNumber}</td>
+              <td className="px-6 py-2 text-gray-700 text-center">{sme.email}</td>
+              <td className="px-6 py-2 text-gray-700 text-center">{sme.location}</td>
+              <td className="px-6 py-2 text-center">
+                <div className="flex items-center justify-center gap-4">
+                  <button onClick={e => handleEditClick(sme, e)} className="text-green-600 hover:text-green-800 transition-transform hover:scale-110" title="Edit">
+                    <Edit size={18} />
+                  </button>
+                  <button onClick={e => handleDelete(sme._id, e)} className="text-red-600 hover:text-red-800 transition-transform hover:scale-110" title="Delete">
+                    <Trash2 size={18} />
+                  </button>
                 </div>
+              </td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="min-w-full text-center text-sm">
-                        <thead className="border-b border-gray-200 bg-gray-50/50">
-                            <tr>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Type</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">SME Name</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Company Name</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Contact</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Email</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Location</th>
-                                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100">
-                            {loading ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">Loading...</td></tr> : smes.length === 0 ? <tr><td colSpan="7" className="px-6 py-8 text-center text-gray-500">No SMEs found</td></tr> : smes.map(sme => <tr key={sme._id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={e => handleViewClick(sme, e)}>
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`px-2 py-1 text-xs rounded-full font-medium ${sme.smeType === 'Company' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'}`}>
-                                                {sme.smeType || 'Freelancer'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 font-bold text-gray-900 text-center">{sme.name}</td>
-                                        <td className="px-6 py-4 text-gray-700 text-center">
-                                            {sme.smeType === 'Company' ? sme.companyName || 'N/A' : '-'}
-                                        </td>
-                                        <td className="px-6 py-4 text-gray-700 text-center">{sme.contactNumber}</td>
-                                        <td className="px-6 py-4 text-gray-700 text-center">{sme.email}</td>
-                                        <td className="px-6 py-4 text-gray-700 text-center">{sme.location}</td>
-                                        <td className="px-6 py-4 text-center">
-                                            <div className="flex items-center justify-center gap-4">
-                                                <button onClick={e => handleEditClick(sme, e)} className="text-green-600 hover:text-green-800 transition-transform hover:scale-110" title="Edit">
-                                                    <Edit size={18} />
-                                                </button>
-                                                <button onClick={e => handleDelete(sme._id, e)} className="text-red-600 hover:text-red-800 transition-transform hover:scale-110" title="Delete">
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>)}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+    {/* Modals */}
+    <AddSMEModal isOpen={isAddEditModalOpen} onClose={() => setIsAddEditModalOpen(false)} onSuccess={handleModalSuccess} smeToEdit={smeToEdit} />
 
-            {/* Modals */}
-            <AddSMEModal isOpen={isAddEditModalOpen} onClose={() => setIsAddEditModalOpen(false)} onSuccess={handleModalSuccess} smeToEdit={smeToEdit} />
-
-            <ViewSMEModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} sme={selectedSme} />
-        </div>;
+    <ViewSMEModal isOpen={isViewModalOpen} onClose={() => setIsViewModalOpen(false)} sme={selectedSme} />
+  </div>;
 };
 export default SMEManagement;
