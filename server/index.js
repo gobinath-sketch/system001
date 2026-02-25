@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const dotenv = require('dotenv');
+const { corsMiddleware, corsPreflightMiddleware, socketCorsOptions } = require('./config/cors');
 
 dotenv.config();
 
@@ -12,7 +12,12 @@ const path = require('path');
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(corsMiddleware);
+app.options(/.*/, corsPreflightMiddleware);
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
@@ -64,23 +69,9 @@ app.get('/', (req, res) => {
 const http = require('http');
 const { Server } = require('socket.io');
 
-const allowedSocketOrigins = (process.env.CLIENT_ORIGINS || '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: (origin, callback) => {
-            if (!origin) return callback(null, true);
-            if (allowedSocketOrigins.length === 0) return callback(null, true);
-            if (allowedSocketOrigins.includes(origin)) return callback(null, true);
-            return callback(new Error('Socket origin not allowed by CORS'));
-        },
-        methods: ["GET", "POST"],
-        credentials: true
-    }
+    cors: socketCorsOptions
 });
 
 // Store io instance for use in routes
