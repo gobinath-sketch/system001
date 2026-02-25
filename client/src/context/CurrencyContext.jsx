@@ -56,8 +56,8 @@ export const CurrencyProvider = ({
     setCurrency,
     toggleCurrency
   }}>
-            {children}
-        </CurrencyContext.Provider>;
+    {children}
+  </CurrencyContext.Provider>;
 };
 export const useCurrency = () => {
   const context = useContext(CurrencyContext);

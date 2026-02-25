@@ -1,27 +1,19 @@
-const cors = require('cors');
-
-// Allow all origins/ports. Origin reflection keeps credentialed requests valid.
+// Dynamically reflect any origin to allow all ports/hosts securely
 const corsOptions = {
-    origin: (origin, callback) => callback(null, true),
-    credentials: true,
+    origin: "*",
+    credentials: false,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    optionsSuccessStatus: 204
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
 };
 
 const socketCorsOptions = {
-    origin: (origin, callback) => callback(null, true),
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    credentials: true
+    origin: "*", // allow all for socket
+    methods: ['GET', 'POST', 'OPTIONS']
 };
 
-const corsMiddleware = cors(corsOptions);
-const corsPreflightMiddleware = cors(corsOptions);
 
 module.exports = {
     corsOptions,
     socketCorsOptions,
-    corsMiddleware,
-    corsPreflightMiddleware
 };
 

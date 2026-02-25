@@ -1,7 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const { corsMiddleware, corsPreflightMiddleware, socketCorsOptions } = require('./config/cors');
+const cors = require('cors');
+const { corsOptions, socketCorsOptions } = require('./config/cors');
 
 dotenv.config();
 
@@ -12,8 +13,7 @@ const path = require('path');
 
 // Middleware
 app.use(express.json());
-app.use(corsMiddleware);
-app.options(/.*/, corsPreflightMiddleware);
+app.use(cors(corsOptions));
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
@@ -21,13 +21,14 @@ app.use((req, res, next) => {
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
-const dbUri = process.env.MONGO_URI
-    ? `${process.env.MONGO_URI}${process.env.MONGO_DB_NAME || ''}`
-    : process.env.MONGODB_URI;
+const dbUri = process.env.MONGO_URI;
 
 mongoose.connect(dbUri)
-    .then(() => console.log('✅ MongoDB Connected (Dashboard Updated)'))
-    .catch(err => console.log(err));
+    .then(() => console.log('? MongoDB Connected'))
+    .catch(err => {
+        console.error('? MongoDB Connection Failed');
+        console.error(err.message);
+    });
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');

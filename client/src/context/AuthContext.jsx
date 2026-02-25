@@ -76,6 +76,6 @@ export const AuthProvider = ({
     updateUser,
     loading
   }}>
-            {!loading && children}
-        </AuthContext.Provider>;
+    {!loading && children}
+  </AuthContext.Provider>;
 };
