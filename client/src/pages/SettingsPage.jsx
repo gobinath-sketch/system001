@@ -13,6 +13,15 @@ const SETTINGS_TEMPORARILY_LOCKED = true;
 const SETTINGS_LOCK_VIDEO_SRC = `${import.meta.env.BASE_URL}settings-lock.mp4`;
 const ENV_DEV_BYPASS = import.meta.env.VITE_SETTINGS_DEV_MODE === '1';
 
+const PROFILE_COMPLETENESS_FIELDS = [
+  { key: 'firstName', label: 'first name' },
+  { key: 'lastName', label: 'last name' },
+  { key: 'email', label: 'email' },
+  { key: 'language', label: 'language' },
+  { key: 'timezone', label: 'timezone' },
+  { key: 'weekStartsOn', label: 'week start day' }
+];
+
 const defaults = (user) => ({
   profile: { firstName: user?.name?.split(' ')?.[0] || '', lastName: user?.name?.split(' ')?.slice(1).join(' ') || '', email: user?.email || '', language: 'English', timezone: 'Asia/Kolkata', weekStartsOn: 'Monday', avatarDataUrl: user?.avatarDataUrl || '' },
   preferences: { defaultCurrency: 'INR', defaultLanding: 'Dashboard', dateFormat: 'DD/MM/YYYY', numberFormat: 'Indian', savedPresets: [] },
@@ -65,18 +74,30 @@ export default function SettingsPage() {
 
   const isSettingsLocked = SETTINGS_TEMPORARILY_LOCKED && !devBypass;
 
-  const profileCompletion = useMemo(() => {
-    const checks = [
-      settings.profile.firstName,
-      settings.profile.lastName,
-      settings.profile.email,
-      settings.profile.language,
-      settings.profile.timezone,
-      settings.profile.weekStartsOn
-    ];
-    const done = checks.filter(Boolean).length;
-    return Math.round(done / checks.length * 100);
+  const profileRealtime = useMemo(() => {
+    const missing = PROFILE_COMPLETENESS_FIELDS.filter(({ key }) => {
+      const value = settings?.profile?.[key];
+      return !(typeof value === 'string' ? value.trim().length > 0 : Boolean(value));
+    });
+    const done = PROFILE_COMPLETENESS_FIELDS.length - missing.length;
+    const completion = Math.round((done / PROFILE_COMPLETENESS_FIELDS.length) * 100);
+    return { completion, missing };
   }, [settings.profile]);
+
+  const quickTipsRealtime = useMemo(() => {
+    if (profileRealtime.missing.length === 0) {
+      return {
+        title: 'Profile is complete',
+        body: 'All required profile fields are filled. Keep them updated for account recovery and notifications.'
+      };
+    }
+
+    const pending = profileRealtime.missing.map((item) => item.label);
+    return {
+      title: `${pending.length} field${pending.length > 1 ? 's' : ''} pending`,
+      body: `Complete ${pending.join(', ')} to improve account recovery and notification accuracy.`
+    };
+  }, [profileRealtime]);
 
   const formatDatePreview = useMemo(() => {
     const now = new Date('2026-02-24T10:30:00');
@@ -307,16 +328,17 @@ export default function SettingsPage() {
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <span className="font-bold text-slate-700">Profile Completeness</span>
-                  <span className="font-extrabold text-slate-900">{profileCompletion}%</span>
+                  <span className="font-extrabold text-slate-900">{profileRealtime.completion}%</span>
                 </div>
                 <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-                  <div className="h-full bg-[#0b5cab]" style={{ width: `${profileCompletion}%` }} />
+                  <div className="h-full bg-[#0b5cab]" style={{ width: `${profileRealtime.completion}%` }} />
                 </div>
               </div>
 
               <div className="rounded-xl border border-slate-200 p-3 text-sm text-slate-700">
                 <p className="font-bold text-slate-800 mb-1">Quick Tips</p>
-                <p>Complete your profile to improve account recovery and notification accuracy.</p>
+                <p className="font-semibold text-slate-800 mb-1">{quickTipsRealtime.title}</p>
+                <p>{quickTipsRealtime.body}</p>
               </div>
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 space-y-2">
