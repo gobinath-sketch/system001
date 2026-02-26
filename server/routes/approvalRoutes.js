@@ -321,22 +321,23 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
         // Check Contingency
         if (validTriggers.includes('contingency')) {
             if (contingencyPercent < 5) {
-                if (!businessHead) return res.status(400).json({ message: 'No approver found for Business Head' });
-                approvalRequests.push({
-                    level: 'Business Head',
-                    assignedTo: businessHead._id,
-                    reason: 'Contingency < 5%',
-                    triggerReason: 'contingency'
-                });
+                // Business Head rule: Can set 0-15% without approval (so they skip this < 5 check)
+                if (req.user.role !== 'Business Head') {
+                    if (!businessHead) return res.status(400).json({ message: 'No approver found for Business Head' });
+                    approvalRequests.push({
+                        level: 'Business Head',
+                        assignedTo: businessHead._id,
+                        reason: 'Contingency < 5%',
+                        triggerReason: 'contingency'
+                    });
+                }
             } else if (contingencyPercent < 10) {
-                // If the requester is a Sales Executive, it goes to the Manager.
-                // Sales Managers and Business Heads have freedom to apply 5-15% without restriction.
                 if (req.user.role === 'Sales Executive') {
                     if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
                     approvalRequests.push({
                         level: 'Manager',
                         assignedTo: manager._id,
-                        reason: 'Contingency 5-9%',
+                        reason: 'Contingency 5-9.99%',
                         triggerReason: 'contingency'
                     });
                 }
@@ -345,23 +346,26 @@ router.post('/escalate', protect, authorize('Sales Executive', 'Sales Manager', 
 
         // Check GP
         if (validTriggers.includes('gp')) {
-            if (gpPercent <= 5) {
+            if (gpPercent < 5) {
                 if (!director) return res.status(400).json({ message: 'No approver found for Director' });
                 approvalRequests.push({
                     level: 'Director',
                     assignedTo: director._id,
-                    reason: 'Sales Profit <= 5%',
+                    reason: 'Sales Profit < 5%',
                     triggerReason: 'gp'
                 });
             } else if (gpPercent < 15) {
-                if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
+                // Sales Managers and Business Heads don't need approval for 5-30%
+                if (req.user.role === 'Sales Executive') {
+                    if (!manager) return res.status(400).json({ message: 'No approver found for Manager' });
 
-                approvalRequests.push({
-                    level: 'Manager',
-                    assignedTo: manager._id,
-                    reason: 'Sales Profit 5-14%',
-                    triggerReason: 'gp'
-                });
+                    approvalRequests.push({
+                        level: 'Manager',
+                        assignedTo: manager._id,
+                        reason: 'Sales Profit 5-14.99%',
+                        triggerReason: 'gp'
+                    });
+                }
             }
         }
 
