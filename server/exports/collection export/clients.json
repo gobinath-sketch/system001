@@ -1,0 +1,570 @@
+[
+  {
+    "_id": "6971b36411e765c4864e53a6",
+    "companyName": "TechNova Solutions Pvt Ltd",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Ananya Rao ",
+        "designation": "Head - Learning and development",
+        "department": "L&D",
+        "contactNumber": "9876543210",
+        "email": "ananya.r@technova.com",
+        "location": "Bangalore, Karnataka",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6971b36411e765c4864e53a7",
+        "createdAt": "2026-01-22T05:19:32.717Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-22T05:19:32.719Z",
+    "__v": 0
+  },
+  {
+    "_id": "6971b3e711e765c4864e53b4",
+    "companyName": "InnoCore System Ltd",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Suresh Kumar",
+        "designation": "Training coordinator",
+        "department": "HR",
+        "contactNumber": "9988776655",
+        "email": "suresh.k@innocore.com",
+        "location": "Hyderabad, Telengana",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "Meena Patel",
+          "designation": "Senior Manager",
+          "contactNumber": "9876011224",
+          "email": "meena.p@innocore.com"
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-22T05:21:43.450Z",
+        "_id": "6971b3e711e765c4864e53b5"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-22T05:21:43.450Z",
+    "__v": 1
+  },
+  {
+    "_id": "6971b4a911e765c4864e53c6",
+    "companyName": "BlueWave Technologies",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Karthik Subramanian",
+        "designation": "Director – Human Resources",
+        "department": "HR",
+        "contactNumber": "9444455667",
+        "email": "karthi.s@bluewave.com",
+        "location": "Chennai, Tamilnadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6971b4a911e765c4864e53c7",
+        "createdAt": "2026-01-22T05:24:57.382Z"
+      },
+      {
+        "name": "Priya Natarajan",
+        "designation": "Manager – Learning Programs",
+        "department": "L&D",
+        "contactNumber": "9555588990",
+        "email": "priya.n@bluewave.com",
+        "location": "Chennai, Tamilnadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": false,
+        "_id": "6971b4a911e765c4864e53c8",
+        "createdAt": "2026-01-22T05:24:57.383Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-22T05:24:57.383Z",
+    "__v": 0
+  },
+  {
+    "_id": "6971c4da2c7cce5fdb961a73",
+    "companyName": "AstraMind Analytics Pvt Ltd",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Ravi Teja",
+        "designation": "Head – Talent Development",
+        "department": "L&D",
+        "contactNumber": "+91 9849011223",
+        "email": "ravi.teja@astramind.com",
+        "location": "Hyderabad, Telengana",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6971c4da2c7cce5fdb961a74",
+        "createdAt": "2026-01-22T06:34:02.869Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81d",
+    "createdAt": "2026-01-22T06:34:02.870Z",
+    "__v": 0
+  },
+  {
+    "_id": "6971c5642c7cce5fdb961a84",
+    "companyName": "CloudEdge Digital Services",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Mohit Agarwal",
+        "designation": "Director – Engineering Enablement",
+        "department": "IT",
+        "contactNumber": "+91 9986933445",
+        "email": "mohit.agarwal@cloudedge.com",
+        "location": "Bangalore, Karnataka",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6971c5642c7cce5fdb961a85",
+        "createdAt": "2026-01-22T06:36:20.625Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81d",
+    "createdAt": "2026-01-22T06:36:20.625Z",
+    "__v": 0
+  },
+  {
+    "_id": "6971c5cf2c7cce5fdb961a90",
+    "companyName": "GreenField Institute of Technology",
+    "sector": "College",
+    "contactPersons": [
+      {
+        "name": "Dr. S. Ramesh Kumar",
+        "designation": "Head – Training & Placement",
+        "department": "Placement Cell",
+        "contactNumber": "+91 9487533221",
+        "email": "ramesh.kumar@greenfieldit.edu.in",
+        "location": "Coimbatore, Tamil Nadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6971c5cf2c7cce5fdb961a91",
+        "createdAt": "2026-01-22T06:38:07.373Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81d",
+    "createdAt": "2026-01-22T06:38:07.373Z",
+    "__v": 0
+  },
+  {
+    "_id": "6971c6252c7cce5fdb961aa0",
+    "companyName": "Sunrise International School",
+    "sector": "School",
+    "contactPersons": [
+      {
+        "name": "Mrs. Lakshmi Narayanan",
+        "designation": "Principal",
+        "department": "Administration",
+        "contactNumber": "+91 9444055666",
+        "email": "principal@sunriseinternationalschool.edu.in",
+        "location": "Chennai, Tamil Nadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-22T06:39:33.548Z",
+        "_id": "6971c6252c7cce5fdb961aa1"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81d",
+    "createdAt": "2026-01-22T06:39:33.549Z",
+    "__v": 1
+  },
+  {
+    "_id": "6973256b59ba656042034ce9",
+    "companyName": "Zoho",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Akshaya",
+        "designation": "Trainer",
+        "department": "IT",
+        "contactNumber": "9876598756",
+        "email": "akshaya.b@zoho.com",
+        "location": "Chennai, TamilNadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6973256b59ba656042034cea",
+        "createdAt": "2026-01-23T07:38:19.155Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-23T07:38:19.158Z",
+    "__v": 0
+  },
+  {
+    "_id": "6978426e9b3a9fdab61f1210",
+    "companyName": "TATA",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Sangeetha",
+        "designation": "Training coordinator",
+        "department": "HR",
+        "contactNumber": "8989898989",
+        "email": "sangeetha.b@tata.com",
+        "location": "Chennai, Tamilnadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-27T04:43:26.272Z",
+        "_id": "6978426e9b3a9fdab61f1211"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-27T04:43:26.273Z",
+    "__v": 2
+  },
+  {
+    "_id": "697ae7675afe3e0cf13ac82b",
+    "companyName": "Google",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Gokul ",
+        "designation": "Technical head",
+        "department": "IT",
+        "contactNumber": "9898989898",
+        "email": "gokul@google.com",
+        "location": "Cochin, Kerala",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-29T04:51:51.682Z",
+        "_id": "697ae7675afe3e0cf13ac82c"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-29T04:51:51.683Z",
+    "__v": 2
+  },
+  {
+    "_id": "697ae7bb1872cc4b40a4a553",
+    "companyName": "Microsoft",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Varun",
+        "designation": "Manager",
+        "department": "IT",
+        "contactNumber": "8220739766",
+        "email": "varun@microsoft.com",
+        "location": "Chennai, TamilNadu",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-29T04:53:15.670Z",
+        "_id": "697ae7bb1872cc4b40a4a554"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-29T04:53:15.672Z",
+    "__v": 1
+  },
+  {
+    "_id": "697ae8155afe3e0cf13ac92a",
+    "companyName": "IBM",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Divya dharshini",
+        "designation": "Manager",
+        "department": "IT",
+        "contactNumber": "9876543211",
+        "email": "divya@ibm.com",
+        "location": "Hyderabad, Telengana",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-29T04:54:21.582Z",
+        "_id": "697ae7fd5afe3e0cf13ac87a"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-29T04:54:45.598Z",
+    "__v": 5
+  },
+  {
+    "_id": "697aedd2b197847931b8a208",
+    "companyName": "Wipro Technologies",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Sathya",
+        "designation": "Manager",
+        "department": "IT",
+        "contactNumber": "9998887221",
+        "email": "sathya@wipro.com",
+        "location": "Bangalore, Karnataka",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-29T05:19:14.778Z",
+        "_id": "697aedd2b197847931b8a209"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-29T05:19:14.779Z",
+    "__v": 5
+  },
+  {
+    "_id": "697b3e9464fd8be891223825",
+    "companyName": "TCS",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Ram",
+        "designation": "L&D team",
+        "department": "L&D",
+        "contactNumber": "9999999996",
+        "email": "anc@gmail.com",
+        "location": "Chennai",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "createdAt": "2026-01-29T11:03:48.622Z",
+        "_id": "697b3e9464fd8be891223826"
+      },
+      {
+        "name": "Lavanya",
+        "designation": "Manager",
+        "department": "HR",
+        "contactNumber": "7676767676",
+        "email": "lavanya.v@tcs.com",
+        "location": "Chennai",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": false,
+        "createdAt": "2026-02-05T07:31:10.155Z",
+        "_id": "6984473e2a99276fb26b9872"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-01-29T11:03:48.623Z",
+    "__v": 3
+  },
+  {
+    "_id": "6985909920ec826349cfba72",
+    "companyName": "Infosys",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Priya",
+        "designation": "Manager",
+        "department": "HR",
+        "contactNumber": "7878787878",
+        "email": "priya.b@info.com",
+        "location": "Bangalore, Karnataka",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "6985909920ec826349cfba73",
+        "createdAt": "2026-02-06T06:56:25.235Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-02-06T06:56:25.236Z",
+    "__v": 0
+  },
+  {
+    "_id": "698c555e3e2c5a2eefe29e8a",
+    "companyName": "HCL",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Mamatha",
+        "designation": "talent exc",
+        "department": "T&D",
+        "contactNumber": "9019144446",
+        "email": "karthik.r@gmail.com",
+        "location": "Chennai",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "698c555e3e2c5a2eefe29e8b",
+        "createdAt": "2026-02-11T10:09:34.162Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-02-11T10:09:34.163Z",
+    "__v": 0
+  },
+  {
+    "_id": "699440585f2b0b97463ae049",
+    "companyName": "HCL",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "maker",
+        "designation": "manager",
+        "department": "developer",
+        "contactNumber": "1234667887",
+        "email": "company@gmail.com",
+        "location": "hiroshima ,japan",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "699440585f2b0b97463ae04a",
+        "createdAt": "2026-02-17T10:18:00.674Z"
+      }
+    ],
+    "createdBy": "6992e52e4cf84b974a03f5e4",
+    "createdAt": "2026-02-17T10:18:00.675Z",
+    "__v": 0
+  },
+  {
+    "_id": "69958edeef0ba09c0f121bff",
+    "companyName": "KSR",
+    "sector": "College",
+    "contactPersons": [
+      {
+        "name": "Anand",
+        "designation": "HOD",
+        "department": "CSE",
+        "contactNumber": "7878738737",
+        "email": "anand.cse@ksrce.ac.in",
+        "location": "Tiruchengode",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "69958edeef0ba09c0f121c00",
+        "createdAt": "2026-02-18T10:05:18.775Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-02-18T10:05:18.776Z",
+    "__v": 0
+  },
+  {
+    "_id": "699de271356facb4bc3351c4",
+    "companyName": "Mphasis",
+    "sector": "Enterprise",
+    "contactPersons": [
+      {
+        "name": "Kanishka",
+        "designation": "HR Manager",
+        "department": "HR",
+        "contactNumber": "+918787887878",
+        "email": "kanishka.m@mpahsis.com",
+        "location": "India",
+        "linkedIn": "",
+        "reportingManager": {
+          "name": "",
+          "designation": "",
+          "contactNumber": "",
+          "email": ""
+        },
+        "isPrimary": true,
+        "_id": "699de271356facb4bc3351c5",
+        "createdAt": "2026-02-24T17:40:01.541Z"
+      }
+    ],
+    "createdBy": "6971ac831b9e4de28a12b81b",
+    "createdAt": "2026-02-24T17:40:01.541Z",
+    "__v": 0
+  }
+]

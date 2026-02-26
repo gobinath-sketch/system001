@@ -1,7 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
-const cors = require('cors');
 const dotenv = require('dotenv');
+const cors = require('cors');
+const { corsOptions, socketCorsOptions } = require('./config/cors');
 
 dotenv.config();
 
@@ -12,13 +13,22 @@ const path = require('path');
 
 // Middleware
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
+app.use((req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    next();
+});
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
-mongoose.connect(process.env.MONGODB_URI)
-    .then(() => console.log('✅ MongoDB Connected (Dashboard Updated)'))
-    .catch(err => console.log(err));
+const dbUri = process.env.MONGO_URI;
+
+mongoose.connect(dbUri)
+    .then(() => console.log('? MongoDB Connected'))
+    .catch(err => {
+        console.error('? MongoDB Connection Failed');
+        console.error(err.message);
+    });
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
@@ -60,23 +70,9 @@ app.get('/', (req, res) => {
 const http = require('http');
 const { Server } = require('socket.io');
 
-const allowedSocketOrigins = (process.env.CLIENT_ORIGINS || '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
-
 const server = http.createServer(app);
 const io = new Server(server, {
-    cors: {
-        origin: (origin, callback) => {
-            if (!origin) return callback(null, true);
-            if (allowedSocketOrigins.length === 0) return callback(null, true);
-            if (allowedSocketOrigins.includes(origin)) return callback(null, true);
-            return callback(new Error('Socket origin not allowed by CORS'));
-        },
-        methods: ["GET", "POST"],
-        credentials: true
-    }
+    cors: socketCorsOptions
 });
 
 // Store io instance for use in routes

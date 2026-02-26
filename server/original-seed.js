@@ -91,7 +91,8 @@ const buildCreatorCode = (role, index) => {
 };
 
 const seedFromSheet = async () => {
-  await mongoose.connect(process.env.MONGODB_URI);
+  const dbUri = process.env.MONGO_URI ? `${process.env.MONGO_URI}${process.env.MONGO_DB_NAME || ''}` : process.env.MONGODB_URI;
+  await mongoose.connect(dbUri);
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash('password123', salt);

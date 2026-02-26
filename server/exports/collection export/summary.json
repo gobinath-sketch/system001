@@ -1,0 +1,37 @@
+{
+  "checkedAt": "2026-02-25T11:03:28.582Z",
+  "database": "test",
+  "missingBefore": [],
+  "collections": [
+    {
+      "name": "approvals",
+      "count": 78,
+      "file": "approvals.json"
+    },
+    {
+      "name": "smes",
+      "count": 6,
+      "file": "smes.json"
+    },
+    {
+      "name": "opportunities",
+      "count": 27,
+      "file": "opportunities.json"
+    },
+    {
+      "name": "clients",
+      "count": 19,
+      "file": "clients.json"
+    },
+    {
+      "name": "users",
+      "count": 17,
+      "file": "users.json"
+    },
+    {
+      "name": "notifications",
+      "count": 592,
+      "file": "notifications.json"
+    }
+  ]
+}
