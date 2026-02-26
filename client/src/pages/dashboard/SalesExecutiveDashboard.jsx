@@ -80,13 +80,19 @@ const SalesExecutiveDashboard = ({
   const fetchDashboardData = useCallback(async () => {
     try {
       const token = sessionStorage.getItem('token');
+      const tokenPayload = token ? JSON.parse(atob(token.split('.')[1])) : null;
+      const effectiveUserId = customUserId || user?.id || user?._id || tokenPayload?.id;
+      if (!token || !effectiveUserId) {
+        setLoading(false);
+        return;
+      }
       const headers = {
-        Authorization: `Bearer ${token} `
+        Authorization: `Bearer ${token}`
       };
       const params = customUserId ? {
         userId: customUserId
       } : {};
-      const perfRes = await axios.get(`${API_BASE}/api/dashboard/performance/${customUserId || user.id}`, {
+      const perfRes = await axios.get(`${API_BASE}/api/dashboard/performance/${effectiveUserId}`, {
         headers
       });
       setPerformance(perfRes.data);
@@ -109,7 +115,7 @@ const SalesExecutiveDashboard = ({
       console.error('Error fetching dashboard data:', err);
       setLoading(false);
     }
-  }, [customUserId, user.id]);
+  }, [customUserId, user]);
   useEffect(() => {
     fetchDashboardData();
   }, [fetchDashboardData]);

@@ -1,6 +1,8 @@
 [
   {
-    "_id": "6971ac831b9e4de28a12b815",
+    "_id": {
+      "": "6971ac831b9e4de28a12b815"
+    },
     "name": "Amit Sharma",
     "email": "amit.director@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
@@ -71,19 +73,25 @@
     }
   },
   {
-    "_id": "6971ac831b9e4de28a12b817",
+    "_id": {
+      "": "6971ac831b9e4de28a12b817"
+    },
     "name": "Priya Singh",
     "email": "priya.mgr@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Sales Manager",
     "creatorCode": "M1",
-    "reportingManager": "6992e52e4cf84b974a03f5e4",
+    "reportingManager": {
+      "": "6992e52e4cf84b974a03f5e4"
+    },
     "targets": [
       {
         "year": 2026,
         "period": "Yearly",
         "amount": 1000000,
-        "_id": "6992f03f7d0130a205725c18"
+        "_id": {
+          "": "6992f03f7d0130a205725c18"
+        }
       }
     ],
     "createdAt": "2026-01-22T04:50:11.549Z",
@@ -311,37 +319,49 @@
     }
   },
   {
-    "_id": "6971ac831b9e4de28a12b818",
+    "_id": {
+      "": "6971ac831b9e4de28a12b818"
+    },
     "name": "Rahul Verma",
     "email": "rahul.mgr@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Sales Manager",
     "creatorCode": "M2",
-    "reportingManager": "6971ac831b9e4de28a12b815",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b815"
+    },
     "targets": [],
     "createdAt": "2026-01-22T04:50:11.550Z",
     "__v": 0
   },
   {
-    "_id": "6971ac831b9e4de28a12b81b",
+    "_id": {
+      "": "6971ac831b9e4de28a12b81b"
+    },
     "name": "Vikram Das",
     "email": "vikram.exec@company.com",
     "password": "$2b$10$7y6bmajuQkM1Z/4sBMk1y.793lHUNDAJpStMxdzU4ZQuCOcXNSOwy",
     "role": "Sales Executive",
     "creatorCode": "E1",
-    "reportingManager": "6971ac831b9e4de28a12b817",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b817"
+    },
     "targets": [
       {
         "year": 2026,
         "period": "Yearly",
         "amount": 2000000,
-        "_id": "6971cb8d2c7cce5fdb962068"
+        "_id": {
+          "": "6971cb8d2c7cce5fdb962068"
+        }
       },
       {
         "year": 2026,
         "period": "Quarterly",
         "amount": 50000,
-        "_id": "699463dc8192abc8f098441b"
+        "_id": {
+          "": "699463dc8192abc8f098441b"
+        }
       }
     ],
     "createdAt": "2026-01-22T04:50:11.629Z",
@@ -416,19 +436,25 @@
     }
   },
   {
-    "_id": "6971ac831b9e4de28a12b81d",
+    "_id": {
+      "": "6971ac831b9e4de28a12b81d"
+    },
     "name": "Sneha Patel",
     "email": "sneha.exec@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Sales Executive",
     "creatorCode": "E2",
-    "reportingManager": "6971ac831b9e4de28a12b817",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b817"
+    },
     "targets": [
       {
         "year": 2026,
         "period": "Yearly",
         "amount": 1500000,
-        "_id": "697206463c019c36566f195a"
+        "_id": {
+          "": "697206463c019c36566f195a"
+        }
       }
     ],
     "createdAt": "2026-01-22T04:50:11.666Z",
@@ -491,37 +517,49 @@
     }
   },
   {
-    "_id": "6971ac831b9e4de28a12b81f",
+    "_id": {
+      "": "6971ac831b9e4de28a12b81f"
+    },
     "name": "Arjun Reddy",
     "email": "arjun.exec@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Sales Executive",
     "creatorCode": "E3",
-    "reportingManager": "6971ac831b9e4de28a12b818",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b818"
+    },
     "targets": [],
     "createdAt": "2026-01-22T04:50:11.701Z",
     "__v": 0
   },
   {
-    "_id": "6971ac831b9e4de28a12b821",
+    "_id": {
+      "": "6971ac831b9e4de28a12b821"
+    },
     "name": "Neha Gupta",
     "email": "neha.exec@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Sales Executive",
     "creatorCode": "E4",
-    "reportingManager": "6971ac831b9e4de28a12b818",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b818"
+    },
     "targets": [],
     "createdAt": "2026-01-22T04:50:11.736Z",
     "__v": 0
   },
   {
-    "_id": "6971ac831b9e4de28a12b823",
+    "_id": {
+      "": "6971ac831b9e4de28a12b823"
+    },
     "name": "Karthik Raman",
     "email": "ops.lead@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Delivery Team",
     "creatorCode": "D1",
-    "reportingManager": "6971ac831b9e4de28a12b815",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b815"
+    },
     "targets": [],
     "createdAt": "2026-01-22T04:50:11.776Z",
     "__v": 1,
@@ -619,13 +657,17 @@
     }
   },
   {
-    "_id": "6971ac831b9e4de28a12b825",
+    "_id": {
+      "": "6971ac831b9e4de28a12b825"
+    },
     "name": "Finance Manager",
     "email": "finance@company.com",
     "password": "$2b$10$h59g9TtgN0rQAxjwkV377ecQw/DHhbK1ahqUO1/ookU8asIyxaHOa",
     "role": "Finance",
     "creatorCode": "F1",
-    "reportingManager": "6971ac831b9e4de28a12b815",
+    "reportingManager": {
+      "": "6971ac831b9e4de28a12b815"
+    },
     "targets": [],
     "createdAt": "2026-01-22T04:50:11.810Z",
     "__v": 1,
@@ -714,7 +756,9 @@
     }
   },
   {
-    "_id": "6992e52e4cf84b974a03f5e4",
+    "_id": {
+      "": "6992e52e4cf84b974a03f5e4"
+    },
     "name": "Arvind Kumar",
     "email": "businesshead@example.com",
     "password": "$2b$10$omUnlRpyxfKfjgv4hEBV1uQRxf1GIpMBLBgulLPygSATMFLd3HBsK",
@@ -726,7 +770,9 @@
         "year": 2026,
         "period": "Yearly",
         "amount": 10000000,
-        "_id": "6992e52e4cf84b974a03f5e5"
+        "_id": {
+          "": "6992e52e4cf84b974a03f5e5"
+        }
       }
     ],
     "achievedTargets": [],
@@ -906,13 +952,17 @@
     }
   },
   {
-    "_id": "699d8cede1ba75122c5bafcf",
+    "_id": {
+      "": "699d8cede1ba75122c5bafcf"
+    },
     "name": "Vinitha M",
     "email": "vinitha.m@gktech.ai",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
     "role": "Sales Executive",
     "creatorCode": "E1",
-    "reportingManager": "699d8cede1ba75122c5bafd2",
+    "reportingManager": {
+      "": "699d8cede1ba75122c5bafd2"
+    },
     "targets": [],
     "achievedTargets": [],
     "settings": {
@@ -983,7 +1033,9 @@
     "__v": 0
   },
   {
-    "_id": "699d8cede1ba75122c5bafd2",
+    "_id": {
+      "": "699d8cede1ba75122c5bafd2"
+    },
     "name": "Dinesh T",
     "email": "dinesh.t@globalknowledgetech.com",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
@@ -1060,7 +1112,9 @@
     "__v": 0
   },
   {
-    "_id": "699d8cede1ba75122c5bafd5",
+    "_id": {
+      "": "699d8cede1ba75122c5bafd5"
+    },
     "name": "Chetana PN",
     "email": "chetana.n@gktech.ai",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
@@ -1128,13 +1182,17 @@
     "__v": 0
   },
   {
-    "_id": "699d8cede1ba75122c5bafd8",
+    "_id": {
+      "": "699d8cede1ba75122c5bafd8"
+    },
     "name": "Tishita Pal",
     "email": "tishita.pal@gktech.ai",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
     "role": "Sales Executive",
     "creatorCode": "E2",
-    "reportingManager": "699d8ceee1ba75122c5bafde",
+    "reportingManager": {
+      "": "699d8ceee1ba75122c5bafde"
+    },
     "targets": [],
     "achievedTargets": [],
     "settings": {
@@ -1196,13 +1254,17 @@
     "__v": 0
   },
   {
-    "_id": "699d8cede1ba75122c5bafdb",
+    "_id": {
+      "": "699d8cede1ba75122c5bafdb"
+    },
     "name": "Mathumitha S",
     "email": "mathumitha.s@gktech.ai",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
     "role": "Sales Executive",
     "creatorCode": "E3",
-    "reportingManager": "699d8ceee1ba75122c5bafde",
+    "reportingManager": {
+      "": "699d8ceee1ba75122c5bafde"
+    },
     "targets": [],
     "achievedTargets": [],
     "settings": {
@@ -1303,13 +1365,17 @@
     "__v": 0
   },
   {
-    "_id": "699d8ceee1ba75122c5bafde",
+    "_id": {
+      "": "699d8ceee1ba75122c5bafde"
+    },
     "name": "Indupriyadarshini V",
     "email": "indu.v@gktech.ai",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
     "role": "Sales Manager",
     "creatorCode": "M2",
-    "reportingManager": "699d8cede1ba75122c5bafd5",
+    "reportingManager": {
+      "": "699d8cede1ba75122c5bafd5"
+    },
     "targets": [],
     "achievedTargets": [],
     "settings": {
@@ -1383,7 +1449,9 @@
     "__v": 0
   },
   {
-    "_id": "699e89c6eb5363fe7f570364",
+    "_id": {
+      "": "699e89c6eb5363fe7f570364"
+    },
     "name": "Lakshmi Prasanna",
     "email": "lakshmi.p@gktech.ai",
     "password": "$2b$10$h/x49TtsqSAqjgATYrHhNuSV0stPTNk2a/ozxRFxAX0R4wP2DJNga",
