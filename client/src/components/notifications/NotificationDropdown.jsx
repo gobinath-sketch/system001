@@ -292,9 +292,12 @@ const NotificationDropdown = () => {
 
         // Show a short transition loader so each click is visually distinct.
         navigationTimerRef.current = setTimeout(() => {
-            if (notification.opportunityId) {
+            if (['approval_granted', 'approval_rejected'].includes(notification.type) && notification.opportunityId) {
+                // Route to the opportunity billing tab (sales) for granted/rejected
                 navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
-            } else if (['approval_request', 'approval_granted', 'approval_rejected', 'approval_status_change', 'gp_approval_request'].includes(notification.type)) {
+            } else if (notification.opportunityId && !['approval_request', 'gp_approval_request'].includes(notification.type)) {
+                navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
+            } else if (['approval_request', 'approval_status_change', 'gp_approval_request'].includes(notification.type)) {
                 navigate('/approvals');
             } else {
                 navigate('/dashboard');

@@ -298,26 +298,36 @@ const BillingTab = forwardRef(({
   };
   const getApprovalTarget = (type, value) => {
     if (type === 'gp') {
-      if (value <= 5) return {
+      if (value < 5) return {
         level: 'Director',
-        range: '<= 5%'
+        range: '< 5%'
       };
-      if (value < 15) return {
-        level: 'Sales Manager',
-        range: '6-14%'
-      };
+      if (value < 15) {
+        if (user?.role === 'Sales Executive') {
+          return {
+            level: 'Sales Manager',
+            range: '5-14.99%'
+          };
+        }
+        return null;
+      }
       return null;
     }
     if (type === 'contingency') {
-      if (value < 5) return {
-        level: 'Business Head',
-        range: '< 5%'
-      };
+      if (value < 5) {
+        if (user?.role !== 'Business Head') {
+          return {
+            level: 'Business Head',
+            range: '< 5%'
+          };
+        }
+        return null;
+      }
       if (value < 10) {
         if (user?.role === 'Sales Executive') {
           return {
             level: 'Sales Manager',
-            range: '5-9%'
+            range: '5-9.99%'
           };
         }
         return null;
@@ -331,7 +341,8 @@ const BillingTab = forwardRef(({
   const handleContingencyChange = value => handleChange('expenses', 'contingencyPercent', value);
 
   // Permissions Logic
-  const isSales = user?.role === 'Sales Executive' || user?.role === 'Sales Manager';
+  // Treat Business Head as part of the sales hierarchy for editing permissions
+  const isSales = ['Sales Executive', 'Sales Manager', 'Business Head'].includes(user?.role);
   const isDelivery = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
   const isAdmin = ['Super Admin', 'Director'].includes(user?.role);
 
@@ -899,7 +910,38 @@ const BillingTab = forwardRef(({
           {/* Approval Status */}
           <div className="mb-7 pb-5 border-b border-slate-200/70">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm font-semibold text-blue-900">Approval Status</span>
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-blue-900">Approval Status</span>
+                {opportunity.approvalStatus === 'Rejected' && opportunity.rejectionReason && (
+                  <div className="relative">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const current = document.getElementById(`reject-tooltip-${opportunity._id}`);
+                        if (current) {
+                          current.classList.toggle('hidden');
+                        }
+                      }}
+                      onBlur={() => {
+                        setTimeout(() => {
+                          const current = document.getElementById(`reject-tooltip-${opportunity._id}`);
+                          if (current) current.classList.add('hidden');
+                        }, 200);
+                      }}
+                      className="text-[11px] font-semibold text-red-600 hover:text-red-700 bg-red-50 px-2.5 py-1 rounded-full transition-all flex items-center gap-1 focus:outline-none hover:scale-105 active:scale-95 shadow-sm hover:shadow cursor-pointer"
+                    >
+                      Review Reason
+                    </button>
+                    <div id={`reject-tooltip-${opportunity._id}`} className="absolute top-full left-0 mt-2 w-64 p-3 bg-white border border-red-100 rounded-lg shadow-xl z-50 hidden cursor-auto" onClick={(e) => e.stopPropagation()}>
+                      <div className="absolute -top-1.5 left-6 w-3 h-3 bg-white border-t border-l border-red-100 rotate-45"></div>
+                      <h4 className="text-[11px] uppercase tracking-wider font-bold text-red-800 mb-1 relative z-10">Reason for Rejection</h4>
+                      <p className="text-sm text-gray-700 relative z-10 leading-relaxed font-medium">
+                        {opportunity.rejectionReason}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="flex gap-2">
                 {pendingApprovals.some(a => a.status === 'Pending') && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200 shadow-sm animate-pulse flex-1 text-center justify-center">
                   Pending
@@ -999,8 +1041,8 @@ const BillingTab = forwardRef(({
                 <div className="flex space-x-2">
                   <select value={formData.expenses?.contingencyPercent ?? 15} onChange={e => handleContingencyChange(parseFloat(e.target.value))} disabled={!canEditExecution} className={`flex-1 border p-2.5 rounded-xl text-[15px] ${!canEditExecution ? 'bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200' : 'bg-white/90 border-slate-300 focus:ring-2 focus:ring-sky-500'}`}>
                     {Array.from({
-                      length: 15
-                    }, (_, i) => i + 1).map(p => <option key={p} value={p}>{p}%</option>)}
+                      length: 16
+                    }, (_, i) => i).map(p => <option key={p} value={p}>{p}%</option>)}
                   </select>
                   <div className="flex-1 border p-2.5 rounded-xl text-[15px] bg-slate-50 text-slate-700 text-right font-medium flex items-center justify-end border-slate-200">
                     {CURRENCY_SYMBOL} {((formData.expenses?.contingency || 0) / CONVERSION_RATE).toLocaleString(undefined, {
