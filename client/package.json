@@ -11,8 +11,7 @@
   "scripts": {
     "dev": "vite --host",
     "build": "vite build",
-    "lint": "npx eslint . --no-inline-config",
-    "preview": "vite preview"
+    "lint": "npx eslint . --no-inline-config"
   },
   "dependencies": {
     "@react-spring/three": "^10.0.3",
