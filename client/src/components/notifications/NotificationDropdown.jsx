@@ -31,6 +31,7 @@ const NotificationDropdown = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [activeFilter, setActiveFilter] = useState('all');
     const [isNavigating, setIsNavigating] = useState(false);
+    const [hasAuthError, setHasAuthError] = useState(false);
     const navigationTimerRef = useRef(null);
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -149,28 +150,38 @@ const NotificationDropdown = () => {
     const { socket } = useSocket();
 
     const loadNotifications = useCallback(async () => {
-        try {
-            const token = sessionStorage.getItem('token');
-            if (!token) return;
+        if (hasAuthError) return;
 
+        const token = sessionStorage.getItem('token');
+
+        // 🔐 Guard: never call API without auth
+        if (!token || !user) return;
+
+        try {
             const res = await axios.get(`${API_BASE}/api/notifications`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            setNotifications(res.data.notifications);
-            setUnreadCount(res.data.unreadCount);
+            setNotifications(res.data.notifications || []);
+            setUnreadCount(res.data.unreadCount || 0);
+            setHasAuthError(false);
         } catch (err) {
-            console.error('Error fetching notifications:', err);
+            if (err.response?.status === 401) {
+                // Stop polling if we get a 401 so we don't spam the console or get into a logout loop
+                setHasAuthError(true);
+            } else {
+                console.error('Error fetching notifications:', err);
+            }
         }
-    }, []);
+    }, [user, hasAuthError]);
 
     useEffect(() => {
         const initialFetchTimer = setTimeout(() => {
             loadNotifications();
         }, 0);
 
-        // Fallback sync for multi-system setups where socket event may not arrive.
         const intervalId = setInterval(loadNotifications, 1000);
+
         return () => {
             clearTimeout(initialFetchTimer);
             clearInterval(intervalId);
@@ -197,8 +208,9 @@ const NotificationDropdown = () => {
             // Optional: You could play a sound here
         };
 
-        socket.on('notification_received', handleNewNotification);
-
+        socket.on('notification_received', () => {
+            loadNotifications(); // sync with backend
+        });
         return () => {
             socket.off('notification_received', handleNewNotification);
         };
@@ -296,7 +308,10 @@ const NotificationDropdown = () => {
         <>
             {/* Notification Icon Trigger */}
             <button
-                onClick={() => setIsOpen(true)}
+                onClick={() => {
+                    setIsOpen(true);
+                    loadNotifications();
+                }}
                 className="relative p-2 text-slate-600 hover:text-primary-blue hover:bg-slate-100 rounded-full transition-all duration-200"
                 aria-label="Notifications"
             >

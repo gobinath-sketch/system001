@@ -28,17 +28,19 @@ const protect = async (req, res, next) => {
             req.user = await User.findById(decoded.id).select('-password');
 
             if (!req.user) {
+                console.error(`[AuthError] User not found in database for token ID: ${decoded.id}`);
                 return res.status(401).json({ message: 'User not found' });
             }
 
             next();
         } catch (error) {
-            console.error(error);
+            console.error('[AuthError] Token verification failed:', error.name, error.message);
             res.status(401).json({ message: 'Not authorized, token failed' });
         }
     }
 
     if (!token) {
+        console.error('[AuthError] No token provided in Authorization header');
         return res.status(401).json({ message: 'Not authorized, no token' });
     }
 };

@@ -18,6 +18,18 @@ app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
 });
+
+// --- DEPLOYMENT DIAGNOSTIC LOGGER ---
+// This will help us see if NGINX/Apache is stripping the Authorization header before it reaches Node
+app.use((req, res, next) => {
+    // Only log API requests to keep the console clean
+    if (req.url.startsWith('/api')) {
+        const hasAuth = !!req.headers.authorization;
+        console.log(`[Diagnostic] ${req.method} ${req.url} | Auth Header Present: ${hasAuth}`);
+    }
+    next();
+});
+// ------------------------------------
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Database Connection
