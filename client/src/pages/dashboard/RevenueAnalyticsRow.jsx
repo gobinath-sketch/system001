@@ -258,7 +258,7 @@ const RevenueAnalyticsRow = ({
   }, [allOpps, filter, yearlyTarget]);
   return <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
             {/* 1. Revenue Summary Box */}
-            <div style={glassCardStyle} className="p-4 flex flex-col min-h-[350px]">
+            <div style={glassCardStyle} className="p-4 flex flex-col min-h-[300px] sm:min-h-[350px]">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-sm font-bold text-black">Revenue Summary</h3>
                     {showSetTargetButton && <button onClick={() => setIsTargetModalOpen(true)} className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors font-medium">
@@ -266,8 +266,8 @@ const RevenueAnalyticsRow = ({
                         </button>}
                 </div>
 
-                <div className="flex-1 w-full min-h-[220px] border-b border-gray-100 pb-1 mb-1">
-                    <SafeResponsiveContainer minHeight={220}>
+                <div className="flex-1 w-full min-h-[170px] sm:min-h-[220px] border-b border-gray-100 pb-1 mb-1">
+                    <SafeResponsiveContainer minHeight={170}>
                         <BarChart accessibilityLayer={false} data={[{
             name: 'Target',
             value: currency === 'INR' ? filteredData.adjustedTarget : filteredData.adjustedTarget / EXCHANGE_RATE,
@@ -331,7 +331,7 @@ const RevenueAnalyticsRow = ({
                 maximumFractionDigits: 0
               })}`; // Already USD
             }} />
-                            <Bar dataKey="value" barSize={48} shape={<ThreeDBar />}>
+                            <Bar dataKey="value" barSize={34} shape={<ThreeDBar />}>
                                 {[{
                 name: 'Target',
                 fill: '#2563eb'
@@ -349,27 +349,27 @@ const RevenueAnalyticsRow = ({
                 </div>
 
                 {/* Numeric Summary Footer */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-center">
+                <div className="grid grid-cols-3 gap-1 sm:gap-2 text-center">
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Target</p>
-                        <p className="font-bold text-blue-600 truncate text-lg" title={formatMoney(filteredData.adjustedTarget)}>
-                            <AnimatedNumber value={filteredData.adjustedTarget} formatValue={(v) => formatMoney(v)} /> <span className="text-xs text-gray-500">(100%)</span>
+                        <p className="font-bold text-blue-600 truncate text-sm sm:text-lg" title={formatMoney(filteredData.adjustedTarget)}>
+                            <AnimatedNumber value={filteredData.adjustedTarget} formatValue={(v) => formatMoney(v)} /> <span className="text-[10px] sm:text-xs text-gray-500">(100%)</span>
                         </p>
                     </div>
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Achieved</p>
-                        <p className="font-bold truncate text-lg" style={{
+                        <p className="font-bold truncate text-sm sm:text-lg" style={{
             color: '#d946ef'
           }} title={formatMoney(filteredData.achievedRevenue)}>
-                            <AnimatedNumber value={filteredData.achievedRevenue} formatValue={(v) => formatMoney(v)} /> <span className="text-xs text-gray-500">
+                            <AnimatedNumber value={filteredData.achievedRevenue} formatValue={(v) => formatMoney(v)} /> <span className="text-[10px] sm:text-xs text-gray-500">
                                 ({filteredData.adjustedTarget > 0 ? (filteredData.achievedRevenue / filteredData.adjustedTarget * 100).toFixed(0) : 0}%)
                             </span>
                         </p>
                     </div>
                     <div>
                         <p className="text-black font-bold text-xs font-semibold">Difference</p>
-                        <p className={`font-bold truncate text-lg ${filteredData.achievedRevenue >= filteredData.adjustedTarget ? 'text-green-600' : 'text-red-500'}`} title={formatMoney(Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget))}>
-                            <AnimatedNumber value={Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget)} formatValue={(v) => formatMoney(v)} /> <span className="text-xs text-gray-500">
+                        <p className={`font-bold truncate text-sm sm:text-lg ${filteredData.achievedRevenue >= filteredData.adjustedTarget ? 'text-green-600' : 'text-red-500'}`} title={formatMoney(Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget))}>
+                            <AnimatedNumber value={Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget)} formatValue={(v) => formatMoney(v)} /> <span className="text-[10px] sm:text-xs text-gray-500">
                                 ({filteredData.adjustedTarget > 0 ? (Math.abs(filteredData.achievedRevenue - filteredData.adjustedTarget) / filteredData.adjustedTarget * 100).toFixed(0) : 0}%)
                             </span>
                         </p>
