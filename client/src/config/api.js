@@ -1,4 +1,4 @@
-//const fallbackBase = `${window.location.protocol}//${window.location.hostname}:5000`;
+// const fallbackBase = `${window.location.protocol}//${window.location.hostname}:5000`;
 const server_api_url = 'https://project.globalknowledgetech.com:5006';
 
 export const API_BASE = server_api_url;

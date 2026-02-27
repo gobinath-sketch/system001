@@ -482,7 +482,16 @@ const SalesTab = forwardRef(({
 
     {/* Trainer Details Section */}
     <Card className="!bg-white">
-      <h3 className="text-xl font-bold text-primary-blue mb-4">Training Details</h3>
+      <h3 className="text-xl font-bold text-primary-blue mb-4">
+        {{
+          'Training': 'Training Details',
+          'Lab Support': 'Lab Details',
+          'Vouchers': 'Voucher Details',
+          'Product Support': 'Product Support Details',
+          'Resource Support': 'Resource Support Details',
+          'Content Development': 'Content Development Details'
+        }[opportunity.type] || 'Training Details'}
+      </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div>
           <label className="block text-base font-semibold text-gray-800 mb-1">Trainer Support</label>
@@ -536,16 +545,24 @@ const SalesTab = forwardRef(({
             <input type="date" value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'endDate', e.target.value)} disabled={!isEditing} className={inputClass} />
           </div>
         </div>
-        {/* SME Details Merged into Trainer Details */}
-        {(formData.selectedSME || formData.commonDetails?.trainingSupporter) && <React.Fragment>
+        {/* SME Required — placed after End Date, before SME fields */}
+        <div>
+          <label className="block text-base font-semibold text-gray-800 mb-1">SME Required</label>
+          <select value={formData.commonDetails?.smeRequired || 'No'} onChange={e => handleChange('commonDetails', 'smeRequired', e.target.value)} disabled={!isEditing} className={selectClass}>
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        {/* SME Details — shown only when SME is required */}
+        {(formData.commonDetails?.smeRequired === 'Yes' || opportunity.commonDetails?.smeRequired === 'Yes') && <React.Fragment>
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">Assigned SME</label>
             <div className="p-2 bg-gray-50 rounded border border-gray-200 text-base font-semibold text-gray-800">
-              {typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME.name : 'Not Assigned'}
+              {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME?.name ? opportunity.selectedSME.name : 'Not Assigned'}
             </div>
           </div>
 
-          {/* Profile Document (from SME Details) */}
+          {/* SME Profile Document */}
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">SME Profile</label>
             <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
@@ -554,6 +571,8 @@ const SalesTab = forwardRef(({
               </a> : <span className="text-sm text-gray-400 italic">Not Available</span>}
             </div>
           </div>
+
+          {/* Content Document */}
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
             <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
