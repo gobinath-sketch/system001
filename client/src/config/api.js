@@ -1,8 +1,8 @@
-// const fallbackBase = `${window.location.protocol}//${window.location.hostname}:5000`;
-const server_api_url = 'https://project.globalknowledgetech.com:5006';
+const fallbackBase = `${window.location.protocol}//${window.location.hostname}:5000`;
+//const server_api_url = 'https://project.globalknowledgetech.com:5006';
 
-export const API_BASE = server_api_url;
-export const SOCKET_URL = server_api_url;
+export const API_BASE = fallbackBase;
+export const SOCKET_URL = fallbackBase;
 
 // Central endpoint registry for maintainability.
 export const API_ENDPOINTS = {
