@@ -334,6 +334,8 @@ export default function SettingsPage() {
     const { currentPassword, newPassword, confirmPassword } = passwordForm;
     if (!currentPassword || !newPassword || !confirmPassword) return addToast('Please fill all password fields.', 'warning');
     if (newPassword.length < 8) return addToast('New password must be at least 8 characters.', 'warning');
+    if (!/[A-Z]/.test(newPassword)) return addToast('New password must include at least one uppercase letter.', 'warning');
+    if (!/[0-9]/.test(newPassword)) return addToast('New password must include at least one number.', 'warning');
     if (newPassword !== confirmPassword) return addToast('Confirm password does not match.', 'error');
     try {
       await axios.put(`${API_BASE}${API_ENDPOINTS.settings.password}`, { currentPassword, newPassword, confirmPassword }, auth);
@@ -355,6 +357,21 @@ export default function SettingsPage() {
       addToast('Session removed.', 'success');
     } catch (e) { addToast(e?.response?.data?.message || 'Unable to remove session.', 'error'); }
   };
+
+  const hasMinPasswordLength = passwordForm.newPassword.length >= 8;
+  const hasUppercaseInPassword = /[A-Z]/.test(passwordForm.newPassword);
+  const hasNumberInPassword = /[0-9]/.test(passwordForm.newPassword);
+  const isConfirmPasswordMatching = passwordForm.confirmPassword.length > 0 && passwordForm.newPassword === passwordForm.confirmPassword;
+  const isPasswordFormReady = Boolean(
+    editing &&
+    passwordForm.currentPassword &&
+    passwordForm.newPassword &&
+    passwordForm.confirmPassword &&
+    hasMinPasswordLength &&
+    hasUppercaseInPassword &&
+    hasNumberInPassword &&
+    isConfirmPasswordMatching
+  );
 
   if (loading) {
     return <div className="p-3 sm:p-6 bg-bg-page h-full">
@@ -598,9 +615,23 @@ export default function SettingsPage() {
                 {passwordVisibility.confirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
             </div>
+            {passwordForm.confirmPassword.length > 0 && (
+              <p className={`text-xs font-semibold ${isConfirmPasswordMatching ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {isConfirmPasswordMatching ? 'Passwords match.' : 'Passwords do not match.'}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={changePassword} disabled={!editing} className="h-10 rounded-xl bg-[#0b5cab] text-white text-sm font-bold hover:bg-[#0d6dcc] disabled:opacity-50">Update</button>
+              <button onClick={changePassword} disabled={!isPasswordFormReady} className="h-10 rounded-xl bg-[#0b5cab] text-white text-sm font-bold hover:bg-[#0d6dcc] disabled:opacity-50">Update</button>
               <button onClick={resetPassword} disabled={!editing} className="h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 disabled:opacity-50">Reset</button>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <p className="font-bold text-slate-800 mb-1">Password Strength Checklist</p>
+              <ul className="space-y-1 text-slate-700">
+                <li className={hasMinPasswordLength ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{hasMinPasswordLength ? '✓' : '•'} Minimum 8 characters</li>
+                <li className={hasUppercaseInPassword ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{hasUppercaseInPassword ? '✓' : '•'} At least one uppercase letter</li>
+                <li className={hasNumberInPassword ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{hasNumberInPassword ? '✓' : '•'} At least one number</li>
+                <li className={isConfirmPasswordMatching ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{isConfirmPasswordMatching ? '✓' : '•'} Confirm password matches</li>
+              </ul>
             </div>
             <div className="rounded-xl border border-slate-200 p-3">
               <p className="text-sm font-bold text-slate-700 mb-2">Active Sessions</p>
@@ -613,15 +644,6 @@ export default function SettingsPage() {
                   {!s.isCurrent && <button onClick={() => revokeSession(s.sessionId)} disabled={!editing} className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-50">Sign out</button>}
                 </div>)}
               </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-              <p className="font-bold text-slate-800 mb-1">Password Strength Checklist</p>
-              <ul className="space-y-1 text-slate-700">
-                <li>{passwordForm.newPassword.length >= 8 ? '✓' : '•'} Minimum 8 characters</li>
-                <li>{/[A-Z]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one uppercase letter</li>
-                <li>{/[0-9]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one number</li>
-              </ul>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">
