@@ -6,7 +6,7 @@ import { LayoutDashboard, Users, Briefcase, Package, FileText, ChevronLeft, Chev
 import LogoutButton from '../common/LogoutButton';
 const Sidebar = ({
   isMobileOpen = false,
-  onCloseMobile = () => {}
+  onCloseMobile = () => { }
 }) => {
   const {
     user,
@@ -205,77 +205,77 @@ const Sidebar = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname]);
   return <>
-            {/* Mobile Backdrop */}
-            {isMobileOpen && <button type="button" className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onCloseMobile} aria-label="Close menu" />}
+    {/* Mobile Backdrop */}
+    {isMobileOpen && <button type="button" className="fixed inset-0 bg-black/40 z-40 lg:hidden" onClick={onCloseMobile} aria-label="Close menu" />}
 
-            {/* Sidebar */}
-            <div className={`
+    {/* Sidebar */}
+    <div className={`
           fixed top-0 left-0 h-screen min-h-screen bg-[linear-gradient(165deg,#0b4a8a_0%,#0a3b72_46%,#082f5c_100%)] border-r border-[#5ea2df]/35
           transition-all duration-300 z-50 lg:z-40 flex flex-col shadow-2xl overflow-hidden
           ${isMobileOpen ? 'translate-x-0' : '-translate-x-full'}
           lg:translate-x-0
           ${isCollapsed ? 'w-20' : 'w-72'}
         `}>
-                {/* Glass Shine Effect */}
-                <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_10%_0%,rgba(147,203,255,0.22)_0%,rgba(147,203,255,0)_45%)] pointer-events-none" />
-                <div className="absolute inset-0 bg-[radial-gradient(100%_70%_at_80%_100%,rgba(7,26,54,0.45)_0%,rgba(7,26,54,0)_55%)] pointer-events-none" />
-                {/* Header - User & Toggle */}
-                <div className={`flex items-center p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
-                    {!isCollapsed && <>
-                            <div className="mr-3 w-11 h-11 rounded-md overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
-                    {avatarUrl ? <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" /> : <img src={`${import.meta.env.BASE_URL}profile-default.svg`} alt="Logo" className="w-full h-full object-contain p-1 drop-shadow-lg" />}
-                            </div>
-                            <div className="flex-1 overflow-hidden mr-3">
-                                <h3 className="text-white font-bold text-sm truncate">{user?.name || 'User'}</h3>
-                                <p className="text-white text-xs truncate">{user?.role || 'Role'}</p>
-                            </div>
-                        </>}
-                    <div className="flex items-center gap-2">
-                        <button onClick={onCloseMobile} className="lg:hidden p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0" aria-label="Close menu">
-                            <ChevronLeft size={18} />
-                        </button>
-                        <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:flex p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0" aria-label="Toggle collapse">
-                            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                        </button>
-                    </div>
-                </div>
+      {/* Glass Shine Effect */}
+      <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_10%_0%,rgba(147,203,255,0.22)_0%,rgba(147,203,255,0)_45%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(100%_70%_at_80%_100%,rgba(7,26,54,0.45)_0%,rgba(7,26,54,0)_55%)] pointer-events-none" />
+      {/* Header - User & Toggle */}
+      <div className={`flex items-center p-4 border-b border-white/10 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
+        {!isCollapsed && <>
+          <div className="mr-3 w-11 h-11 rounded-md overflow-hidden border border-white/20 bg-white/10 flex items-center justify-center shrink-0">
+            {avatarUrl ? <img src={avatarUrl} alt="Profile" className="w-full h-full object-cover" /> : <img src={`${import.meta.env.BASE_URL}profile-default.svg`} alt="Logo" className="w-full h-full object-contain p-1 drop-shadow-lg" />}
+          </div>
+          <div className="flex-1 overflow-hidden mr-3">
+            <h3 className="text-white font-bold text-sm truncate">{user?.name || 'User'}</h3>
+            <p className="text-white text-xs truncate">{user?.role || 'Role'}</p>
+          </div>
+        </>}
+        <div className="flex items-center gap-2">
+          <button onClick={onCloseMobile} className="lg:hidden p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0" aria-label="Close menu">
+            <ChevronLeft size={18} />
+          </button>
+          <button onClick={() => setIsCollapsed(!isCollapsed)} className="hidden lg:flex p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors flex-shrink-0" aria-label="Toggle collapse">
+            {isCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          </button>
+        </div>
+      </div>
 
 
 
-                {/* Navigation Menu */}
-                <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-6 ${isCollapsed ? 'px-2.5' : 'px-4'}`}>
-                    {menuItems.map(item => {
+      {/* Navigation Menu */}
+      <nav className={`flex-1 overflow-y-auto overflow-x-hidden py-6 ${isCollapsed ? 'px-2.5' : 'px-4'}`}>
+        {menuItems.map(item => {
           const Icon = item.icon;
           const active = isActive(item.path);
           return <Link key={item.path} to={item.path} className="block mb-3" style={{
             textDecoration: 'none'
           }}>
-                                <StyledWrapper>
-                                    <div className={`button ${active ? 'active' : ''} ${isCollapsed ? 'justify-center px-2 py-3' : ''}`}>
-                                        <div className="inner-press" />
-                                        <Icon size={isCollapsed ? 20 : 20} strokeWidth={isCollapsed ? 2.2 : 2} className={`relative z-10 shrink-0 transition-colors duration-300 ${active ? 'text-white' : 'text-white/95'}`} />
+            <StyledWrapper>
+              <div className={`button ${active ? 'active' : ''} ${isCollapsed ? 'justify-center px-2 py-3' : ''}`}>
+                <div className="inner-press" />
+                <Icon size={isCollapsed ? 20 : 20} strokeWidth={isCollapsed ? 2.2 : 2} className={`relative z-10 shrink-0 transition-colors duration-300 ${active ? 'text-white' : 'text-white/95'}`} />
 
-                                        {!isCollapsed && <span className="ml-3 font-medium truncate relative z-10 text-sm">
-                                                {item.label}
-                                            </span>}
+                {!isCollapsed && <span className="ml-3 font-medium truncate relative z-10 text-sm">
+                  {item.label}
+                </span>}
 
-                                    </div>
-                                </StyledWrapper>
-                            </Link>;
+              </div>
+            </StyledWrapper>
+          </Link>;
         })}
-                </nav>
+      </nav>
 
 
 
-                {/* Logout Button */}
-                <div className="w-full mb-6 flex justify-center">
-                    <LogoutButton onClick={handleLogout} isCollapsed={isCollapsed} />
-                </div>
-            </div>
+      {/* Logout Button */}
+      <div className="w-full mb-6 flex justify-center">
+        <LogoutButton onClick={handleLogout} isCollapsed={isCollapsed} />
+      </div>
+    </div>
 
-            {/* Spacer for content */}
-            <div className={`${isCollapsed ? 'lg:w-20' : 'lg:w-72'} transition-all duration-300 flex-shrink-0 hidden lg:block`}></div>
-        </>;
+    {/* Spacer for content */}
+    <div className={`${isCollapsed ? 'lg:w-20' : 'lg:w-72'} transition-all duration-300 flex-shrink-0 hidden lg:block`}></div>
+  </>;
 };
 const StyledWrapper = styled.div`
   width: 100%;
