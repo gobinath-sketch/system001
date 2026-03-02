@@ -11,6 +11,16 @@ import { API_BASE } from '../config/api';
 import IntlPhoneField from '../components/form/IntlPhoneField';
 import CountrySelectField from '../components/form/CountrySelectField';
 const ClientPage = () => {
+  const formatLocationForDisplay = (rawLocation) => {
+    const parts = String(rawLocation || '')
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (parts.length <= 1) return rawLocation || 'N/A';
+    return [...parts.slice(1), parts[0]].join(', ');
+  };
+
   const toSectorOptionValue = sector => {
     if (sector === 'University' || sector === 'Universities') return 'Academics - Universities';
     if (sector === 'College') return 'Academics - College';
@@ -520,7 +530,7 @@ const ClientPage = () => {
               <td className="px-6 py-4 text-gray-700">{contact.department || 'N/A'}</td>
               <td className="px-6 py-4 text-gray-700">{contact.email}</td>
               <td className="px-6 py-4 text-gray-700">{contact.contactNumber}</td>
-              <td className="px-6 py-4 text-primary-blue">{contact.location}</td>
+              <td className="px-6 py-4 text-primary-blue">{formatLocationForDisplay(contact.location)}</td>
             </tr>)}
           </tbody>
         </table>
@@ -549,7 +559,7 @@ const ClientPage = () => {
             </div>
             <div>
               <p className="text-lg font-semibold text-gray-800">Location</p>
-              <p className="text-[15px] text-primary-blue">{selectedContact.location}</p>
+              <p className="text-[15px] text-primary-blue">{formatLocationForDisplay(selectedContact.location)}</p>
             </div>
           </div>
 
@@ -703,7 +713,7 @@ const ClientPage = () => {
                     {primaryContact?.designation || 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-primary-blue">
-                    {primaryContact?.location || 'N/A'}
+                    {formatLocationForDisplay(primaryContact?.location)}
                   </td>
                   <td className="px-6 py-4">
                     {primaryContact ? <div className="space-y-1">
