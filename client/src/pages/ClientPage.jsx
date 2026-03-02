@@ -638,65 +638,72 @@ const ClientPage = () => {
   </div>;
   return <div className="p-3 sm:p-5 relative">
     {/* Contact Detail Modal */}
-    {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{selectedContact.name}</h2>
-            <p className="text-lg text-gray-700">{selectedContact.designation}</p>
+    {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full border border-gray-100 overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="px-5 sm:px-7 py-5 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="h-11 w-11 rounded-xl bg-primary-blue text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
+                {String(selectedContact.name || 'NA').split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold text-gray-900 truncate">{selectedContact.name}</h2>
+                <p className="text-base text-gray-600 truncate">{selectedContact.designation || 'No designation'}</p>
+              </div>
+            </div>
+            <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-700 h-9 w-9 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center">
+              <X size={22} />
+            </button>
           </div>
-          <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600">
-            <X size={24} />
-          </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="p-5 sm:p-7 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-lg font-semibold text-gray-800">Department</p>
-              <p className="text-[15px] text-gray-900">{selectedContact.department || 'N/A'}</p>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-[11px] font-semibold tracking-wide uppercase text-gray-500 mb-1">Department</p>
+              <p className="text-[15px] font-semibold text-gray-900">{selectedContact.department || 'N/A'}</p>
             </div>
-            <div>
-              <p className="text-lg font-semibold text-gray-800">Location</p>
-              <p className="text-[15px] text-primary-blue">{formatLocationForDisplay(selectedContact.location)}</p>
-            </div>
-          </div>
-
-          <div className="border-t pt-4">
-            <p className="text-lg font-semibold text-gray-800 mb-2">Contact Information</p>
-            <div className="space-y-2">
-              <div>
-                <p className="text-base font-medium text-gray-700">Email</p>
-                <p className="text-[15px] text-gray-900">{selectedContact.email}</p>
-              </div>
-              <div>
-                <p className="text-base font-medium text-gray-700">Phone</p>
-                <p className="text-[15px] text-gray-900">{selectedContact.contactNumber}</p>
-              </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+              <p className="text-[11px] font-semibold tracking-wide uppercase text-gray-500 mb-1">Location</p>
+              <p className="text-[15px] font-semibold text-primary-blue">{formatLocationForDisplay(selectedContact.location)}</p>
             </div>
           </div>
 
-          {selectedContact.linkedIn && <div className="border-t pt-4">
-            <p className="text-base font-semibold text-gray-800 mb-2">LinkedIn</p>
-            <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline">
+          <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+            <p className="text-base font-bold text-gray-900 mb-3">Contact Information</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Email</p>
+                <p className="text-[15px] text-gray-900 break-all">{selectedContact.email || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Phone</p>
+                <p className="text-[15px] text-gray-900">{selectedContact.contactNumber || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          {selectedContact.linkedIn && <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+            <p className="text-base font-bold text-gray-900 mb-2">LinkedIn</p>
+            <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline text-[15px] break-all">
               {selectedContact.linkedIn}
             </a>
           </div>}
 
-          {selectedContact.reportingManager?.name && <div className="border-t pt-4">
-            <p className="text-base font-semibold text-gray-800 mb-2">Reporting Manager</p>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium text-gray-900">{selectedContact.reportingManager.name}</p>
-              <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation}</p>
-              <div className="mt-2 text-sm space-y-1">
-                <p className="text-gray-700">{selectedContact.reportingManager.email}</p>
-                <p className="text-gray-700">{selectedContact.reportingManager.contactNumber}</p>
+          {selectedContact.reportingManager?.name && <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+            <p className="text-base font-bold text-gray-900 mb-3">Reporting Manager</p>
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-3.5">
+              <p className="text-[15px] font-semibold text-gray-900">{selectedContact.reportingManager.name}</p>
+              <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation || 'N/A'}</p>
+              <div className="mt-2.5 text-sm space-y-1">
+                <p className="text-gray-700 break-all">{selectedContact.reportingManager.email || 'N/A'}</p>
+                <p className="text-gray-700">{selectedContact.reportingManager.contactNumber || 'N/A'}</p>
               </div>
             </div>
           </div>}
 
-          {selectedContact.isPrimary && <div className="mt-4">
-            <span className="inline-block bg-brand-gold text-white px-3 py-1 rounded-full text-sm font-medium">
+          {selectedContact.isPrimary && <div>
+            <span className="inline-flex items-center bg-brand-gold text-white px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase">
               Primary Contact
             </span>
           </div>}
