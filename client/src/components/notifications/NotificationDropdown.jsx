@@ -293,7 +293,7 @@ const NotificationDropdown = () => {
         // Show a short transition loader so each click is visually distinct.
         navigationTimerRef.current = setTimeout(() => {
             // Determine the correct tab based on the current user's role
-            const isDeliveryUser = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
+            const isDeliveryUser = ['Delivery Head', 'Delivery Executive', 'Delivery Manager'].includes(user?.role);
             const targetTab = isDeliveryUser ? 'delivery' : 'sales';
 
             if (['approval_granted', 'approval_rejected'].includes(notification.type) && notification.opportunityId) {

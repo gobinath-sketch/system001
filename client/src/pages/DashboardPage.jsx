@@ -28,7 +28,7 @@ const DashboardPage = () => {
   // Redirect other roles to their specific dashboards
   if (user?.role === 'Business Head') return <Navigate to="/dashboard/businesshead" replace />;
   if (user?.role === 'Director') return <Navigate to="/dashboard/director" replace />;
-  if (user?.role === 'Delivery Team') return <Navigate to="/dashboard/delivery" replace />;
+  if (user?.role === 'Delivery Head' || user?.role === 'Delivery Executive') return <Navigate to="/dashboard/delivery" replace />;
   if (user?.role === 'Finance') return <Navigate to="/finance/dashboard" replace />;
   const [stats, setStats] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
@@ -92,40 +92,40 @@ const DashboardPage = () => {
     color,
     subtext
   }) => <div style={glassCardStyle} className="p-6 flex items-center space-x-4">
-            <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
-                <Icon size={24} className={color.replace('bg-', 'text-')} />
-            </div>
-            <div>
-                <p className="text-sm text-gray-500 font-medium">{title}</p>
-                <p className="text-2xl font-bold text-gray-800">
-                  <AnimatedNumber value={value} />
-                </p>
-                {subtext && <p className="text-xs text-gray-400">{subtext}</p>}
-            </div>
-        </div>;
+      <div className={`p-3 rounded-full ${color} bg-opacity-10`}>
+        <Icon size={24} className={color.replace('bg-', 'text-')} />
+      </div>
+      <div>
+        <p className="text-sm text-gray-500 font-medium">{title}</p>
+        <p className="text-2xl font-bold text-gray-800">
+          <AnimatedNumber value={value} />
+        </p>
+        {subtext && <p className="text-xs text-gray-400">{subtext}</p>}
+      </div>
+    </div>;
   if (loading) return <div className="p-5">Loading dashboard...</div>;
   return <div className="p-5">
-            {/* Header Removed */}
+    {/* Header Removed */}
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard title="Total Clients" value={stats?.totalClients || 0} icon={Users} color="text-blue-600 bg-blue-600" subtext="Assigned to you" />
-                <StatCard title="Total Opportunities" value={stats?.totalOpportunities || 0} icon={Briefcase} color="text-purple-600 bg-purple-600" subtext="Created by you" />
-                <StatCard title="Active Opportunities" value={stats?.activeOpportunities || 0} icon={Activity} color="text-green-600 bg-green-600" subtext="In pipeline" />
-                <StatCard title="Pending Opportunities" value={stats?.pendingOpportunities || 0} icon={Clock} color="text-yellow-600 bg-yellow-600" subtext="Waiting approval" />
-            </div>
+    {/* KPI Cards */}
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <StatCard title="Total Clients" value={stats?.totalClients || 0} icon={Users} color="text-blue-600 bg-blue-600" subtext="Assigned to you" />
+      <StatCard title="Total Opportunities" value={stats?.totalOpportunities || 0} icon={Briefcase} color="text-purple-600 bg-purple-600" subtext="Created by you" />
+      <StatCard title="Active Opportunities" value={stats?.activeOpportunities || 0} icon={Activity} color="text-green-600 bg-green-600" subtext="In pipeline" />
+      <StatCard title="Pending Opportunities" value={stats?.pendingOpportunities || 0} icon={Clock} color="text-yellow-600 bg-yellow-600" subtext="Waiting approval" />
+    </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-                {/* Target Progress Module */}
-                <div className="lg:col-span-2">
-                    <TargetProgress userId={user?.id} />
-                </div>
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      {/* Target Progress Module */}
+      <div className="lg:col-span-2">
+        <TargetProgress userId={user?.id} />
+      </div>
 
-                {/* Escalation / GP Monitor */}
-                <div>
-                    <EscalationWidget opportunities={opportunities} onEscalate={() => window.location.reload()} />
-                </div>
-            </div>
-        </div>;
+      {/* Escalation / GP Monitor */}
+      <div>
+        <EscalationWidget opportunities={opportunities} onEscalate={() => window.location.reload()} />
+      </div>
+    </div>
+  </div>;
 };
 export default DashboardPage;

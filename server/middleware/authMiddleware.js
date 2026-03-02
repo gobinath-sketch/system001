@@ -15,7 +15,7 @@ const protect = async (req, res, next) => {
                     _id: 'mock-head-id',
                     name: 'Amit Sharma (Dev Mode)',
                     email: 'head@company.com',
-                    role: 'Delivery Team',
+                    role: 'Delivery Head',
                     creatorCode: 'D1'
                 };
                 req.sessionId = 'dev-mode-session';

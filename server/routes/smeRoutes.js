@@ -81,7 +81,7 @@ const uploadMiddleware = (req, res, next) => {
 // @route   POST /api/smes
 // @desc    Create new SME (Company or Freelancer)
 // @access  Private (Sales, Manager, Director, Delivery Team)
-router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Team'), uploadMiddleware, async (req, res) => {
+router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Head', 'Delivery Executive'), uploadMiddleware, async (req, res) => {
     try {
         const smeData = { ...req.body, createdBy: req.user._id };
 
@@ -189,7 +189,7 @@ router.get('/:id', protect, async (req, res) => {
 // @route   PUT /api/smes/:id
 // @desc    Update SME
 // @access  Private (Sales, Manager, Director, Delivery Team)
-router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Team'), uploadMiddleware, async (req, res) => {
+router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Head', 'Delivery Executive'), uploadMiddleware, async (req, res) => {
     try {
         const sme = await SME.findById(req.params.id);
 

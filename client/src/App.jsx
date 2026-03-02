@@ -24,11 +24,11 @@ import { ToastProvider } from './context/ToastContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { SocketProvider } from './context/SocketContext';
 function App() {
-  const allRoles = ['Sales Executive', 'Sales Manager', 'Delivery Team', 'Finance', 'Business Head', 'Director', 'Super Admin'];
+  const allRoles = ['Sales Executive', 'Sales Manager', 'Delivery Head', 'Delivery Executive', 'Finance', 'Business Head', 'Director', 'Super Admin'];
   const salesRoles = ['Sales Executive', 'Sales Manager', 'Business Head', 'Director', 'Super Admin'];
-  const opportunityRoles = ['Sales Executive', 'Sales Manager', 'Business Head', 'Director', 'Delivery Team', 'Super Admin'];
+  const opportunityRoles = ['Sales Executive', 'Sales Manager', 'Business Head', 'Director', 'Delivery Head', 'Delivery Executive', 'Super Admin'];
   const approvalRoles = ['Sales Manager', 'Business Head', 'Director', 'Super Admin'];
-  const deliveryRoles = ['Delivery Team', 'Delivery Manager', 'Delivery Head', 'Super Admin'];
+  const deliveryRoles = ['Delivery Head', 'Delivery Executive', 'Delivery Manager', 'Super Admin'];
   const financeRoles = ['Finance', 'Super Admin'];
 
   useEffect(() => {

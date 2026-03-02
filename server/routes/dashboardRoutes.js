@@ -155,6 +155,7 @@ router.get('/client-health', protect, async (req, res) => {
 
         let activeCount = 0;
         let midCount = 0;
+        let newCount = 0;
         let inactiveCount = 0;
 
         for (const client of clients) {
@@ -170,13 +171,20 @@ router.get('/client-health', protect, async (req, res) => {
             } else if (completedOppCount >= 1) {
                 midCount++;
             } else {
-                inactiveCount++;
+                // If 0 opportunities in last year, check creation date
+                const clientCreatedAt = new Date(client.createdAt);
+                if (clientCreatedAt < oneYearAgo) {
+                    inactiveCount++; // Older than 1 year with 0 opps -> inactive
+                } else {
+                    newCount++; // Less than 1 year old -> new client
+                }
             }
         }
 
         res.json({
             active: activeCount,
             mid: midCount,
+            newClient: newCount,
             inactive: inactiveCount
         });
     } catch (err) {

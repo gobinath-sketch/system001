@@ -3,7 +3,8 @@ export const getDefaultRouteForRole = role => {
   if (role === 'Business Head') return '/dashboard/businesshead';
   if (role === 'Sales Manager') return '/dashboard/manager';
   if (role === 'Sales Executive') return '/dashboard/executive';
-  if (role === 'Delivery Team') return '/dashboard/delivery';
+  if (role === 'Delivery Head') return '/dashboard/delivery';
+  if (role === 'Delivery Executive') return '/dashboard/delivery';
   if (role === 'Finance') return '/finance/dashboard';
   return '/';
 };

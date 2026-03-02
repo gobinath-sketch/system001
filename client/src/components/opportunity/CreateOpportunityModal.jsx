@@ -19,6 +19,7 @@ const CreateOpportunityModal = ({
 
   // Data States
   const [clients, setClients] = useState([]);
+  const [deliveryUsers, setDeliveryUsers] = useState([]);
 
   // New Client Modal State
   const [showClientModal, setShowClientModal] = useState(false);
@@ -32,6 +33,8 @@ const CreateOpportunityModal = ({
     // Default
     status: 'Identify',
     // Default
+    assignedTo: '',
+    // Delivery person
 
     // Training fields
     technology: '',
@@ -78,9 +81,23 @@ const CreateOpportunityModal = ({
       addToast('Failed to load clients. Please reload.', 'error');
     }
   };
+
+  const fetchDeliveryUsers = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const res = await axios.get(`${API_BASE}/api/opportunities/delivery-users`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setDeliveryUsers(res.data || []);
+    } catch (err) {
+      console.error('Failed to fetch delivery users:', err);
+    }
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchClients();
+      fetchDeliveryUsers();
       if (preselectedClientId) {
         setFormData(prev => ({
           ...prev,
@@ -158,6 +175,9 @@ const CreateOpportunityModal = ({
       payload.append('participants', parseInt(formData.batchSize) || 0);
       payload.append('days', parseInt(formData.duration) || 0);
       payload.append('typeSpecificDetails', JSON.stringify(typeSpecificDetails)); // Stringify nested object
+      if (formData.assignedTo) {
+        payload.append('assignedTo', formData.assignedTo);
+      }
 
       if (requirementDoc) {
         payload.append('requirementDocument', requirementDoc);
@@ -176,6 +196,7 @@ const CreateOpportunityModal = ({
         requirementSummary: '',
         type: 'Training',
         status: 'Identify',
+        assignedTo: '',
         technology: '',
         trainingName: '',
         modeOfTraining: 'Virtual',
@@ -411,6 +432,26 @@ const CreateOpportunityModal = ({
             </label>
             <input type="file" onChange={handleFileChange} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" accept=".pdf,.doc,.docx,.txt" />
             <p className="text-s text-gray-500 mt-1">Upload relevant requirement documents (PDF, DOCX, TXT).</p>
+          </div>
+
+          {/* Assign Delivery Person */}
+          <div className="border-b pb-4">
+            <label className="block text-[12px] font-medium text-gray-700 mb-1">
+              Assign Delivery Person <span className="text-gray-400 text-[11px]">(Optional)</span>
+            </label>
+            <select
+              name="assignedTo"
+              value={formData.assignedTo}
+              onChange={handleChange}
+              className="w-full h-[36px] bg-gray-50 border border-gray-200 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]"
+            >
+              <option value="">-- Not Assigned --</option>
+              {deliveryUsers.map(du => (
+                <option key={du._id} value={du._id}>
+                  {du.name} ({du.role === 'Delivery Head' ? 'Head' : 'Executive'})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-4">

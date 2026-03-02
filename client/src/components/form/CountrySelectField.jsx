@@ -34,7 +34,7 @@ const CountrySelectField = ({
         disabled={disabled}
         placeholder={placeholder}
         required={required}
-        className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded text-[13px] text-gray-900 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-blue"
+        className={`w-full border p-2 rounded-lg text-base border-gray-500 ${disabled ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus:ring-2 focus:ring-primary-blue focus:outline-none'}`}
       />
     </div>
   );

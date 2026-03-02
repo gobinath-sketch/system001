@@ -34,7 +34,7 @@ const DeliveryTab = forwardRef(({
   const [formData, setFormData] = useState({});
 
   // Derived state
-  const isDeliveryRole = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
+  const isDeliveryRole = ['Delivery Team', 'Delivery Head', 'Delivery Executive', 'Delivery Manager'].includes(user?.role);
   const activeData = isEditing ? formData : opportunity;
 
   // Fetch Vendors and SMEs

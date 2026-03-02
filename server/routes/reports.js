@@ -173,7 +173,7 @@ router.get('/gp-analysis', protect, async (req, res) => {
  */
 router.get('/vendor-expenses', protect, async (req, res) => {
     try {
-        const allowedRoles = ['Finance', 'Delivery Team', 'Super Admin', 'Director'];
+        const allowedRoles = ['Finance', 'Delivery Head', 'Delivery Executive', 'Super Admin', 'Director'];
         if (!allowedRoles.includes(req.user.role)) {
             return res.status(403).json({ message: 'Access denied' });
         }

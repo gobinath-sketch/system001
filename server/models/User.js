@@ -76,7 +76,7 @@ const UserSchema = new mongoose.Schema({
     password: { type: String, required: true },
     role: {
         type: String,
-        enum: ['Director', 'Business Head', 'Sales Manager', 'Sales Executive', 'Delivery Team', 'Finance'],
+        enum: ['Director', 'Business Head', 'Sales Manager', 'Sales Executive', 'Delivery Head', 'Delivery Executive', 'Finance'],
         required: true
     },
     creatorCode: { type: String, required: true },

@@ -343,7 +343,7 @@ const BillingTab = forwardRef(({
   // Permissions Logic
   // Treat Business Head as part of the sales hierarchy for editing permissions
   const isSales = ['Sales Executive', 'Sales Manager', 'Business Head'].includes(user?.role);
-  const isDelivery = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
+  const isDelivery = ['Delivery Head', 'Delivery Executive', 'Delivery Manager'].includes(user?.role);
   const isAdmin = ['Super Admin', 'Director'].includes(user?.role);
 
   // Execution Details (TOV, Marketing, Contingency): Editable by Sales, Admin (NOT Delivery)
@@ -945,6 +945,12 @@ const BillingTab = forwardRef(({
               <div className="flex gap-2">
                 {pendingApprovals.some(a => a.status === 'Pending') && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-amber-100 text-amber-800 border border-amber-200 shadow-sm animate-pulse flex-1 text-center justify-center">
                   Pending
+                </span>}
+                {opportunity.approvalStatus === 'In Process' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+                  In Process
+                </span>}
+                {opportunity.approvalStatus === 'Pre Approved' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-teal-50 text-teal-700 border border-teal-200">
+                  Pre Approved
                 </span>}
                 {opportunity.approvalStatus === 'Not Required' && <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-800 border border-gray-200">
                   No Approval Required
