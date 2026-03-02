@@ -284,3 +284,9 @@ input[type="number"] {
 .intl-phone-field .selected-flag .arrow.up {
   border-bottom-color: #6B7280 !important;
 }
+
+/* Hide native password reveal/clear controls so custom eye toggle remains consistent */
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}
