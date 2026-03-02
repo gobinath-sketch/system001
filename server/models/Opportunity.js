@@ -179,6 +179,12 @@ const OpportunitySchema = new mongoose.Schema({
             default: 'GKT'
         },
 
+        smeRequired: {
+            type: String,
+            enum: ['Yes', 'No'],
+            default: 'No'
+        },
+
         // Auto-filled from opportunity creator
         sales: {
             type: mongoose.Schema.Types.ObjectId,

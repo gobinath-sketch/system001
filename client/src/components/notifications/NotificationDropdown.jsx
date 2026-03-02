@@ -292,11 +292,15 @@ const NotificationDropdown = () => {
 
         // Show a short transition loader so each click is visually distinct.
         navigationTimerRef.current = setTimeout(() => {
+            // Determine the correct tab based on the current user's role
+            const isDeliveryUser = ['Delivery Team', 'Delivery Head', 'Delivery Manager'].includes(user?.role);
+            const targetTab = isDeliveryUser ? 'delivery' : 'sales';
+
             if (['approval_granted', 'approval_rejected'].includes(notification.type) && notification.opportunityId) {
                 // Route to the opportunity billing tab (sales) for granted/rejected
                 navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
             } else if (notification.opportunityId && !['approval_request', 'gp_approval_request'].includes(notification.type)) {
-                navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
+                navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: targetTab } });
             } else if (['approval_request', 'approval_status_change', 'gp_approval_request'].includes(notification.type)) {
                 navigate('/approvals');
             } else {
