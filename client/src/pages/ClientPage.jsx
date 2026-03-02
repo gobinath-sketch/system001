@@ -10,6 +10,43 @@ import { validateMobile, validateEmail } from '../utils/validation';
 import { API_BASE } from '../config/api';
 import IntlPhoneField from '../components/form/IntlPhoneField';
 import CountrySelectField from '../components/form/CountrySelectField';
+const CLIENT_DRAFT_KEY = 'erp_client_drafts_v1';
+const LEGACY_CLIENT_DRAFT_KEY = 'erp_client_create_draft_v1';
+
+const loadClientDrafts = () => {
+  try {
+    const raw = localStorage.getItem(CLIENT_DRAFT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    const legacyRaw = localStorage.getItem(LEGACY_CLIENT_DRAFT_KEY);
+    if (legacyRaw) {
+      const legacyDraft = JSON.parse(legacyRaw);
+      const migrated = legacyDraft ? [{
+        id: `client_draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        formData: legacyDraft,
+        updatedAt: new Date().toISOString()
+      }] : [];
+      localStorage.setItem(CLIENT_DRAFT_KEY, JSON.stringify(migrated));
+      localStorage.removeItem(LEGACY_CLIENT_DRAFT_KEY);
+      return migrated;
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to load client drafts:', error);
+    return [];
+  }
+};
+
+const persistClientDrafts = drafts => {
+  try {
+    localStorage.setItem(CLIENT_DRAFT_KEY, JSON.stringify(drafts));
+  } catch (error) {
+    console.error('Failed to persist client drafts:', error);
+  }
+};
 const ClientPage = () => {
   const formatLocationForDisplay = (rawLocation) => {
     const parts = String(rawLocation || '')
@@ -39,11 +76,16 @@ const ClientPage = () => {
     socket
   } = useSocket();
   const [clients, setClients] = useState([]);
+  const [clientDrafts, setClientDrafts] = useState(() => loadClientDrafts());
+  const [activeClientDraftId, setActiveClientDraftId] = useState(null);
+  const [showClientDraftsModal, setShowClientDraftsModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'details'
   const [showFormModal, setShowFormModal] = useState(false);
   useEffect(() => {
     if (location.state?.mode === 'create') {
       resetForm();
+      setSelectedClient(null);
+      setActiveClientDraftId(null);
       setShowFormModal(true);
       setViewMode('list');
     } else {
@@ -100,9 +142,51 @@ const ClientPage = () => {
       }
     }]
   });
+  const hasClientDraftData = data => {
+    if (!data) return false;
+    if (data.companyName?.trim()) return true;
+    return Array.isArray(data.contactPersons) && data.contactPersons.some(contact => contact.name?.trim() || contact.email?.trim() || contact.contactNumber?.trim() || contact.location?.trim());
+  };
   useEffect(() => {
     fetchClients();
   }, []);
+  const upsertClientDraft = draftPayload => {
+    const nextDraft = {
+      id: draftPayload?.id || `client_draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      formData: draftPayload.formData,
+      updatedAt: new Date().toISOString()
+    };
+    setClientDrafts(prevDrafts => {
+      const nextDrafts = [nextDraft, ...prevDrafts.filter(item => item.id !== nextDraft.id)];
+      persistClientDrafts(nextDrafts);
+      return nextDrafts;
+    });
+    return nextDraft;
+  };
+  const removeClientDraft = draftId => {
+    if (!draftId) return;
+    setClientDrafts(prevDrafts => {
+      const nextDrafts = prevDrafts.filter(item => item.id !== draftId);
+      persistClientDrafts(nextDrafts);
+      return nextDrafts;
+    });
+    if (activeClientDraftId === draftId) {
+      setActiveClientDraftId(null);
+    }
+  };
+  useEffect(() => {
+    if (!showFormModal || selectedClient || !hasClientDraftData(formData)) return;
+    const timer = setTimeout(() => {
+      const draft = upsertClientDraft({
+        id: activeClientDraftId,
+        formData
+      });
+      if (draft?.id && draft.id !== activeClientDraftId) {
+        setActiveClientDraftId(draft.id);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [showFormModal, selectedClient, formData, activeClientDraftId]);
   useEffect(() => {
     if (!socket) return;
     const handleEntityUpdated = event => {
@@ -239,6 +323,10 @@ const ClientPage = () => {
             Authorization: `Bearer ${token}`
           }
         });
+        if (activeClientDraftId) {
+          removeClientDraft(activeClientDraftId);
+        }
+        setActiveClientDraftId(null);
         addToast('Client created successfully', 'success');
       }
       setShowFormModal(false);
@@ -291,6 +379,7 @@ const ClientPage = () => {
   const startCreate = () => {
     resetForm();
     setSelectedClient(null); // Explicitly clear selected client
+    setActiveClientDraftId(null);
     setShowFormModal(true);
     if (viewMode !== 'list' && viewMode !== 'details') {
       setViewMode('list');
@@ -302,6 +391,7 @@ const ClientPage = () => {
   };
   const startEdit = () => {
     if (selectedClient) {
+      setActiveClientDraftId(null);
       setFormData({
         companyName: selectedClient.companyName,
         sector: toSectorOptionValue(selectedClient.sector || selectedClient.base),
@@ -328,6 +418,15 @@ const ClientPage = () => {
       setSelectedClient(null);
     }
     // If in modal, the modal has its own close button which just toggles the state
+  };
+  const editClientDraft = draft => {
+    if (!draft?.formData) return;
+    setShowClientDraftsModal(false);
+    setSelectedClient(null);
+    setFormData(draft.formData);
+    setActiveClientDraftId(draft.id);
+    setShowFormModal(true);
+    setViewMode('list');
   };
 
   // --- Filters ---
@@ -668,10 +767,58 @@ const ClientPage = () => {
 
     {/* List View - Always show unless in details mode */}
     {viewMode === 'list' && <>
+      {showClientDraftsModal && <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setShowClientDraftsModal(false)}>
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[88vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="sticky top-0 z-10 bg-white border-b p-5 sm:p-6 flex items-center justify-between">
+            <h2 className="text-2xl font-semibold text-gray-900">Client Drafts ({clientDrafts.length})</h2>
+            <button onClick={() => setShowClientDraftsModal(false)} className="text-gray-500 hover:text-gray-700" aria-label="Close drafts modal">
+              <X size={24} />
+            </button>
+          </div>
+          <div className="p-5 sm:p-6">
+            {clientDrafts.length > 0 ? <div className="overflow-x-auto">
+              <table className="min-w-full text-left text-base">
+                <thead className="border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 font-semibold text-gray-900">Client Name</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900">Last Saved</th>
+                    <th className="px-4 py-3 font-semibold text-gray-900">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {clientDrafts.map(draft => <tr key={draft.id}>
+                    <td className="px-4 py-4 text-gray-900">{draft.formData?.companyName?.trim() || 'Untitled Client Draft'}</td>
+                    <td className="px-4 py-4 text-gray-600">{new Date(draft.updatedAt).toLocaleString()}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button type="button" onClick={() => editClientDraft(draft)} className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-primary-blue text-white hover:bg-primary-blue-dark" title="Edit Draft" aria-label="Edit Draft">
+                          <Edit size={16} />
+                        </button>
+                        <button type="button" onClick={() => removeClientDraft(draft.id)} className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-red-500 text-white hover:bg-red-600" title="Delete Draft" aria-label="Delete Draft">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </div> : <div className="text-sm text-gray-500">No drafts found.</div>}
+          </div>
+        </div>
+      </div>}
       {/* Client List Container */}
       <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
         <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-3">
-          <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
+          <div className="w-full md:w-auto flex items-center gap-3">
+            <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
+            {clientDrafts.length > 0 && <button type="button" onClick={() => setShowClientDraftsModal(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-300 bg-red-50 text-[14px] font-bold text-red-700 shadow-md hover:bg-red-100">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+              </span>
+              You have unsaved drafts ({clientDrafts.length})
+            </button>}
+          </div>
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />

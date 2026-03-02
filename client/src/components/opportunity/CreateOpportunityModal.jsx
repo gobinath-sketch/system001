@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import axios from 'axios';
 import { X, MoreHorizontal } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
@@ -11,7 +11,10 @@ const CreateOpportunityModal = ({
   isOpen,
   onClose,
   onSuccess,
-  preselectedClientId
+  preselectedClientId,
+  draftData,
+  onDraftSave,
+  onDraftDelete
 }) => {
   const {
     addToast
@@ -25,7 +28,7 @@ const CreateOpportunityModal = ({
   const [showClientModal, setShowClientModal] = useState(false);
 
   // Form Data State
-  const [formData, setFormData] = useState({
+  const initialFormState = useMemo(() => ({
     clientId: '',
     selectedContactPerson: '',
     requirementSummary: '',
@@ -64,8 +67,33 @@ const CreateOpportunityModal = ({
     teamSize: '',
     // Custom Technology Input
     customTechnology: ''
-  });
+  }), []);
+  const [formData, setFormData] = useState(initialFormState);
   const [requirementDoc, setRequirementDoc] = useState(null); // New state for file
+  const [draftId, setDraftId] = useState(null);
+
+  const hasMeaningfulData = data => {
+    if (!data) return false;
+    return Boolean(
+      data.clientId ||
+      data.selectedContactPerson ||
+      data.requirementSummary?.trim() ||
+      data.technology?.trim() ||
+      data.trainingName?.trim() ||
+      data.examDetails?.trim() ||
+      data.noOfVouchers ||
+      data.noOfIDs ||
+      data.duration?.trim() ||
+      data.region?.trim() ||
+      data.resourceType?.trim() ||
+      data.resourceCount ||
+      data.contentType?.trim() ||
+      data.deliveryFormat?.trim() ||
+      data.projectScope?.trim() ||
+      data.teamSize ||
+      data.customTechnology?.trim()
+    );
+  };
 
   const fetchClients = async () => {
     try {
@@ -98,14 +126,38 @@ const CreateOpportunityModal = ({
     if (isOpen) {
       fetchClients();
       fetchDeliveryUsers();
-      if (preselectedClientId) {
-        setFormData(prev => ({
-          ...prev,
+      if (draftData?.formData) {
+        setFormData({
+          ...initialFormState,
+          ...draftData.formData
+        });
+        setDraftId(draftData.id || null);
+      } else if (preselectedClientId) {
+        setFormData({
+          ...initialFormState,
           clientId: preselectedClientId
-        }));
+        });
+        setDraftId(null);
+      } else {
+        setFormData(initialFormState);
+        setDraftId(null);
       }
     }
-  }, [isOpen, preselectedClientId]);
+  }, [isOpen, preselectedClientId, draftData, initialFormState]);
+
+  useEffect(() => {
+    if (!isOpen || !onDraftSave || !hasMeaningfulData(formData)) return;
+    const timer = setTimeout(() => {
+      const savedDraft = onDraftSave({
+        id: draftId,
+        formData
+      });
+      if (savedDraft?.id && savedDraft.id !== draftId) {
+        setDraftId(savedDraft.id);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isOpen, formData, draftId, onDraftSave]);
   const handleChange = e => {
     setFormData({
       ...formData,
@@ -189,32 +241,12 @@ const CreateOpportunityModal = ({
         }
       });
       addToast('Opportunity created successfully', 'success');
+      if (draftId && onDraftDelete) {
+        onDraftDelete(draftId);
+      }
       // Reset form
-      setFormData({
-        clientId: '',
-        selectedContactPerson: '',
-        requirementSummary: '',
-        type: 'Training',
-        status: 'Identify',
-        assignedTo: '',
-        technology: '',
-        trainingName: '',
-        modeOfTraining: 'Virtual',
-        batchSize: '',
-        trainingLocation: '',
-        examDetails: '',
-        noOfVouchers: '',
-        noOfIDs: '',
-        duration: '',
-        region: '',
-        resourceType: '',
-        resourceCount: '',
-        contentType: '',
-        deliveryFormat: '',
-        projectScope: '',
-        teamSize: '',
-        customTechnology: ''
-      });
+      setFormData(initialFormState);
+      setDraftId(null);
       setRequirementDoc(null);
       onSuccess();
       onClose();
@@ -455,6 +487,22 @@ const CreateOpportunityModal = ({
           </div>
 
           <div className="flex flex-col sm:flex-row justify-end gap-3 sm:space-x-4">
+            <button type="button" onClick={() => {
+              if (!hasMeaningfulData(formData)) {
+                addToast('Enter at least one field to save draft.', 'error');
+                return;
+              }
+              const savedDraft = onDraftSave?.({
+                id: draftId,
+                formData
+              });
+              if (savedDraft?.id && savedDraft.id !== draftId) {
+                setDraftId(savedDraft.id);
+              }
+              addToast('Draft saved.', 'success');
+            }} className="bg-amber-100 text-amber-800 px-6 py-2 rounded-lg hover:bg-amber-200 w-full sm:w-auto">
+              Save Draft
+            </button>
             <button type="button" onClick={onClose} className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 w-full sm:w-auto">
               Cancel
             </button>
