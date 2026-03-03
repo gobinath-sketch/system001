@@ -36,6 +36,15 @@ const getLastPreview = (message) => {
   return 'No messages yet';
 };
 
+const sortUsersByLastMessage = (list = []) => {
+  return [...list].sort((a, b) => {
+    const aTs = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+    const bTs = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+    if (aTs !== bTs) return bTs - aTs;
+    return String(a.name || '').localeCompare(String(b.name || ''));
+  });
+};
+
 const defaultUploadConfig = {
   enabled: true,
   maxFileSizeBytes: 500 * 1024 * 1024,
@@ -97,9 +106,12 @@ const InAppChatWidget = () => {
   const [dragDepth, setDragDepth] = useState(0);
   const [iconPosition, setIconPosition] = useState({ x: null, y: null });
   const [iconDragging, setIconDragging] = useState(false);
+  const [panelPosition, setPanelPosition] = useState({ x: null, y: null });
+  const [panelDragging, setPanelDragging] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const dragStartRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0, moved: false });
+  const panelDragRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0 });
 
   const currentUserId = user?._id || user?.id || '';
 
@@ -147,20 +159,23 @@ const InAppChatWidget = () => {
       const convoList = Array.isArray(convoRes.data) ? convoRes.data : [];
       setConversations(convoList);
 
-      const convoUserMap = new Map(convoList.map((row) => [row.user?._id, row]));
-      const mergedUsers = usersList
+      const convoUserMap = new Map(
+        convoList
+          .map((row) => [getUserId(row.user), row])
+          .filter(([id]) => Boolean(id))
+      );
+      const mergedUsers = sortUsersByLastMessage(
+        usersList
         .map((userItem) => ({
           ...userItem,
           unreadCount: convoUserMap.get(userItem._id)?.unreadCount || 0,
-          lastMessageAt: convoUserMap.get(userItem._id)?.lastMessage?.createdAt || null,
+          lastMessageAt:
+            convoUserMap.get(userItem._id)?.lastMessage?.createdAt
+            || convoUserMap.get(userItem._id)?.lastMessageAt
+            || null,
           lastMessage: convoUserMap.get(userItem._id)?.lastMessage || null
         }))
-        .sort((a, b) => {
-          const aTs = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
-          const bTs = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
-          if (aTs !== bTs) return bTs - aTs;
-          return String(a.name || '').localeCompare(String(b.name || ''));
-        });
+      );
 
       setUsers(mergedUsers);
       if (!selectedUserId && mergedUsers.length > 0) {
@@ -255,7 +270,7 @@ const InAppChatWidget = () => {
     const timer = setInterval(() => {
       refreshUsersAndConversations({ silent: true });
       if (selectedUserId) {
-        loadMessages(selectedUserId, { silent: true, autoScroll: false }).then(() => markConversationRead(selectedUserId));
+        loadMessages(selectedUserId, { silent: true, autoScroll: true }).then(() => markConversationRead(selectedUserId));
       }
     }, 1000);
     return () => clearInterval(timer);
@@ -302,7 +317,7 @@ const InAppChatWidget = () => {
           lastMessage: message
         };
         const withoutCurrent = prev.filter((u) => u._id !== otherId);
-        return [updated, ...withoutCurrent];
+        return sortUsersByLastMessage([updated, ...withoutCurrent]);
       });
 
       setConversations((prev) => {
@@ -515,8 +530,8 @@ const InAppChatWidget = () => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     if (iconPosition.x !== null && iconPosition.y !== null) return;
-    const defaultX = Math.max(window.innerWidth - 84, 12);
-    const defaultY = Math.max(window.innerHeight - 84, 12);
+    const defaultX = Math.max(window.innerWidth - 156, 12);
+    const defaultY = Math.max(window.innerHeight - 90, 12);
     setIconPosition({ x: defaultX, y: defaultY });
   }, [iconPosition.x, iconPosition.y]);
 
@@ -534,8 +549,8 @@ const InAppChatWidget = () => {
     dragStartRef.current = {
       startX,
       startY,
-      baseX: iconPosition.x ?? Math.max(window.innerWidth - 84, 12),
-      baseY: iconPosition.y ?? Math.max(window.innerHeight - 84, 12),
+      baseX: iconPosition.x ?? Math.max(window.innerWidth - 156, 12),
+      baseY: iconPosition.y ?? Math.max(window.innerHeight - 90, 12),
       moved: false
     };
   };
@@ -595,6 +610,117 @@ const InAppChatWidget = () => {
     window.addEventListener('touchend', handleEnd);
   };
 
+  const isDesktopViewport = () => typeof window !== 'undefined' && window.innerWidth >= 640;
+
+  const getPanelSize = () => {
+    const width = 820;
+    const height = Math.min(Math.round((window.innerHeight || 0) * 0.7), 640);
+    return { width, height };
+  };
+
+  const clampPanelPosition = (x, y) => {
+    const { width, height } = getPanelSize();
+    const min = 8;
+    const maxX = Math.max((window.innerWidth || 0) - width - min, min);
+    const maxY = Math.max((window.innerHeight || 0) - height - min, min);
+    return {
+      x: Math.min(Math.max(x, min), maxX),
+      y: Math.min(Math.max(y, min), maxY)
+    };
+  };
+
+  const getDefaultPanelPosition = () => {
+    const { width, height } = getPanelSize();
+    return clampPanelPosition(
+      (window.innerWidth || 0) - width - 16,
+      (window.innerHeight || 0) - height - 16
+    );
+  };
+
+  const startPanelDrag = (startX, startY) => {
+    const base = panelPosition.x !== null && panelPosition.y !== null
+      ? panelPosition
+      : getDefaultPanelPosition();
+    panelDragRef.current = {
+      startX,
+      startY,
+      baseX: base.x,
+      baseY: base.y
+    };
+  };
+
+  const onPanelMouseDown = (event) => {
+    if (!isDesktopViewport()) return;
+    if (!event.target.closest('[data-chat-drag-handle]')) return;
+    if (event.target.closest('button, a, input, textarea')) return;
+    event.preventDefault();
+    startPanelDrag(event.clientX, event.clientY);
+    setPanelDragging(true);
+
+    const handleMove = (moveEvent) => {
+      const dx = moveEvent.clientX - panelDragRef.current.startX;
+      const dy = moveEvent.clientY - panelDragRef.current.startY;
+      const next = clampPanelPosition(panelDragRef.current.baseX + dx, panelDragRef.current.baseY + dy);
+      setPanelPosition(next);
+    };
+
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      setPanelDragging(false);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  const onPanelTouchStart = (event) => {
+    if (!isDesktopViewport()) return;
+    if (!event.target.closest('[data-chat-drag-handle]')) return;
+    if (event.target.closest('button, a, input, textarea')) return;
+    if (!event.touches?.[0]) return;
+    const touch = event.touches[0];
+    startPanelDrag(touch.clientX, touch.clientY);
+    setPanelDragging(true);
+
+    const handleMove = (moveEvent) => {
+      if (!moveEvent.touches?.[0]) return;
+      moveEvent.preventDefault();
+      const t = moveEvent.touches[0];
+      const dx = t.clientX - panelDragRef.current.startX;
+      const dy = t.clientY - panelDragRef.current.startY;
+      const next = clampPanelPosition(panelDragRef.current.baseX + dx, panelDragRef.current.baseY + dy);
+      setPanelPosition(next);
+    };
+
+    const handleEnd = () => {
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+      setPanelDragging(false);
+    };
+
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+  };
+
+  useEffect(() => {
+    if (!isOpen || !isDesktopViewport()) return;
+    if (panelPosition.x !== null && panelPosition.y !== null) return;
+    setPanelPosition(getDefaultPanelPosition());
+  }, [isOpen, panelPosition.x, panelPosition.y]);
+
+  useEffect(() => {
+    if (!isOpen || panelPosition.x === null || panelPosition.y === null) return;
+    const handleResize = () => {
+      setPanelPosition((prev) => {
+        if (!prev || prev.x === null || prev.y === null) return prev;
+        return clampPanelPosition(prev.x, prev.y);
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen, panelPosition.x, panelPosition.y]);
+
   return (
     <>
       {!isOpen && (
@@ -602,11 +728,11 @@ const InAppChatWidget = () => {
           type="button"
           onMouseDown={onIconMouseDown}
           onTouchStart={onIconTouchStart}
-          className={`fixed z-[70] h-14 w-14 bg-transparent border-0 p-0 ${iconDragging ? '' : 'hover:scale-105'} transition-transform inline-flex items-center justify-center cursor-grab active:cursor-grabbing touch-none`}
-          style={iconPosition.x !== null && iconPosition.y !== null ? { left: `${iconPosition.x}px`, top: `${iconPosition.y}px` } : { right: '20px', bottom: '20px' }}
+          className="fixed z-[70] h-[45px] w-[45px] bg-transparent border-0 p-0 inline-flex items-center justify-center cursor-grab active:cursor-grabbing touch-none"
+          style={iconPosition.x !== null && iconPosition.y !== null ? { left: `${iconPosition.x}px`, top: `${iconPosition.y}px` } : { right: '92px', bottom: '26px' }}
           aria-label="Open chat"
         >
-          <img src={chatIcon} alt="Chat" className="h-12 w-12 object-contain" />
+          <img src={chatIcon} alt="Chat" className="h-[45px] w-[45px] object-contain" />
           {unreadTotal > 0 && (
             <span className="absolute -top-1 -right-1 min-w-6 h-6 px-1 rounded-full bg-red-500 text-white text-xs font-bold inline-flex items-center justify-center">
               {unreadTotal > 99 ? '99+' : unreadTotal}
@@ -617,20 +743,22 @@ const InAppChatWidget = () => {
 
       {isOpen && (
         <div
-          className="fixed bottom-4 right-4 left-4 sm:left-auto z-[75] sm:w-[920px] h-[78vh] max-h-[720px] rounded-2xl border border-slate-200/70 bg-white/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(15,23,42,0.25)] overflow-hidden flex"
+          className={`fixed z-[75] sm:w-[820px] h-[70vh] max-h-[640px] rounded-2xl border border-slate-200/70 bg-white/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(15,23,42,0.25)] overflow-hidden flex ${panelDragging ? 'select-none' : ''} ${panelPosition.x === null || panelPosition.y === null || !isDesktopViewport() ? 'bottom-4 right-4 left-4 sm:left-auto' : ''}`}
+          style={panelPosition.x !== null && panelPosition.y !== null && isDesktopViewport() ? { left: `${panelPosition.x}px`, top: `${panelPosition.y}px` } : undefined}
+          onMouseDown={onPanelMouseDown}
+          onTouchStart={onPanelTouchStart}
           onDragEnter={onDragEnter}
           onDragOver={onDragOver}
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <aside className="w-[38%] min-w-[280px] max-w-[340px] border-r border-slate-200 bg-slate-50 flex flex-col">
-            <div className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between">
+          <aside className="w-[35%] min-w-[250px] max-w-[300px] border-r border-slate-200 bg-[#e8f1ff] flex flex-col">
+            <div data-chat-drag-handle className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between cursor-move select-none">
               <div>
-                <h3 className="text-[15px] font-semibold text-slate-900">Team Chat</h3>
-                <p className="text-[11px] text-slate-500 mt-0.5">Direct messages</p>
+                <h3 className="text-[15px] font-semibold text-slate-900">Chat</h3>
               </div>
             </div>
-            <div className="p-3 border-b border-slate-200 bg-white">
+            <div className="p-3 border-b border-slate-200 bg-[#e8f1ff]">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -652,9 +780,9 @@ const InAppChatWidget = () => {
                     key={person._id}
                     type="button"
                     onClick={() => onSelectUser(person._id)}
-                    className={`w-full px-3 py-3 text-left rounded-xl border transition-all ${selectedUserId === person._id ? 'bg-white border-primary-blue/40 shadow-sm' : 'bg-transparent border-transparent hover:bg-white/80 hover:border-slate-200'}`}
+                    className={`w-full px-3 py-2 text-left rounded-xl border transition-all ${selectedUserId === person._id ? 'bg-[#dbe9ff] border-primary-blue/40 shadow-sm' : 'bg-transparent border-transparent hover:bg-[#edf4ff] hover:border-blue-200/70'}`}
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
                       <Avatar name={person.name} avatarDataUrl={person.avatarDataUrl} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
@@ -664,9 +792,6 @@ const InAppChatWidget = () => {
                           </span>
                         </div>
                         <p className="text-[11px] text-slate-500 truncate">{person.role}</p>
-                        <p className="mt-1 text-xs text-slate-600 truncate">
-                          {getLastPreview(person.lastMessage)}
-                        </p>
                       </div>
                       {Number(person.unreadCount || 0) > 0 && (
                         <span className="mt-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold inline-flex items-center justify-center shadow-sm">
@@ -690,11 +815,12 @@ const InAppChatWidget = () => {
             )}
             {selectedUser ? (
               <>
-                <div className="h-[62px] px-4 border-b border-slate-200 flex items-center gap-3 bg-white">
-                  <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900 truncate">{selectedUser.name}</p>
-                    <p className="text-xs text-slate-500 truncate">{selectedUser.role}</p>
+                <div data-chat-drag-handle className="h-[56px] px-3 border-b border-slate-200 flex items-center gap-2 bg-white cursor-move select-none">
+                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+                    <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-8 w-8" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-slate-900 truncate">{selectedUser.name}</p>
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -715,29 +841,20 @@ const InAppChatWidget = () => {
                   ) : (
                     messages.map((msg, idx) => {
                       const mine = getUserId(msg.sender) === currentUserId;
-                      const nextMsg = messages[idx + 1];
-                      const currentTimeLabel = formatTime(msg.createdAt);
-                      const nextTimeLabel = nextMsg ? formatTime(nextMsg.createdAt) : '';
-                      const shouldShowTime = !nextMsg || getUserId(nextMsg.sender) !== getUserId(msg.sender) || nextTimeLabel !== currentTimeLabel;
                       return (
                         <div key={msg._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'bg-gradient-to-br from-primary-blue to-blue-700 text-white rounded-br-md' : 'bg-white border border-slate-200 text-slate-900 rounded-bl-md'}`}>
+                          <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'bg-gradient-to-br from-[#c9dcff] to-[#a9c8ff] text-slate-900 rounded-br-md' : 'bg-white border border-slate-200 text-slate-900 rounded-bl-md'}`}>
                             {msg.text ? <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p> : null}
                             {msg.attachment ? (
                               <a
                                 href={getAttachmentHref(msg.attachment)}
                                 target="_blank"
                                 rel="noreferrer"
-                                className={`mt-2 inline-flex items-center gap-2 text-xs underline underline-offset-2 ${mine ? 'text-blue-100' : 'text-primary-blue'}`}
+                                className={`mt-2 inline-flex items-center gap-2 text-xs underline underline-offset-2 ${mine ? 'text-blue-700' : 'text-primary-blue'}`}
                               >
                                 <Download size={13} />
                                 {msg.attachment.originalName || 'Download file'}
                               </a>
-                            ) : null}
-                            {shouldShowTime ? (
-                              <div className={`mt-1 text-[10px] ${mine ? 'text-blue-100' : 'text-slate-500'}`}>
-                                {currentTimeLabel}
-                              </div>
                             ) : null}
                           </div>
                         </div>
@@ -798,7 +915,7 @@ const InAppChatWidget = () => {
               </>
             ) : (
               <>
-                <div className="h-[62px] px-4 border-b border-slate-200 flex items-center justify-end bg-white">
+                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-slate-200 flex items-center justify-end bg-white cursor-move select-none">
                   <button
                     type="button"
                     className="h-9 w-9 rounded-lg hover:bg-red-50 inline-flex items-center justify-center text-red-500 hover:text-red-600 transition-colors"
@@ -822,4 +939,3 @@ const InAppChatWidget = () => {
 };
 
 export default InAppChatWidget;
-
