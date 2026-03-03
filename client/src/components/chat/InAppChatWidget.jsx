@@ -228,6 +228,17 @@ const InAppChatWidget = () => {
   }, [selectedUserId, isOpen]);
 
   useEffect(() => {
+    if (!isOpen) return;
+    const timer = setInterval(() => {
+      refreshUsersAndConversations();
+      if (selectedUserId) {
+        loadMessages(selectedUserId).then(() => markConversationRead(selectedUserId));
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isOpen, selectedUserId]);
+
+  useEffect(() => {
     if (!socket || !currentUserId) return;
 
     const handleIncomingMessage = (message) => {
