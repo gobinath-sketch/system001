@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
-import { validateMobile, validateEmail } from '../../utils/validation';
+import { validateMobile, validateEmail, validateLinkedIn } from '../../utils/validation';
 import { API_BASE } from '../../config/api';
 import IntlPhoneField from '../form/IntlPhoneField';
 import CountrySelectField from '../form/CountrySelectField';
@@ -184,6 +184,14 @@ const AddClientModal = ({
         return;
       }
 
+      // Validate LinkedIn if provided
+      const linkedInValidation = validateLinkedIn(contact.linkedIn);
+      if (!linkedInValidation.valid) {
+        addToast(`Contact ${i + 1}: ${linkedInValidation.message}`, 'error');
+        setLoading(false);
+        return;
+      }
+
       // Validate reporting manager if exists
       if (contact.reportingManager?.contactNumber) {
         const rmMobileValidation = validateMobile(contact.reportingManager.contactNumber);
@@ -317,7 +325,7 @@ const AddClientModal = ({
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">LinkedIn</label>
-                  <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
+                  <input type="url" value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." pattern="https?://(www\.)?linkedin\.com/(in|company|school|pub)/.+" title="Enter a valid LinkedIn URL (linkedin.com/in/... or linkedin.com/company/...)." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
                 </div>
               </div>
 

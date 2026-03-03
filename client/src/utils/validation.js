@@ -48,6 +48,32 @@ export const validateEmail = (email) => {
     return { valid: true, message: '' };
 };
 
+export const validateLinkedIn = (linkedIn) => {
+    const value = String(linkedIn || '').trim();
+    if (!value) return { valid: true, message: '' };
+
+    const normalizedValue = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(normalizedValue);
+    } catch {
+        return { valid: false, message: 'Please enter a valid LinkedIn URL' };
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '');
+    if (hostname !== 'linkedin.com' && hostname !== 'in.linkedin.com') {
+        return { valid: false, message: 'LinkedIn URL must be from linkedin.com' };
+    }
+
+    const pathname = parsedUrl.pathname.toLowerCase();
+    const isSupportedPath = /^\/(in|company|school|pub)\/[^/]+/.test(pathname);
+    if (!isSupportedPath) {
+        return { valid: false, message: 'Use a valid LinkedIn profile/company URL' };
+    }
+
+    return { valid: true, message: '' };
+};
+
 export const validatePAN = (pan) => {
     if (!pan) return { valid: false, message: 'PAN is required' };
     if (!/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(pan)) {

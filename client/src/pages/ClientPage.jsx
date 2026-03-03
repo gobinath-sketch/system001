@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { getDefaultRouteForRole } from '../utils/navigation';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
-import { validateMobile, validateEmail } from '../utils/validation';
+import { validateMobile, validateEmail, validateLinkedIn } from '../utils/validation';
 import { API_BASE } from '../config/api';
 import IntlPhoneField from '../components/form/IntlPhoneField';
 import CountrySelectField from '../components/form/CountrySelectField';
@@ -289,6 +289,13 @@ const ClientPage = () => {
         return;
       }
 
+      // Validate LinkedIn if provided
+      const linkedInValidation = validateLinkedIn(contact.linkedIn);
+      if (!linkedInValidation.valid) {
+        addToast(`Contact ${i + 1}: ${linkedInValidation.message}`, 'error');
+        return;
+      }
+
       // Validate reporting manager if exists
       if (contact.reportingManager?.contactNumber) {
         const rmMobileValidation = validateMobile(contact.reportingManager.contactNumber);
@@ -531,7 +538,7 @@ const ClientPage = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium text-gray-700 mb-1">LinkedIn (Optional)</label>
-                  <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
+                  <input type="url" value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." pattern="https?://(www\.)?linkedin\.com/(in|company|school|pub)/.+" title="Enter a valid LinkedIn URL (linkedin.com/in/... or linkedin.com/company/...)." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
                 </div>
               </div>
 
