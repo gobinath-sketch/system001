@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { MessageCircle, Send, Paperclip, X, Search, Download } from 'lucide-react';
+import { Send, Paperclip, X, Search, Download } from 'lucide-react';
 import { API_BASE, API_ENDPOINTS, uploadUrl } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useSocket } from '../../context/SocketContext';
+import chatIcon from '../../assets/chat-icon.svg';
 
 const formatTime = (value) => {
   if (!value) return '';
@@ -94,8 +95,11 @@ const InAppChatWidget = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragDepth, setDragDepth] = useState(0);
+  const [iconPosition, setIconPosition] = useState({ x: null, y: null });
+  const [iconDragging, setIconDragging] = useState(false);
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const dragStartRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0, moved: false });
 
   const currentUserId = user?._id || user?.id || '';
 
@@ -508,16 +512,101 @@ const InAppChatWidget = () => {
     }
   };
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (iconPosition.x !== null && iconPosition.y !== null) return;
+    const defaultX = Math.max(window.innerWidth - 84, 12);
+    const defaultY = Math.max(window.innerHeight - 84, 12);
+    setIconPosition({ x: defaultX, y: defaultY });
+  }, [iconPosition.x, iconPosition.y]);
+
+  const clampIconPosition = (x, y) => {
+    const min = 8;
+    const maxX = Math.max((window.innerWidth || 0) - 56, min);
+    const maxY = Math.max((window.innerHeight || 0) - 56, min);
+    return {
+      x: Math.min(Math.max(x, min), maxX),
+      y: Math.min(Math.max(y, min), maxY)
+    };
+  };
+
+  const startIconDrag = (startX, startY) => {
+    dragStartRef.current = {
+      startX,
+      startY,
+      baseX: iconPosition.x ?? Math.max(window.innerWidth - 84, 12),
+      baseY: iconPosition.y ?? Math.max(window.innerHeight - 84, 12),
+      moved: false
+    };
+  };
+
+  const onIconMouseDown = (event) => {
+    if (isOpen) return;
+    event.preventDefault();
+    startIconDrag(event.clientX, event.clientY);
+
+    const handleMove = (moveEvent) => {
+      const dx = moveEvent.clientX - dragStartRef.current.startX;
+      const dy = moveEvent.clientY - dragStartRef.current.startY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dragStartRef.current.moved = true;
+      if (!dragStartRef.current.moved) return;
+      const next = clampIconPosition(dragStartRef.current.baseX + dx, dragStartRef.current.baseY + dy);
+      setIconPosition(next);
+      setIconDragging(true);
+    };
+
+    const handleUp = () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+      setIconDragging(false);
+      if (!dragStartRef.current.moved) setIsOpen(true);
+    };
+
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+  };
+
+  const onIconTouchStart = (event) => {
+    if (isOpen) return;
+    if (!event.touches?.[0]) return;
+    const touch = event.touches[0];
+    startIconDrag(touch.clientX, touch.clientY);
+
+    const handleMove = (moveEvent) => {
+      if (!moveEvent.touches?.[0]) return;
+      const t = moveEvent.touches[0];
+      const dx = t.clientX - dragStartRef.current.startX;
+      const dy = t.clientY - dragStartRef.current.startY;
+      if (Math.abs(dx) > 6 || Math.abs(dy) > 6) dragStartRef.current.moved = true;
+      if (!dragStartRef.current.moved) return;
+      const next = clampIconPosition(dragStartRef.current.baseX + dx, dragStartRef.current.baseY + dy);
+      setIconPosition(next);
+      setIconDragging(true);
+    };
+
+    const handleEnd = () => {
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+      setIconDragging(false);
+      if (!dragStartRef.current.moved) setIsOpen(true);
+    };
+
+    window.addEventListener('touchmove', handleMove, { passive: false });
+    window.addEventListener('touchend', handleEnd);
+  };
+
   return (
     <>
       {!isOpen && (
         <button
           type="button"
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-5 right-5 z-[70] h-14 w-14 rounded-full bg-gradient-to-br from-primary-blue to-blue-700 text-white shadow-[0_12px_28px_rgba(16,66,131,0.4)] hover:shadow-[0_16px_32px_rgba(16,66,131,0.5)] transition-all"
+          onMouseDown={onIconMouseDown}
+          onTouchStart={onIconTouchStart}
+          className={`fixed z-[70] h-14 w-14 bg-transparent border-0 p-0 ${iconDragging ? '' : 'hover:scale-105'} transition-transform inline-flex items-center justify-center cursor-grab active:cursor-grabbing touch-none`}
+          style={iconPosition.x !== null && iconPosition.y !== null ? { left: `${iconPosition.x}px`, top: `${iconPosition.y}px` } : { right: '20px', bottom: '20px' }}
           aria-label="Open chat"
         >
-          <MessageCircle size={24} className="mx-auto" />
+          <img src={chatIcon} alt="Chat" className="h-12 w-12 object-contain" />
           {unreadTotal > 0 && (
             <span className="absolute -top-1 -right-1 min-w-6 h-6 px-1 rounded-full bg-red-500 text-white text-xs font-bold inline-flex items-center justify-center">
               {unreadTotal > 99 ? '99+' : unreadTotal}
@@ -733,3 +822,4 @@ const InAppChatWidget = () => {
 };
 
 export default InAppChatWidget;
+
