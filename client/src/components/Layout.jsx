@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Sidebar from './layout/Sidebar';
 import NotificationDropdown from './notifications/NotificationDropdown';
 import RealisticToggle from './common/RealisticToggle';
+import InAppChatWidget from './chat/InAppChatWidget';
 import { useCurrency } from '../context/CurrencyContext';
 import { Menu } from 'lucide-react';
 const Layout = ({
@@ -54,6 +55,7 @@ const Layout = ({
                 {children}
             </main>
         </div>
+        <InAppChatWidget />
     </div>;
 };
 export default Layout;

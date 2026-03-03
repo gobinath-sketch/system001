@@ -56,6 +56,7 @@ const smeRoutes = require('./routes/smeRoutes');
 
 const reportRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settingsRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 // Force Restart Tracker
 const notificationRoutes = require('./routes/notifications');
@@ -74,6 +75,7 @@ app.use('/api/smes', smeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes.router);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
     res.send('ERP API Running');

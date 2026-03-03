@@ -75,6 +75,18 @@ export const API_ENDPOINTS = {
     requestDeactivation: '/api/settings/me/request-deactivation',
     exportProfileCard: '/api/settings/me/export-profile-card',
   },
+  chat: {
+    users: '/api/chat/users',
+    conversations: '/api/chat/conversations',
+    messagesByUser: (userId) => `/api/chat/messages/${userId}`,
+    sendMessage: '/api/chat/messages',
+    uploadConfig: '/api/chat/uploads/config',
+    initiateUpload: '/api/chat/uploads/initiate',
+    uploadChunk: (uploadId, index) => `/api/chat/uploads/${uploadId}/chunk?index=${index}`,
+    completeUpload: (uploadId) => `/api/chat/uploads/${uploadId}/complete`,
+    cancelUpload: (uploadId) => `/api/chat/uploads/${uploadId}`,
+    markConversationRead: (userId) => `/api/chat/conversations/${userId}/read`,
+  },
 };
 
 export const apiUrl = (path) => `${API_BASE}${path}`;
