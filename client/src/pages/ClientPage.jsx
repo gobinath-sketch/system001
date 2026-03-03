@@ -775,34 +775,39 @@ const ClientPage = () => {
     {/* List View - Always show unless in details mode */}
     {viewMode === 'list' && <>
       {showClientDraftsModal && <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setShowClientDraftsModal(false)}>
-        <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[88vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-          <div className="sticky top-0 z-10 bg-white border-b p-5 sm:p-6 flex items-center justify-between">
-            <h2 className="text-2xl font-semibold text-gray-900">Client Drafts ({clientDrafts.length})</h2>
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[84vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="sticky top-0 z-10 bg-white border-b px-5 py-4 sm:px-6 sm:py-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Client Drafts ({clientDrafts.length})</h2>
             <button onClick={() => setShowClientDraftsModal(false)} className="text-gray-500 hover:text-gray-700" aria-label="Close drafts modal">
-              <X size={24} />
+              <X size={22} />
             </button>
           </div>
-          <div className="p-5 sm:p-6">
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
             {clientDrafts.length > 0 ? <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-base">
+              <table className="w-full table-fixed text-left text-sm">
+                <colgroup>
+                  <col className="w-[42%]" />
+                  <col className="w-[38%]" />
+                  <col className="w-[20%]" />
+                </colgroup>
                 <thead className="border-b border-gray-200">
                   <tr>
-                    <th className="px-4 py-3 font-semibold text-gray-900">Client Name</th>
-                    <th className="px-4 py-3 font-semibold text-gray-900">Last Saved</th>
-                    <th className="px-4 py-3 font-semibold text-gray-900">Actions</th>
+                    <th className="px-3 py-2.5 font-semibold text-gray-900 leading-none">Client Name</th>
+                    <th className="px-3 py-2.5 font-semibold text-gray-900 leading-none">Last Saved</th>
+                    <th className="px-3 py-2.5 font-semibold text-gray-900 leading-none text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {clientDrafts.map(draft => <tr key={draft.id}>
-                    <td className="px-4 py-4 text-gray-900">{draft.formData?.companyName?.trim() || 'Untitled Client Draft'}</td>
-                    <td className="px-4 py-4 text-gray-600">{new Date(draft.updatedAt).toLocaleString()}</td>
-                    <td className="px-4 py-4">
-                      <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => editClientDraft(draft)} className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-primary-blue text-white hover:bg-primary-blue-dark" title="Edit Draft" aria-label="Edit Draft">
-                          <Edit size={16} />
+                    <td className="px-3 py-2.5 align-middle text-[15px] text-gray-900 leading-tight">{draft.formData?.companyName?.trim() || 'Untitled Client Draft'}</td>
+                    <td className="px-3 py-2.5 align-middle text-[15px] text-gray-600 leading-tight">{new Date(draft.updatedAt).toLocaleString()}</td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => editClientDraft(draft)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-primary-blue text-white hover:bg-primary-blue-dark" title="Edit Draft" aria-label="Edit Draft">
+                          <Edit size={15} />
                         </button>
-                        <button type="button" onClick={() => removeClientDraft(draft.id)} className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-red-500 text-white hover:bg-red-600" title="Delete Draft" aria-label="Delete Draft">
-                          <Trash2 size={16} />
+                        <button type="button" onClick={() => removeClientDraft(draft.id)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-red-500 text-white hover:bg-red-600" title="Delete Draft" aria-label="Delete Draft">
+                          <Trash2 size={15} />
                         </button>
                       </div>
                     </td>
