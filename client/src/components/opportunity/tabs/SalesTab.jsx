@@ -28,6 +28,23 @@ const SalesTab = forwardRef(({
   };
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({});
+  const [deliveryUsers, setDeliveryUsers] = useState([]);
+
+  // Fetch delivery users for the assignment dropdown
+  useEffect(() => {
+    const fetchDeliveryUsers = async () => {
+      try {
+        const token = sessionStorage.getItem('token');
+        const res = await axios.get(`${API_BASE}/api/opportunities/delivery-users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setDeliveryUsers(res.data || []);
+      } catch (err) {
+        console.error('Failed to fetch delivery users:', err);
+      }
+    };
+    fetchDeliveryUsers();
+  }, []);
 
   // Initialize formData
   useEffect(() => {
@@ -43,7 +60,11 @@ const SalesTab = forwardRef(({
         },
         typeSpecificDetails: {
           ...opportunity.typeSpecificDetails
-        }
+        },
+        // Flatten assignedTo if populated object
+        assignedTo: typeof opportunity.assignedTo === 'object' && opportunity.assignedTo !== null
+          ? opportunity.assignedTo._id
+          : opportunity.assignedTo || ''
       });
     }
   }, [opportunity]);
@@ -86,7 +107,8 @@ const SalesTab = forwardRef(({
           typeSpecificDetails: sanitizedTypeSpecificDetails,
           participants: formData.participants,
           days: formData.days,
-          requirementSummary: formData.requirementSummary
+          requirementSummary: formData.requirementSummary,
+          assignedTo: formData.assignedTo || null
         };
         const res = await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
@@ -125,7 +147,10 @@ const SalesTab = forwardRef(({
         },
         typeSpecificDetails: {
           ...opportunity.typeSpecificDetails
-        }
+        },
+        assignedTo: typeof opportunity.assignedTo === 'object' && opportunity.assignedTo !== null
+          ? opportunity.assignedTo._id
+          : opportunity.assignedTo || ''
       });
     }
   }));
@@ -226,6 +251,40 @@ const SalesTab = forwardRef(({
           <input type="text" value={opportunity.type || 'N/A'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
         </div>
 
+        {/* Assign Delivery Person — editable in edit mode, read-only display in view mode */}
+        <div>
+          <label className="block text-base font-semibold text-gray-800 mb-1">Assign Delivery Person</label>
+          {isEditing ? (
+            <select
+              value={formData.assignedTo || ''}
+              onChange={e => handleChange('root', 'assignedTo', e.target.value || null)}
+              className={selectClass}
+            >
+              <option value="">-- Not Assigned --</option>
+              {deliveryUsers.map(du => (
+                <option key={du._id} value={du._id}>
+                  {du.name} ({du.role === 'Delivery Head' ? 'Head' : 'Executive'})
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              type="text"
+              value={
+                (() => {
+                  const assigned = opportunity.assignedTo;
+                  if (!assigned) return 'Not Assigned';
+                  if (typeof assigned === 'object') return `${assigned.name} (${assigned.role === 'Delivery Head' ? 'Head' : 'Executive'})`;
+                  const found = deliveryUsers.find(u => u._id === assigned);
+                  return found ? `${found.name} (${found.role === 'Delivery Head' ? 'Head' : 'Executive'})` : 'Assigned';
+                })()
+              }
+              disabled
+              className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed"
+            />
+          )}
+        </div>
+
         {/* Training-Specific Fields */}
         {opportunity.type === 'Training' && <>
           <div className={formData.typeSpecificDetails?.technology?.startsWith('Emerging technologies') || formData.typeSpecificDetails?.technology?.startsWith('Other technologies') ? "col-span-1 grid grid-cols-2 gap-2" : ""}>
@@ -281,6 +340,26 @@ const SalesTab = forwardRef(({
               required
             />
           </div>}
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
+            <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
+          </div>
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+              <div className="min-w-0">
+                {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                  <CheckCircle size={14} /> View
+                </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+              </div>
+              {isEditing && <div className="shrink-0">
+                <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                  {formData.requirementDocument ? 'Replace' : 'Upload'}
+                </UploadButton>
+              </div>}
+            </div>
+          </div>
         </>}
 
         {/* Vouchers-Specific Fields */}
@@ -306,6 +385,26 @@ const SalesTab = forwardRef(({
               className="w-full"
               required
             />
+          </div>
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
+            <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
+          </div>
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
+            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+              <div className="min-w-0">
+                {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
+                  <CheckCircle size={14} /> View
+                </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+              </div>
+              {isEditing && <div className="shrink-0">
+                <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
+                <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
+                  {formData.requirementDocument ? 'Replace' : 'Upload'}
+                </UploadButton>
+              </div>}
+            </div>
           </div>
         </>}
 
@@ -455,28 +554,7 @@ const SalesTab = forwardRef(({
           </div>
         </>}
 
-        {!(isResourceSupport || isContentDevelopment || isLabSupport || isProductSupport) && <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Summary *</label>
-            <input type="text" value={formData.requirementSummary || ''} onChange={e => handleChange('root', 'requirementSummary', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter requirement summary" />
-          </div>
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
-            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-              <div className="min-w-0">
-                {formData.requirementDocument ? <a href={`${API_BASE}/${String(formData.requirementDocument).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline" title="View Requirement Document">
-                  <CheckCircle size={14} /> View
-                </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
-              </div>
-              {isEditing && <div className="shrink-0">
-                <input type="file" id="requirement-document-upload" className="hidden" onChange={handleRequirementDocumentUpload} accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png" disabled={uploading} />
-                <UploadButton onClick={() => document.getElementById('requirement-document-upload').click()} disabled={uploading}>
-                  {formData.requirementDocument ? 'Replace' : 'Upload'}
-                </UploadButton>
-              </div>}
-            </div>
-          </div>
-        </div>}
+
       </div>
     </Card>
 

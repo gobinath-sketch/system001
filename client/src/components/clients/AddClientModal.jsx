@@ -1,11 +1,48 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { X, Plus, Trash2 } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
-import { validateMobile, validateEmail } from '../../utils/validation';
+import { validateMobile, validateEmail, validateLinkedIn } from '../../utils/validation';
 import { API_BASE } from '../../config/api';
 import IntlPhoneField from '../form/IntlPhoneField';
 import CountrySelectField from '../form/CountrySelectField';
+const CLIENT_DRAFT_KEY = 'erp_client_drafts_v1';
+const LEGACY_CLIENT_DRAFT_KEY = 'erp_client_create_draft_v1';
+
+const loadClientDrafts = () => {
+  try {
+    const raw = localStorage.getItem(CLIENT_DRAFT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    const legacyRaw = localStorage.getItem(LEGACY_CLIENT_DRAFT_KEY);
+    if (legacyRaw) {
+      const legacyDraft = JSON.parse(legacyRaw);
+      const migrated = legacyDraft ? [{
+        id: `client_draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        formData: legacyDraft,
+        updatedAt: new Date().toISOString()
+      }] : [];
+      localStorage.setItem(CLIENT_DRAFT_KEY, JSON.stringify(migrated));
+      localStorage.removeItem(LEGACY_CLIENT_DRAFT_KEY);
+      return migrated;
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to load client drafts:', error);
+    return [];
+  }
+};
+
+const persistClientDrafts = drafts => {
+  try {
+    localStorage.setItem(CLIENT_DRAFT_KEY, JSON.stringify(drafts));
+  } catch (error) {
+    console.error('Failed to persist client drafts:', error);
+  }
+};
 const AddClientModal = ({
   isOpen,
   onClose,
@@ -36,6 +73,41 @@ const AddClientModal = ({
     }]
   };
   const [formData, setFormData] = useState(initialFormState);
+  const [draftId, setDraftId] = useState(null);
+  const hasClientDraftData = data => {
+    if (!data) return false;
+    if (data.companyName?.trim()) return true;
+    return Array.isArray(data.contactPersons) && data.contactPersons.some(contact => contact.name?.trim() || contact.email?.trim() || contact.contactNumber?.trim() || contact.location?.trim());
+  };
+  useEffect(() => {
+    if (!isOpen) return;
+    const drafts = loadClientDrafts();
+    const latestDraft = drafts[0];
+    if (hasClientDraftData(latestDraft?.formData)) {
+      setFormData(latestDraft.formData);
+      setDraftId(latestDraft.id);
+    } else {
+      setFormData(initialFormState);
+      setDraftId(null);
+    }
+  }, [isOpen]);
+  useEffect(() => {
+    if (!isOpen || !hasClientDraftData(formData)) return;
+    const timer = setTimeout(() => {
+      const nextDraft = {
+        id: draftId || `client_draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        formData,
+        updatedAt: new Date().toISOString()
+      };
+      const existingDrafts = loadClientDrafts();
+      const nextDrafts = [nextDraft, ...existingDrafts.filter(item => item.id !== nextDraft.id)];
+      persistClientDrafts(nextDrafts);
+      if (!draftId) {
+        setDraftId(nextDraft.id);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [isOpen, formData, draftId]);
   const handleChange = e => {
     setFormData({
       ...formData,
@@ -112,6 +184,14 @@ const AddClientModal = ({
         return;
       }
 
+      // Validate LinkedIn if provided
+      const linkedInValidation = validateLinkedIn(contact.linkedIn);
+      if (!linkedInValidation.valid) {
+        addToast(`Contact ${i + 1}: ${linkedInValidation.message}`, 'error');
+        setLoading(false);
+        return;
+      }
+
       // Validate reporting manager if exists
       if (contact.reportingManager?.contactNumber) {
         const rmMobileValidation = validateMobile(contact.reportingManager.contactNumber);
@@ -139,6 +219,11 @@ const AddClientModal = ({
       });
       addToast('Client created successfully', 'success');
       setFormData(initialFormState);
+      if (draftId) {
+        const nextDrafts = loadClientDrafts().filter(item => item.id !== draftId);
+        persistClientDrafts(nextDrafts);
+      }
+      setDraftId(null);
       if (onSuccess) onSuccess(res.data);
       onClose();
     } catch (err) {
@@ -240,7 +325,7 @@ const AddClientModal = ({
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600 mb-1">LinkedIn</label>
-                  <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
+                  <input type="url" value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." pattern="https?://(www\.)?linkedin\.com/(in|company|school|pub)/.+" title="Enter a valid LinkedIn URL (linkedin.com/in/... or linkedin.com/company/...)." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
                 </div>
               </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { AlertTriangle, Download, Globe2, KeyRound, ShieldCheck, SlidersHorizontal, UserCircle2 } from 'lucide-react';
+import { AlertTriangle, Download, Eye, EyeOff, Globe2, KeyRound, ShieldCheck, SlidersHorizontal, UserCircle2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { useToast } from '../context/ToastContext';
@@ -65,6 +65,7 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState(() => defaults(user));
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordVisibility, setPasswordVisibility] = useState({ currentPassword: false, newPassword: false, confirmPassword: false });
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -333,10 +334,13 @@ export default function SettingsPage() {
     const { currentPassword, newPassword, confirmPassword } = passwordForm;
     if (!currentPassword || !newPassword || !confirmPassword) return addToast('Please fill all password fields.', 'warning');
     if (newPassword.length < 8) return addToast('New password must be at least 8 characters.', 'warning');
+    if (!/[A-Z]/.test(newPassword)) return addToast('New password must include at least one uppercase letter.', 'warning');
+    if (!/[0-9]/.test(newPassword)) return addToast('New password must include at least one number.', 'warning');
     if (newPassword !== confirmPassword) return addToast('Confirm password does not match.', 'error');
     try {
       await axios.put(`${API_BASE}${API_ENDPOINTS.settings.password}`, { currentPassword, newPassword, confirmPassword }, auth);
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordVisibility({ currentPassword: false, newPassword: false, confirmPassword: false });
       addToast('Password updated successfully.', 'success');
     } catch (e) { addToast(e?.response?.data?.message || 'Unable to update password.', 'error'); }
   };
@@ -353,6 +357,21 @@ export default function SettingsPage() {
       addToast('Session removed.', 'success');
     } catch (e) { addToast(e?.response?.data?.message || 'Unable to remove session.', 'error'); }
   };
+
+  const hasMinPasswordLength = passwordForm.newPassword.length >= 8;
+  const hasUppercaseInPassword = /[A-Z]/.test(passwordForm.newPassword);
+  const hasNumberInPassword = /[0-9]/.test(passwordForm.newPassword);
+  const isConfirmPasswordMatching = passwordForm.confirmPassword.length > 0 && passwordForm.newPassword === passwordForm.confirmPassword;
+  const isPasswordFormReady = Boolean(
+    editing &&
+    passwordForm.currentPassword &&
+    passwordForm.newPassword &&
+    passwordForm.confirmPassword &&
+    hasMinPasswordLength &&
+    hasUppercaseInPassword &&
+    hasNumberInPassword &&
+    isConfirmPasswordMatching
+  );
 
   if (loading) {
     return <div className="p-3 sm:p-6 bg-bg-page h-full">
@@ -539,12 +558,80 @@ export default function SettingsPage() {
           </div>
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm font-medium text-amber-900 mb-3">Use a strong password and rotate it periodically.</div>
           <div className="space-y-3 flex-1 overflow-y-auto pr-1">
-            <input type="password" disabled={!editing} value={passwordForm.currentPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Current Password" />
-            <input type="password" disabled={!editing} value={passwordForm.newPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="New Password" />
-            <input type="password" disabled={!editing} value={passwordForm.confirmPassword} onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))} className="w-full h-10 border border-slate-300 rounded-xl px-3 text-[15px] font-semibold bg-white disabled:bg-slate-100" placeholder="Confirm Password" />
+            <div className="relative">
+              <input
+                type={passwordVisibility.currentPassword ? 'text' : 'password'}
+                disabled={!editing}
+                value={passwordForm.currentPassword}
+                onChange={(e) => setPasswordForm((p) => ({ ...p, currentPassword: e.target.value }))}
+                className="w-full h-10 border border-slate-300 rounded-xl px-3 pr-10 text-[15px] font-semibold bg-white disabled:bg-slate-100"
+                placeholder="Current Password"
+              />
+              <button
+                type="button"
+                disabled={!editing}
+                onClick={() => setPasswordVisibility((p) => ({ ...p, currentPassword: !p.currentPassword }))}
+                className="absolute inset-y-0 right-0 w-10 inline-flex items-center justify-center text-slate-500 hover:text-slate-700 disabled:opacity-40"
+                aria-label={passwordVisibility.currentPassword ? 'Hide current password' : 'Show current password'}
+              >
+                {passwordVisibility.currentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type={passwordVisibility.newPassword ? 'text' : 'password'}
+                disabled={!editing}
+                value={passwordForm.newPassword}
+                onChange={(e) => setPasswordForm((p) => ({ ...p, newPassword: e.target.value }))}
+                className="w-full h-10 border border-slate-300 rounded-xl px-3 pr-10 text-[15px] font-semibold bg-white disabled:bg-slate-100"
+                placeholder="New Password"
+              />
+              <button
+                type="button"
+                disabled={!editing}
+                onClick={() => setPasswordVisibility((p) => ({ ...p, newPassword: !p.newPassword }))}
+                className="absolute inset-y-0 right-0 w-10 inline-flex items-center justify-center text-slate-500 hover:text-slate-700 disabled:opacity-40"
+                aria-label={passwordVisibility.newPassword ? 'Hide new password' : 'Show new password'}
+              >
+                {passwordVisibility.newPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            <div className="relative">
+              <input
+                type={passwordVisibility.confirmPassword ? 'text' : 'password'}
+                disabled={!editing}
+                value={passwordForm.confirmPassword}
+                onChange={(e) => setPasswordForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                className="w-full h-10 border border-slate-300 rounded-xl px-3 pr-10 text-[15px] font-semibold bg-white disabled:bg-slate-100"
+                placeholder="Confirm Password"
+              />
+              <button
+                type="button"
+                disabled={!editing}
+                onClick={() => setPasswordVisibility((p) => ({ ...p, confirmPassword: !p.confirmPassword }))}
+                className="absolute inset-y-0 right-0 w-10 inline-flex items-center justify-center text-slate-500 hover:text-slate-700 disabled:opacity-40"
+                aria-label={passwordVisibility.confirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+              >
+                {passwordVisibility.confirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {passwordForm.confirmPassword.length > 0 && (
+              <p className={`text-xs font-semibold ${isConfirmPasswordMatching ? 'text-emerald-600' : 'text-rose-600'}`}>
+                {isConfirmPasswordMatching ? 'Passwords match.' : 'Passwords do not match.'}
+              </p>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <button onClick={changePassword} disabled={!editing} className="h-10 rounded-xl bg-[#0b5cab] text-white text-sm font-bold hover:bg-[#0d6dcc] disabled:opacity-50">Update</button>
+              <button onClick={changePassword} disabled={!isPasswordFormReady} className="h-10 rounded-xl bg-[#0b5cab] text-white text-sm font-bold hover:bg-[#0d6dcc] disabled:opacity-50">Update</button>
               <button onClick={resetPassword} disabled={!editing} className="h-10 rounded-xl border border-slate-300 text-slate-700 text-sm font-bold hover:bg-slate-50 disabled:opacity-50">Reset</button>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <p className="font-bold text-slate-800 mb-1">Password Strength Checklist</p>
+              <ul className="space-y-1 text-slate-700">
+                <li className={hasMinPasswordLength ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{hasMinPasswordLength ? '✓' : '•'} Minimum 8 characters</li>
+                <li className={hasUppercaseInPassword ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{hasUppercaseInPassword ? '✓' : '•'} At least one uppercase letter</li>
+                <li className={hasNumberInPassword ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{hasNumberInPassword ? '✓' : '•'} At least one number</li>
+                <li className={isConfirmPasswordMatching ? 'text-emerald-600 font-semibold' : 'text-rose-600 font-semibold drop-shadow-[0_0_1px_rgba(225,29,72,0.22)]'}>{isConfirmPasswordMatching ? '✓' : '•'} Confirm password matches</li>
+              </ul>
             </div>
             <div className="rounded-xl border border-slate-200 p-3">
               <p className="text-sm font-bold text-slate-700 mb-2">Active Sessions</p>
@@ -557,15 +644,6 @@ export default function SettingsPage() {
                   {!s.isCurrent && <button onClick={() => revokeSession(s.sessionId)} disabled={!editing} className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-50">Sign out</button>}
                 </div>)}
               </div>
-            </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-              <p className="font-bold text-slate-800 mb-1">Password Strength Checklist</p>
-              <ul className="space-y-1 text-slate-700">
-                <li>{passwordForm.newPassword.length >= 8 ? '✓' : '•'} Minimum 8 characters</li>
-                <li>{/[A-Z]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one uppercase letter</li>
-                <li>{/[0-9]/.test(passwordForm.newPassword) ? '✓' : '•'} At least one number</li>
-              </ul>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm space-y-2">

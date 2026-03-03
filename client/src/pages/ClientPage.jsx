@@ -6,11 +6,58 @@ import { useAuth } from '../context/AuthContext';
 import { getDefaultRouteForRole } from '../utils/navigation';
 import { useToast } from '../context/ToastContext';
 import { useSocket } from '../context/SocketContext';
-import { validateMobile, validateEmail } from '../utils/validation';
+import { validateMobile, validateEmail, validateLinkedIn } from '../utils/validation';
 import { API_BASE } from '../config/api';
 import IntlPhoneField from '../components/form/IntlPhoneField';
 import CountrySelectField from '../components/form/CountrySelectField';
+const CLIENT_DRAFT_KEY = 'erp_client_drafts_v1';
+const LEGACY_CLIENT_DRAFT_KEY = 'erp_client_create_draft_v1';
+
+const loadClientDrafts = () => {
+  try {
+    const raw = localStorage.getItem(CLIENT_DRAFT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    }
+
+    const legacyRaw = localStorage.getItem(LEGACY_CLIENT_DRAFT_KEY);
+    if (legacyRaw) {
+      const legacyDraft = JSON.parse(legacyRaw);
+      const migrated = legacyDraft ? [{
+        id: `client_draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        formData: legacyDraft,
+        updatedAt: new Date().toISOString()
+      }] : [];
+      localStorage.setItem(CLIENT_DRAFT_KEY, JSON.stringify(migrated));
+      localStorage.removeItem(LEGACY_CLIENT_DRAFT_KEY);
+      return migrated;
+    }
+    return [];
+  } catch (error) {
+    console.error('Failed to load client drafts:', error);
+    return [];
+  }
+};
+
+const persistClientDrafts = drafts => {
+  try {
+    localStorage.setItem(CLIENT_DRAFT_KEY, JSON.stringify(drafts));
+  } catch (error) {
+    console.error('Failed to persist client drafts:', error);
+  }
+};
 const ClientPage = () => {
+  const formatLocationForDisplay = (rawLocation) => {
+    const parts = String(rawLocation || '')
+      .split(',')
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    if (parts.length <= 1) return rawLocation || 'N/A';
+    return [...parts.slice(1), parts[0]].join(', ');
+  };
+
   const toSectorOptionValue = sector => {
     if (sector === 'University' || sector === 'Universities') return 'Academics - Universities';
     if (sector === 'College') return 'Academics - College';
@@ -29,11 +76,16 @@ const ClientPage = () => {
     socket
   } = useSocket();
   const [clients, setClients] = useState([]);
+  const [clientDrafts, setClientDrafts] = useState(() => loadClientDrafts());
+  const [activeClientDraftId, setActiveClientDraftId] = useState(null);
+  const [showClientDraftsModal, setShowClientDraftsModal] = useState(false);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'details'
   const [showFormModal, setShowFormModal] = useState(false);
   useEffect(() => {
     if (location.state?.mode === 'create') {
       resetForm();
+      setSelectedClient(null);
+      setActiveClientDraftId(null);
       setShowFormModal(true);
       setViewMode('list');
     } else {
@@ -90,9 +142,51 @@ const ClientPage = () => {
       }
     }]
   });
+  const hasClientDraftData = data => {
+    if (!data) return false;
+    if (data.companyName?.trim()) return true;
+    return Array.isArray(data.contactPersons) && data.contactPersons.some(contact => contact.name?.trim() || contact.email?.trim() || contact.contactNumber?.trim() || contact.location?.trim());
+  };
   useEffect(() => {
     fetchClients();
   }, []);
+  const upsertClientDraft = draftPayload => {
+    const nextDraft = {
+      id: draftPayload?.id || `client_draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+      formData: draftPayload.formData,
+      updatedAt: new Date().toISOString()
+    };
+    setClientDrafts(prevDrafts => {
+      const nextDrafts = [nextDraft, ...prevDrafts.filter(item => item.id !== nextDraft.id)];
+      persistClientDrafts(nextDrafts);
+      return nextDrafts;
+    });
+    return nextDraft;
+  };
+  const removeClientDraft = draftId => {
+    if (!draftId) return;
+    setClientDrafts(prevDrafts => {
+      const nextDrafts = prevDrafts.filter(item => item.id !== draftId);
+      persistClientDrafts(nextDrafts);
+      return nextDrafts;
+    });
+    if (activeClientDraftId === draftId) {
+      setActiveClientDraftId(null);
+    }
+  };
+  useEffect(() => {
+    if (!showFormModal || selectedClient || !hasClientDraftData(formData)) return;
+    const timer = setTimeout(() => {
+      const draft = upsertClientDraft({
+        id: activeClientDraftId,
+        formData
+      });
+      if (draft?.id && draft.id !== activeClientDraftId) {
+        setActiveClientDraftId(draft.id);
+      }
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [showFormModal, selectedClient, formData, activeClientDraftId]);
   useEffect(() => {
     if (!socket) return;
     const handleEntityUpdated = event => {
@@ -195,6 +289,13 @@ const ClientPage = () => {
         return;
       }
 
+      // Validate LinkedIn if provided
+      const linkedInValidation = validateLinkedIn(contact.linkedIn);
+      if (!linkedInValidation.valid) {
+        addToast(`Contact ${i + 1}: ${linkedInValidation.message}`, 'error');
+        return;
+      }
+
       // Validate reporting manager if exists
       if (contact.reportingManager?.contactNumber) {
         const rmMobileValidation = validateMobile(contact.reportingManager.contactNumber);
@@ -229,6 +330,10 @@ const ClientPage = () => {
             Authorization: `Bearer ${token}`
           }
         });
+        if (activeClientDraftId) {
+          removeClientDraft(activeClientDraftId);
+        }
+        setActiveClientDraftId(null);
         addToast('Client created successfully', 'success');
       }
       setShowFormModal(false);
@@ -281,6 +386,7 @@ const ClientPage = () => {
   const startCreate = () => {
     resetForm();
     setSelectedClient(null); // Explicitly clear selected client
+    setActiveClientDraftId(null);
     setShowFormModal(true);
     if (viewMode !== 'list' && viewMode !== 'details') {
       setViewMode('list');
@@ -292,6 +398,7 @@ const ClientPage = () => {
   };
   const startEdit = () => {
     if (selectedClient) {
+      setActiveClientDraftId(null);
       setFormData({
         companyName: selectedClient.companyName,
         sector: toSectorOptionValue(selectedClient.sector || selectedClient.base),
@@ -318,6 +425,15 @@ const ClientPage = () => {
       setSelectedClient(null);
     }
     // If in modal, the modal has its own close button which just toggles the state
+  };
+  const editClientDraft = draft => {
+    if (!draft?.formData) return;
+    setShowClientDraftsModal(false);
+    setSelectedClient(null);
+    setFormData(draft.formData);
+    setActiveClientDraftId(draft.id);
+    setShowFormModal(true);
+    setViewMode('list');
   };
 
   // --- Filters ---
@@ -422,7 +538,7 @@ const ClientPage = () => {
                 </div>
                 <div>
                   <label className="block text-[12px] font-medium text-gray-700 mb-1">LinkedIn (Optional)</label>
-                  <input value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
+                  <input type="url" value={contact.linkedIn} onChange={e => handleContactChange(index, 'linkedIn', e.target.value)} placeholder="https://linkedin.com/in/..." pattern="https?://(www\.)?linkedin\.com/(in|company|school|pub)/.+" title="Enter a valid LinkedIn URL (linkedin.com/in/... or linkedin.com/company/...)." className="w-full h-[36px] bg-white border border-gray-200 px-3 rounded focus:outline-none focus:ring-2 focus:ring-primary-blue text-[13px]" />
                 </div>
               </div>
 
@@ -520,7 +636,7 @@ const ClientPage = () => {
               <td className="px-6 py-4 text-gray-700">{contact.department || 'N/A'}</td>
               <td className="px-6 py-4 text-gray-700">{contact.email}</td>
               <td className="px-6 py-4 text-gray-700">{contact.contactNumber}</td>
-              <td className="px-6 py-4 text-primary-blue">{contact.location}</td>
+              <td className="px-6 py-4 text-primary-blue">{formatLocationForDisplay(contact.location)}</td>
             </tr>)}
           </tbody>
         </table>
@@ -529,65 +645,72 @@ const ClientPage = () => {
   </div>;
   return <div className="p-3 sm:p-5 relative">
     {/* Contact Detail Modal */}
-    {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-3 sm:mx-4 p-4 sm:p-6" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">{selectedContact.name}</h2>
-            <p className="text-lg text-gray-700">{selectedContact.designation}</p>
+    {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full border border-gray-100 overflow-hidden" onClick={e => e.stopPropagation()}>
+        <div className="px-5 sm:px-7 py-5 border-b border-gray-100 bg-gradient-to-r from-slate-50 to-white">
+          <div className="flex justify-between items-start gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="h-11 w-11 rounded-xl bg-primary-blue text-white text-sm font-bold flex items-center justify-center flex-shrink-0">
+                {String(selectedContact.name || 'NA').split(' ').filter(Boolean).slice(0, 2).map(part => part[0]).join('').toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-2xl font-bold text-gray-900 truncate">{selectedContact.name}</h2>
+                <p className="text-base text-gray-600 truncate">{selectedContact.designation || 'No designation'}</p>
+              </div>
+            </div>
+            <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-700 h-9 w-9 rounded-lg hover:bg-gray-100 transition-colors flex items-center justify-center">
+              <X size={22} />
+            </button>
           </div>
-          <button onClick={() => setSelectedContact(null)} className="text-gray-400 hover:text-gray-600">
-            <X size={24} />
-          </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="p-5 sm:p-7 space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <p className="text-lg font-semibold text-gray-800">Department</p>
-              <p className="text-[15px] text-gray-900">{selectedContact.department || 'N/A'}</p>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+              <p className="text-[11px] font-semibold tracking-wide uppercase text-gray-500 mb-1">Department</p>
+              <p className="text-[15px] font-semibold text-gray-900">{selectedContact.department || 'N/A'}</p>
             </div>
-            <div>
-              <p className="text-lg font-semibold text-gray-800">Location</p>
-              <p className="text-[15px] text-primary-blue">{selectedContact.location}</p>
-            </div>
-          </div>
-
-          <div className="border-t pt-4">
-            <p className="text-lg font-semibold text-gray-800 mb-2">Contact Information</p>
-            <div className="space-y-2">
-              <div>
-                <p className="text-base font-medium text-gray-700">Email</p>
-                <p className="text-[15px] text-gray-900">{selectedContact.email}</p>
-              </div>
-              <div>
-                <p className="text-base font-medium text-gray-700">Phone</p>
-                <p className="text-[15px] text-gray-900">{selectedContact.contactNumber}</p>
-              </div>
+            <div className="rounded-xl border border-blue-100 bg-blue-50/60 p-4">
+              <p className="text-[11px] font-semibold tracking-wide uppercase text-gray-500 mb-1">Location</p>
+              <p className="text-[15px] font-semibold text-primary-blue">{formatLocationForDisplay(selectedContact.location)}</p>
             </div>
           </div>
 
-          {selectedContact.linkedIn && <div className="border-t pt-4">
-            <p className="text-base font-semibold text-gray-800 mb-2">LinkedIn</p>
-            <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline">
+          <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+            <p className="text-base font-bold text-gray-900 mb-3">Contact Information</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Email</p>
+                <p className="text-[15px] text-gray-900 break-all">{selectedContact.email || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Phone</p>
+                <p className="text-[15px] text-gray-900">{selectedContact.contactNumber || 'N/A'}</p>
+              </div>
+            </div>
+          </div>
+
+          {selectedContact.linkedIn && <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+            <p className="text-base font-bold text-gray-900 mb-2">LinkedIn</p>
+            <a href={selectedContact.linkedIn} target="_blank" rel="noopener noreferrer" className="text-primary-blue hover:underline text-[15px] break-all">
               {selectedContact.linkedIn}
             </a>
           </div>}
 
-          {selectedContact.reportingManager?.name && <div className="border-t pt-4">
-            <p className="text-base font-semibold text-gray-800 mb-2">Reporting Manager</p>
-            <div className="bg-gray-50 p-3 rounded-lg">
-              <p className="font-medium text-gray-900">{selectedContact.reportingManager.name}</p>
-              <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation}</p>
-              <div className="mt-2 text-sm space-y-1">
-                <p className="text-gray-700">{selectedContact.reportingManager.email}</p>
-                <p className="text-gray-700">{selectedContact.reportingManager.contactNumber}</p>
+          {selectedContact.reportingManager?.name && <div className="rounded-xl border border-gray-200 p-4 sm:p-5">
+            <p className="text-base font-bold text-gray-900 mb-3">Reporting Manager</p>
+            <div className="bg-gray-50 rounded-xl border border-gray-100 p-3.5">
+              <p className="text-[15px] font-semibold text-gray-900">{selectedContact.reportingManager.name}</p>
+              <p className="text-sm text-gray-600">{selectedContact.reportingManager.designation || 'N/A'}</p>
+              <div className="mt-2.5 text-sm space-y-1">
+                <p className="text-gray-700 break-all">{selectedContact.reportingManager.email || 'N/A'}</p>
+                <p className="text-gray-700">{selectedContact.reportingManager.contactNumber || 'N/A'}</p>
               </div>
             </div>
           </div>}
 
-          {selectedContact.isPrimary && <div className="mt-4">
-            <span className="inline-block bg-brand-gold text-white px-3 py-1 rounded-full text-sm font-medium">
+          {selectedContact.isPrimary && <div>
+            <span className="inline-flex items-center bg-brand-gold text-white px-3.5 py-1.5 rounded-full text-xs font-semibold tracking-wide uppercase">
               Primary Contact
             </span>
           </div>}
@@ -658,10 +781,63 @@ const ClientPage = () => {
 
     {/* List View - Always show unless in details mode */}
     {viewMode === 'list' && <>
+      {showClientDraftsModal && <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setShowClientDraftsModal(false)}>
+        <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl max-h-[84vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="sticky top-0 z-10 bg-white border-b px-5 py-4 sm:px-6 sm:py-4 flex items-center justify-between">
+            <h2 className="text-xl font-semibold text-gray-900">Client Drafts ({clientDrafts.length})</h2>
+            <button onClick={() => setShowClientDraftsModal(false)} className="text-gray-500 hover:text-gray-700" aria-label="Close drafts modal">
+              <X size={22} />
+            </button>
+          </div>
+          <div className="px-5 py-4 sm:px-6 sm:py-5">
+            {clientDrafts.length > 0 ? <div className="overflow-x-auto">
+              <table className="w-full table-fixed text-left text-sm">
+                <colgroup>
+                  <col className="w-[42%]" />
+                  <col className="w-[38%]" />
+                  <col className="w-[20%]" />
+                </colgroup>
+                <thead className="border-b border-gray-200">
+                  <tr>
+                    <th className="px-3 py-2.5 font-semibold text-gray-900 leading-none">Client Name</th>
+                    <th className="px-3 py-2.5 font-semibold text-gray-900 leading-none">Last Saved</th>
+                    <th className="px-3 py-2.5 font-semibold text-gray-900 leading-none text-center">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {clientDrafts.map(draft => <tr key={draft.id}>
+                    <td className="px-3 py-2.5 align-middle text-[15px] text-gray-900 leading-tight">{draft.formData?.companyName?.trim() || 'Untitled Client Draft'}</td>
+                    <td className="px-3 py-2.5 align-middle text-[15px] text-gray-600 leading-tight">{new Date(draft.updatedAt).toLocaleString()}</td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <div className="flex items-center justify-center gap-2">
+                        <button type="button" onClick={() => editClientDraft(draft)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-primary-blue text-white hover:bg-primary-blue-dark" title="Edit Draft" aria-label="Edit Draft">
+                          <Edit size={15} />
+                        </button>
+                        <button type="button" onClick={() => removeClientDraft(draft.id)} className="h-8 w-8 inline-flex items-center justify-center rounded-md bg-red-500 text-white hover:bg-red-600" title="Delete Draft" aria-label="Delete Draft">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </div> : <div className="text-sm text-gray-500">No drafts found.</div>}
+          </div>
+        </div>
+      </div>}
       {/* Client List Container */}
       <div className="bg-white p-3 sm:p-6 rounded-lg shadow-sm">
         <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 gap-3">
-          <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
+          <div className="w-full md:w-auto flex items-center gap-3">
+            <h2 className="text-[18px] font-semibold text-gray-900">All Clients ({filteredClients.length})</h2>
+            {clientDrafts.length > 0 && <button type="button" onClick={() => setShowClientDraftsModal(true)} className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-red-300 bg-red-50 text-[14px] font-bold text-red-700 shadow-md hover:bg-red-100">
+              <span className="relative flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-600 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+              </span>
+              You have unsaved drafts ({clientDrafts.length})
+            </button>}
+          </div>
           <div className="flex flex-wrap gap-3 w-full md:w-auto">
             <div className="relative w-full md:w-80">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
@@ -703,7 +879,7 @@ const ClientPage = () => {
                     {primaryContact?.designation || 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-primary-blue">
-                    {primaryContact?.location || 'N/A'}
+                    {formatLocationForDisplay(primaryContact?.location)}
                   </td>
                   <td className="px-6 py-4">
                     {primaryContact ? <div className="space-y-1">

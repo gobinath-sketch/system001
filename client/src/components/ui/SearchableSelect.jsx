@@ -109,15 +109,15 @@ const SearchableSelect = ({
     return (label || '').toLowerCase().includes((value || '').toLowerCase());
   });
   return <div className="relative w-full" ref={wrapperRef}>
-            <div className="relative">
-                <input ref={inputRef} type="text" name={name} value={value || ''} onChange={handleInputChange} onClick={() => !disabled && setIsOpen(true)} onKeyDown={e => {
+    <div className="relative">
+      <input ref={inputRef} type="text" name={name} value={value || ''} onChange={handleInputChange} onClick={() => !disabled && setIsOpen(true)} onKeyDown={e => {
         if (e.key === 'Enter') {
           e.preventDefault();
           setIsOpen(false);
           e.target.blur();
         }
-      }} disabled={disabled} placeholder={placeholder} className={`${className} pr-8 cursor-text bg-white`} autoComplete="off" required={required} />
-                <div className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500" onClick={e => {
+      }} disabled={disabled} placeholder={placeholder} className={`${className} pr-8 cursor-text`} autoComplete="off" required={required} />
+      <div className="absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer text-gray-500" onClick={e => {
         e.stopPropagation();
         // If closed, open and show all. If open, close.
         if (!isOpen) {
@@ -128,29 +128,29 @@ const SearchableSelect = ({
           setIsOpen(false);
         }
       }}>
-                    <ChevronDown size={18} />
-                </div>
-            </div>
+        <ChevronDown size={18} />
+      </div>
+    </div>
 
-            {isOpen && !disabled && filteredOptions.length > 0 && createPortal(<div id="searchable-select-dropdown" className="fixed z-[9999] bg-white border border-gray-200 rounded-md shadow-lg overflow-y-auto" style={{
+    {isOpen && !disabled && filteredOptions.length > 0 && createPortal(<div id="searchable-select-dropdown" className="fixed z-[9999] bg-white border border-gray-200 rounded-md shadow-lg overflow-y-auto" style={{
       top: `${dropdownPosition.top}px`,
       left: `${dropdownPosition.left}px`,
       width: `${dropdownPosition.width}px`,
       maxHeight: '400px' // Reasonable max height for "full dropdown"
     }}>
-                    {filteredOptions.map((option, index) => {
+      {filteredOptions.map((option, index) => {
         const isString = typeof option === 'string';
         const label = isString ? option : option.label;
         const optionValue = isString ? option : option.value;
         const icon = !isString ? option.icon : null;
         return <div key={index} className="px-4 py-2 cursor-pointer hover:bg-blue-50 text-sm text-gray-700 hover:text-primary-blue transition-colors flex items-center" onClick={() => handleOptionClick(optionValue)}>
-                                {icon && (typeof icon === 'string' ? <img src={icon} alt="" className="w-5 h-5 object-contain mr-3" /> : <div className="mr-3 text-gray-500">
-                                            {icon}
-                                        </div>)}
-                                <span>{label}</span>
-                            </div>;
-      })}
-                </div>, document.body)}
+          {icon && (typeof icon === 'string' ? <img src={icon} alt="" className="w-5 h-5 object-contain mr-3" /> : <div className="mr-3 text-gray-500">
+            {icon}
+          </div>)}
+          <span>{label}</span>
         </div>;
+      })}
+    </div>, document.body)}
+  </div>;
 };
 export default SearchableSelect;

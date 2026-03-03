@@ -9,13 +9,29 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = "Continue"
 
 $root = Resolve-Path (Join-Path $PSScriptRoot "..")
-$timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
 $outputDir = Join-Path $root "audit-logs"
-$outputFile = Join-Path $outputDir "full-audit-log-$timestamp.md"
 
 if (-not (Test-Path $outputDir)) {
     New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 }
+
+function Get-NextAuditIndex {
+    param([string]$Directory)
+    if (-not (Test-Path $Directory)) { return 1 }
+
+    $max = 0
+    Get-ChildItem -Path $Directory -File -Filter "*.md" | ForEach-Object {
+        if ($_.Name -match '^(\d+)-audit-log-') {
+            $value = [int]$Matches[1]
+            if ($value -gt $max) { $max = $value }
+        }
+    }
+    return ($max + 1)
+}
+
+$timestamp = Get-Date -Format "dd-MM-yy-hh.mm.ss-tt"
+$nextIndex = "{0:D2}" -f (Get-NextAuditIndex -Directory $outputDir)
+$outputFile = Join-Path $outputDir "$nextIndex-audit-log-full-$($timestamp.ToLower()).md"
 
 $builder = New-Object System.Text.StringBuilder
 $bt = [char]96

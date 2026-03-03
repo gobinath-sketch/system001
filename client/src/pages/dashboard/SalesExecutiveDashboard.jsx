@@ -492,19 +492,23 @@ const SalesExecutiveDashboard = ({
           <div className="p-1.5 rounded-full bg-blue-100">
             <Users size={16} className="text-blue-600" />
           </div>
-          <span className="text-base text-black font-bold">Clients (Total: <AnimatedNumber value={clientHealth.active + clientHealth.mid + clientHealth.inactive} />)</span>
+          <span className="text-base text-black font-bold">Clients (Total: <AnimatedNumber value={(clientHealth.newClient || 0) + (clientHealth.active || 0) + (clientHealth.mid || 0) + (clientHealth.inactive || 0)} />)</span>
         </div>
-        <div className="grid grid-cols-3 gap-1 text-center">
+        <div className="grid grid-cols-4 gap-1 text-center">
           <div>
-            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={clientHealth.active} /></p>
+            <p className="text-3xl font-bold text-blue-500"><AnimatedNumber value={clientHealth.newClient || 0} /></p>
+            <p className="text-base text-black font-bold">New</p>
+          </div>
+          <div className="border-l border-gray-100">
+            <p className="text-3xl font-bold text-emerald-600"><AnimatedNumber value={clientHealth.active || 0} /></p>
             <p className="text-base text-black font-bold">Active</p>
           </div>
           <div className="border-l border-r border-gray-100">
-            <p className="text-3xl font-bold text-yellow-500"><AnimatedNumber value={clientHealth.mid} /></p>
+            <p className="text-3xl font-bold text-yellow-500"><AnimatedNumber value={clientHealth.mid || 0} /></p>
             <p className="text-base text-black font-bold">Mild</p>
           </div>
           <div>
-            <p className="text-3xl font-bold text-red-600"><AnimatedNumber value={clientHealth.inactive} /></p>
+            <p className="text-3xl font-bold text-red-600"><AnimatedNumber value={clientHealth.inactive || 0} /></p>
             <p className="text-base text-black font-bold">Inactive</p>
           </div>
         </div>

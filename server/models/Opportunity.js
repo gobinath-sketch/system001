@@ -315,8 +315,8 @@ const OpportunitySchema = new mongoose.Schema({
 
     approvalStatus: {
         type: String,
-        enum: ['Not Required', 'Pending', 'Pending Manager', 'Pending Business Head', 'Pending Director', 'Approved', 'Rejected'],
-        default: 'Not Required'
+        enum: ['In Process', 'Pre Approved', 'Not Required', 'Pending', 'Pending Manager', 'Pending Business Head', 'Pending Director', 'Approved', 'Rejected'],
+        default: 'In Process'
     },
 
     approvalRequired: { type: Boolean, default: false },
@@ -347,6 +347,13 @@ const OpportunitySchema = new mongoose.Schema({
     lastModifiedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    },
+
+    // Delivery person assigned to this opportunity (set by Sales team)
+    assignedTo: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     },
 
     createdAt: { type: Date, default: Date.now },
@@ -453,16 +460,19 @@ OpportunitySchema.pre('save', async function () {
         if (this.approvalStatus !== 'Approved' && this.approvalStatus !== 'Rejected' && this.approvalStatus !== 'Pending') {
             const contingencyPercent = (this.expenses && this.expenses.contingencyPercent !== undefined) ? this.expenses.contingencyPercent : 15;
 
-            // Mark as requiring approval if thresholds are met, but do NOT auto-escalate.
+            // Mark as requiring approval if thresholds are met
             if (gpPercent < 15) {
                 this.approvalRequired = true;
-                this.approvalStatus = 'Not Required'; // Frontend will trigger escalation
+                // Leave it as In Process or Pending depending on UI trigger
             } else if (contingencyPercent < 10) {
                 this.approvalRequired = true;
-                this.approvalStatus = 'Not Required';
             } else {
+                // If expenses are set and no approval is needed, it goes to Pre Approved
                 this.approvalRequired = false;
-                this.approvalStatus = 'Not Required';
+                // Only mark Pre Approved if expenses are actually defined/saved (e.g. TOV > 0 or base expense > 0)
+                if (revenueBase > 0 || baseExpense > 0) {
+                    this.approvalStatus = 'Pre Approved';
+                }
             }
         }
 
@@ -539,11 +549,19 @@ OpportunitySchema.methods.canEdit = function (fieldPath, userRole) {
 
     let allowed = false;
     if (userRole === 'Sales Executive' || userRole === 'Sales Manager' || userRole === 'Business Head') {
-        allowed = salesEditableFields.some(field => fieldPath.startsWith(field));
-    } else if (userRole === 'Delivery Team' || userRole === 'Delivery Head' || userRole === 'Delivery Manager') {
+        // Sales can also set/update assignedTo field
+        if (fieldPath === 'assignedTo') {
+            allowed = true;
+        } else {
+            allowed = salesEditableFields.some(field => fieldPath.startsWith(field));
+        }
+    } else if (userRole === 'Delivery Head' || userRole === 'Delivery Executive' || userRole === 'Delivery Manager') {
         // Delivery can edit expenses BUT NOT marketing/contingency which are Sales decisions
         if (fieldPath === 'expenses.marketingPercent' || fieldPath === 'expenses.contingencyPercent') {
             allowed = false;
+        } else if (fieldPath === 'assignedTo' && userRole === 'Delivery Head') {
+            // Delivery Head can reassign
+            allowed = true;
         } else {
             allowed = deliveryEditableFields.some(field => fieldPath.startsWith(field));
         }

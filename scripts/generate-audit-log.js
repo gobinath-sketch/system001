@@ -18,6 +18,34 @@ function timestampForFile() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 }
 
+function humanTimestampForFile(d = new Date()) {
+  const pad = (n) => String(n).padStart(2, '0');
+  const day = pad(d.getDate());
+  const month = pad(d.getMonth() + 1);
+  const year = String(d.getFullYear()).slice(-2);
+  let hours = d.getHours();
+  const minutes = pad(d.getMinutes());
+  const seconds = pad(d.getSeconds());
+  const meridiem = hours >= 12 ? 'pm' : 'am';
+  hours = hours % 12 || 12;
+  return `${day}-${month}-${year}-${pad(hours)}.${minutes}.${seconds}-${meridiem}`;
+}
+
+function getNextAuditIndex(outputDir) {
+  if (!fs.existsSync(outputDir)) return 1;
+  const names = fs.readdirSync(outputDir);
+  let maxIndex = 0;
+  names.forEach((name) => {
+    const match = name.match(/^(\d+)-audit-log-/i);
+    if (!match) return;
+    const parsed = Number.parseInt(match[1], 10);
+    if (Number.isFinite(parsed) && parsed > maxIndex) {
+      maxIndex = parsed;
+    }
+  });
+  return maxIndex + 1;
+}
+
 function runCommand(command, args, cwd) {
   const startedAt = nowIso();
   const result = spawnSync(command, args, {
@@ -357,7 +385,8 @@ function main() {
   const outputDir = path.resolve('audit-logs');
   if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
 
-  const fileName = `npm-audit-log-${timestampForFile()}.md`;
+  const nextIndex = String(getNextAuditIndex(outputDir)).padStart(2, '0');
+  const fileName = `${nextIndex}-audit-log-npm-${humanTimestampForFile()}.md`;
   const fullPath = path.join(outputDir, fileName);
   fs.writeFileSync(fullPath, markdown, 'utf8');
 

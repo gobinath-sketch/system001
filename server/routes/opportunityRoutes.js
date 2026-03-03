@@ -110,6 +110,16 @@ const getAccessibleUserIds = async (user) => {
     }
 };
 
+// Helper to build MongoDB filter for delivery team access
+// Delivery Head sees ALL; Delivery Executive sees only assigned to them
+const getDeliveryFilter = (user) => {
+    if (user.role === 'Delivery Head') {
+        return {}; // No filter — sees everything
+    }
+    // Delivery Executive — only assigned opportunities
+    return { assignedTo: user._id };
+};
+
 // @route   POST /api/opportunities
 // @desc    Create new opportunity (Sales only - Base details)
 // @access  Private (Sales Executive, Sales Manager)
@@ -133,7 +143,7 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
 
         const {
             type, clientId, participants, days, requirementSummary,
-            selectedContactPerson
+            selectedContactPerson, assignedTo
         } = body;
 
         // GENERATE OPPORTUNITY ID: GKT-YY-CODE-MM-XXX
@@ -172,11 +182,12 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
             requirementSummary,
             selectedContactPerson,
             typeSpecificDetails: typeSpecificDetails || {},
+            assignedTo: assignedTo || null,
             commonDetails: {
-                trainingSector: normalizeSector(client.sector), // Auto-fetch from client (normalized)
-                sales: req.user._id, // Auto-fill
-                year: new Date().getFullYear(), // Default to current year for immediate dashboard visibility
-                monthOfTraining: new Date().toLocaleString('default', { month: 'short' }), // Default to current month
+                trainingSector: normalizeSector(client.sector),
+                sales: req.user._id,
+                year: new Date().getFullYear(),
+                monthOfTraining: new Date().toLocaleString('default', { month: 'short' }),
                 status: 'Active'
             },
             createdBy: req.user._id,
@@ -195,11 +206,10 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
 
         const opportunity = await Opportunity.create(opportunityData);
 
-        // NOTIFICATION: Notify Delivery Team about new opportunity
-        // Target: All "Delivery Team" users (as "concerned" users are not yet assigned)
+        // NOTIFICATION: Notify Delivery Heads + assigned Executive (if set at creation)
         try {
-            const deliveryTeam = await User.find({ role: 'Delivery Team' });
-            const notifications = deliveryTeam.map(user => ({
+            const deliveryHeads = await User.find({ role: 'Delivery Head' });
+            const notifications = deliveryHeads.map(user => ({
                 recipientId: user._id,
                 type: 'opportunity_created',
                 message: `New opportunity ${opportunityNumber} created by ${req.user.name}`,
@@ -208,6 +218,22 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
                 triggeredBy: req.user._id,
                 triggeredByName: req.user.name
             }));
+
+            // Also notify the assigned Delivery Executive specifically
+            if (assignedTo) {
+                const assignedUser = await User.findById(assignedTo);
+                if (assignedUser && assignedUser.role === 'Delivery Executive') {
+                    notifications.push({
+                        recipientId: assignedUser._id,
+                        type: 'opportunity_created',
+                        message: `You have been assigned to opportunity ${opportunityNumber} by ${req.user.name}`,
+                        opportunityId: opportunity._id,
+                        opportunityNumber: opportunityNumber,
+                        triggeredBy: req.user._id,
+                        triggeredByName: req.user.name
+                    });
+                }
+            }
 
             if (notifications.length > 0) {
                 await Notification.insertMany(notifications);
@@ -228,6 +254,20 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Busines
     }
 });
 
+// @route   GET /api/opportunities/delivery-users
+// @desc    Get all delivery team members (Delivery Head + Delivery Executive) for assignment
+// @access  Private (Sales roles + Delivery Head)
+router.get('/delivery-users', protect, async (req, res) => {
+    try {
+        const deliveryUsers = await User.find({
+            role: { $in: ['Delivery Head', 'Delivery Executive'] }
+        }).select('name email role creatorCode');
+        res.json(deliveryUsers);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 // @route   GET /api/opportunities
 // @desc    Get all accessible opportunities
 // @access  Private
@@ -235,10 +275,18 @@ router.get('/', protect, async (req, res) => {
     try {
         let filter = {};
 
-        if (req.user.role !== 'Director' && req.user.role !== 'Delivery Team' && req.user.role !== 'Finance') {
-            const accessibleUserIds = await getAccessibleUserIds(req.user);
-            if (accessibleUserIds.length > 0) {
-                filter.createdBy = { $in: accessibleUserIds };
+        if (req.user.role !== 'Director' && req.user.role !== 'Finance') {
+            // Delivery hierarchy: Delivery Head sees all, Executive sees only assigned
+            if (req.user.role === 'Delivery Head') {
+                // No filter — see all
+            } else if (req.user.role === 'Delivery Executive') {
+                filter.assignedTo = req.user._id;
+            } else {
+                // Sales roles — filter by creator hierarchy
+                const accessibleUserIds = await getAccessibleUserIds(req.user);
+                if (accessibleUserIds.length > 0) {
+                    filter.createdBy = { $in: accessibleUserIds };
+                }
             }
         }
 
@@ -258,6 +306,7 @@ router.get('/', protect, async (req, res) => {
                 }
             })
             .populate('commonDetails.sales', 'name email')
+            .populate('assignedTo', 'name role email')
             .sort({ createdAt: -1 });
 
         res.json(opportunities);
@@ -290,7 +339,8 @@ router.get('/:id', protect, async (req, res) => {
             .populate('approvedBy', 'name role')
             .populate('rejectedBy', 'name role')
             // .populate('selectedVendor') removed
-            .populate('selectedSME');
+            .populate('selectedSME')
+            .populate('assignedTo', 'name role email');
 
         if (!opportunity) {
             return res.status(404).json({ message: 'Opportunity not found' });
@@ -507,7 +557,8 @@ router.put('/:id', protect, async (req, res) => {
         if (newStatus && newStatus !== currentStatus) {
             console.log(`Status update detected: ${newStatus} by ${req.user.name}`);
 
-            if (req.user.role !== 'Delivery Team' && req.user.role !== 'Director' && req.user.role !== 'Finance') {
+            const deliveryRolesForStatus = ['Delivery Head', 'Delivery Executive'];
+            if (!deliveryRolesForStatus.includes(req.user.role) && req.user.role !== 'Director' && req.user.role !== 'Finance') {
                 console.log('❌ Status update blocked for non-Delivery user');
                 return res.status(403).json({ message: 'Only Delivery Team can change status.' });
             }
@@ -605,21 +656,42 @@ router.put('/:id', protect, async (req, res) => {
                 updates.participants ||
                 (updates.typeSpecificDetails && Object.keys(updates.typeSpecificDetails).length > 0)) {
 
-                // If update is by Sales/Admin -> Notify Delivery Team
+                // If update is by Sales/Admin -> Notify Delivery Head + the assigned Delivery Executive (if any)
                 if (req.user.role === 'Sales Executive' || req.user.role === 'Sales Manager' || req.user.role === 'Business Head' || req.user.role === 'Super Admin') {
-                    const deliveryUsers = await User.find({ role: 'Delivery Team' });
-                    if (deliveryUsers.length > 0) {
-                        const notifs = deliveryUsers.map(u => ({
-                            recipientId: u._id,
-                            type: 'general',
-                            message: `Requirement details has been updated by ${req.user.name} for ${opportunity.opportunityNumber}`,
-                            opportunityId: opportunity._id,
-                            opportunityNumber: opportunity.opportunityNumber,
-                            triggeredBy: req.user._id,
-                            triggeredByName: req.user.name,
-                            targetTab: 'delivery'
-                        }));
-                        await Notification.insertMany(notifs);
+                    // Always notify Delivery Head users
+                    const deliveryHeads = await User.find({ role: 'Delivery Head' });
+                    const headNotifs = deliveryHeads.map(u => ({
+                        recipientId: u._id,
+                        type: 'general',
+                        message: `Requirement details has been updated by ${req.user.name} for ${opportunity.opportunityNumber}`,
+                        opportunityId: opportunity._id,
+                        opportunityNumber: opportunity.opportunityNumber,
+                        triggeredBy: req.user._id,
+                        triggeredByName: req.user.name,
+                        targetTab: 'delivery'
+                    }));
+
+                    // Also notify the assigned Delivery Executive if set (and not a head)
+                    const extraNotifs = [];
+                    if (opportunity.assignedTo) {
+                        const assignedUser = await User.findById(opportunity.assignedTo);
+                        if (assignedUser && assignedUser.role === 'Delivery Executive') {
+                            extraNotifs.push({
+                                recipientId: assignedUser._id,
+                                type: 'general',
+                                message: `Requirement details has been updated by ${req.user.name} for ${opportunity.opportunityNumber}`,
+                                opportunityId: opportunity._id,
+                                opportunityNumber: opportunity.opportunityNumber,
+                                triggeredBy: req.user._id,
+                                triggeredByName: req.user.name,
+                                targetTab: 'delivery'
+                            });
+                        }
+                    }
+
+                    const allNotifs = [...headNotifs, ...extraNotifs];
+                    if (allNotifs.length > 0) {
+                        await Notification.insertMany(allNotifs);
                     }
                 }
             }
@@ -655,7 +727,7 @@ router.put('/:id', protect, async (req, res) => {
                     return String(newVal) !== String(oldVal);
                 });
 
-                const deliveryRoles = ['Delivery Team', 'Operations Lead', 'Delivery Head', 'Delivery Manager'];
+                const deliveryRoles = ['Operations Lead', 'Delivery Head', 'Delivery Manager'];
                 if (isTrainingUpdate && deliveryRoles.includes(req.user.role)) {
                     if (opportunity.createdBy) { // Notify CreatedBy (Sales Person)
                         await Notification.create({
@@ -674,7 +746,7 @@ router.put('/:id', protect, async (req, res) => {
 
             // 3. Expenses Update (Delivery -> Sales)
             // Handle updates from BillingTab (generic PUT)
-            const deliveryRoles = ['Delivery Team', 'Operations Lead', 'Delivery Head', 'Delivery Manager'];
+            const deliveryRoles = ['Operations Lead', 'Delivery Head', 'Delivery Manager'];
             if (updates.expenses && deliveryRoles.includes(req.user.role)) {
                 console.log('DEBUG: Expenses Update Triggered by', req.user.role);
 
@@ -822,7 +894,7 @@ router.put('/:id/type-specific', protect, authorize('Sales Executive', 'Sales Ma
 // @route   PUT /api/opportunities/:id/expenses
 // @desc    Update expenses (Delivery only)
 // @access  Private (Delivery Team)
-router.put('/:id/expenses', protect, authorize('Delivery Team'), async (req, res) => {
+router.put('/:id/expenses', protect, authorize('Delivery Head', 'Delivery Executive'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -1075,7 +1147,7 @@ router.post('/:id/upload-po', protect, authorize('Sales Executive', 'Sales Manag
         // NOTIFICATION: Sales -> Delivery
         try {
             // Notify Delivery Team
-            const deliveryTeam = await User.find({ role: 'Delivery Team' });
+            const deliveryTeam = await User.find({ role: { $in: ['Delivery Head', 'Delivery Executive'] } });
             if (deliveryTeam.length > 0) {
                 const Notification = require('../models/Notification');
                 const notifs = deliveryTeam.map(u => ({
@@ -1109,7 +1181,7 @@ router.post('/:id/upload-po', protect, authorize('Sales Executive', 'Sales Manag
 // @route   POST /api/opportunities/:id/upload-finance-doc
 // @desc    Upload finance-related document (PO, Invoice, etc.)
 // @access  Private (Sales Executive, Sales Manager, Delivery Team, Finance)
-router.post('/:id/upload-finance-doc', protect, authorize('Sales Executive', 'Sales Manager', 'Delivery Team', 'Finance'), upload.single('document'), async (req, res) => {
+router.post('/:id/upload-finance-doc', protect, authorize('Sales Executive', 'Sales Manager', 'Delivery Head', 'Delivery Executive', 'Finance'), upload.single('document'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -1172,7 +1244,7 @@ router.post('/:id/upload-finance-doc', protect, authorize('Sales Executive', 'Sa
             // PO Uploaded (usually by Finance) -> Notify Delivery Team
             // Since Delivery Team is a role, finding one or all? Usually notification goes to 'Delivery Team' role users.
             // Or specifically distinct users. Let's send to all Delivery Team members for visibility.
-            const deliveryUsers = await User.find({ role: 'Delivery Team' });
+            const deliveryUsers = await User.find({ role: { $in: ['Delivery Head', 'Delivery Executive'] } });
             if (deliveryUsers.length > 0) {
                 const notifs = deliveryUsers.map(u => ({
                     recipientId: u._id,
@@ -1218,7 +1290,7 @@ router.post('/:id/upload-finance-doc', protect, authorize('Sales Executive', 'Sa
 // @route   POST /api/opportunities/:id/upload-invoice
 // @desc    Upload Invoice Document
 // @access  Private (Delivery Team, Delivery Head, Delivery Manager, Sales Manager, Super Admin)
-router.post('/:id/upload-invoice', protect, authorize('Delivery Team', 'Delivery Head', 'Delivery Manager', 'Sales Manager', 'Super Admin'), upload.single('invoice'), async (req, res) => {
+router.post('/:id/upload-invoice', protect, authorize('Delivery Head', 'Delivery Executive', 'Delivery Manager', 'Sales Manager', 'Super Admin'), upload.single('invoice'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -1271,7 +1343,7 @@ router.post('/:id/upload-invoice', protect, authorize('Delivery Team', 'Delivery
 });
 
 // @route   POST /api/opportunities/:id/upload-delivery-doc
-router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sales Manager'), upload.single('document'), async (req, res) => {
+router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Head', 'Delivery Executive', 'Sales Manager'), upload.single('document'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -1354,7 +1426,7 @@ router.post('/:id/upload-delivery-doc', protect, authorize('Delivery Team', 'Sal
 // @route   POST /api/opportunities/:id/upload-expense-doc
 // @desc    Upload operational expense proposal document
 // @access  Private (Delivery Team, Sales Manager)
-router.post('/:id/upload-expense-doc', protect, authorize('Delivery Team', 'Delivery Head', 'Delivery Manager', 'Sales Manager', 'Super Admin'), upload.single('document'), async (req, res) => {
+router.post('/:id/upload-expense-doc', protect, authorize('Delivery Head', 'Delivery Executive', 'Delivery Manager', 'Sales Manager', 'Super Admin'), upload.single('document'), async (req, res) => {
     try {
         const opportunity = await Opportunity.findById(req.params.id);
 
@@ -1384,7 +1456,7 @@ router.post('/:id/upload-expense-doc', protect, authorize('Delivery Team', 'Deli
 
         // Notify Sales Creator about Proposal Upload in Expenses
         const salesPersonId = opportunity.createdBy;
-        if (salesPersonId && req.user.role === 'Delivery Team') {
+        if (salesPersonId && (req.user.role === 'Delivery Executive' || req.user.role === 'Delivery Head')) {
             const Notification = require('../models/Notification'); // Ensure import
             await Notification.create({
                 recipientId: salesPersonId,

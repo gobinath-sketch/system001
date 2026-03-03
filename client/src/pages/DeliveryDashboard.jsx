@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { Briefcase, ChevronRight, BarChart2, DollarSign, Activity, FileText } from 'lucide-react';
+import { Briefcase, ChevronRight, BarChart2, DollarSign, Activity, FileText, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -12,6 +13,7 @@ import { API_BASE } from '../config/api';
 const DeliveryDashboard = () => {
   const { updateUserRole } = useAuth();
   const { socket } = useSocket();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [opportunities, setOpportunities] = useState([]);
   const { currency } = useCurrency();
@@ -36,6 +38,21 @@ const DeliveryDashboard = () => {
   const [selectedYear, setSelectedYear] = useState(getCurrentFinancialYearLabel());
   const [timeFilter, setTimeFilter] = useState('Yearly');
   const [selectedMonth, setSelectedMonth] = useState('All');
+
+  // Progress Modal State
+  const [progressModal, setProgressModal] = useState({
+    isOpen: false,
+    stage: '',
+    data: []
+  });
+
+  const openProgressModal = (stage, data) => {
+    setProgressModal({
+      isOpen: true,
+      stage,
+      data
+    });
+  };
 
   const getOpportunityDate = (opp) => {
     if (opp.commonDetails?.startDate) {
@@ -68,7 +85,6 @@ const DeliveryDashboard = () => {
   };
 
   useEffect(() => {
-    updateUserRole('Delivery Team');
     fetchOpportunities();
   }, []);
 
@@ -326,7 +342,7 @@ const DeliveryDashboard = () => {
             <span className="text-sm text-black font-bold">Opportunities (Total: <AnimatedNumber value={filteredStats.totalOpportunities} />)</span>
           </div>
           <div className="grid grid-cols-4 gap-1 text-center">
-            <div className="progress-stage-group group flex flex-col items-center hover:bg-white/10 rounded transition-colors">
+            <div onClick={() => openProgressModal('30%', filteredOpps.filter(o => o.progressPercentage < 50))} className="progress-stage-group group flex flex-col items-center cursor-pointer hover:bg-white/10 rounded transition-colors">
               <span className="progress-stage-tip">Opportunity created</span>
               <p className="text-2xl font-bold text-red-600"><AnimatedNumber value={filteredStats.progress30} /></p>
               <p className="inline-flex items-center gap-1 text-xs text-black font-bold">
@@ -338,7 +354,7 @@ const DeliveryDashboard = () => {
                 </span>
               </p>
             </div>
-            <div className="progress-stage-group group flex flex-col items-center border-l border-gray-100 hover:bg-white/10 rounded transition-colors">
+            <div onClick={() => openProgressModal('50%', filteredOpps.filter(o => o.progressPercentage >= 50 && o.progressPercentage < 80))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
               <span className="progress-stage-tip">Expenses filled</span>
               <p className="text-2xl font-bold text-yellow-500"><AnimatedNumber value={filteredStats.progress50} /></p>
               <p className="inline-flex items-center gap-1 text-xs text-black font-bold">
@@ -350,7 +366,7 @@ const DeliveryDashboard = () => {
                 </span>
               </p>
             </div>
-            <div className="progress-stage-group group flex flex-col items-center border-l border-gray-100 hover:bg-white/10 rounded transition-colors">
+            <div onClick={() => openProgressModal('80%', filteredOpps.filter(o => o.progressPercentage >= 80 && o.progressPercentage < 100))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
               <span className="progress-stage-tip">Client Proposal uploaded</span>
               <p className="text-2xl font-bold text-indigo-600"><AnimatedNumber value={filteredStats.progress80} /></p>
               <p className="inline-flex items-center gap-1 text-xs text-black font-bold">
@@ -362,7 +378,7 @@ const DeliveryDashboard = () => {
                 </span>
               </p>
             </div>
-            <div className="progress-stage-group group flex flex-col items-center border-l border-gray-100 hover:bg-white/10 rounded transition-colors">
+            <div onClick={() => openProgressModal('100%', filteredOpps.filter(o => o.progressPercentage === 100))} className="progress-stage-group group flex flex-col items-center border-l border-gray-100 cursor-pointer hover:bg-white/10 rounded transition-colors">
               <span className="progress-stage-tip">Completed</span>
               <p className="text-2xl font-bold text-emerald-600"><AnimatedNumber value={filteredStats.progress100} /></p>
               <p className="inline-flex items-center gap-1 text-xs text-black font-bold">
@@ -518,6 +534,65 @@ const DeliveryDashboard = () => {
 
         </div>
       </div>
+
+      {/* Progress Breakdown Modal */}
+      {progressModal.isOpen && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[85vh] flex flex-col">
+          <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
+            <h2 className="text-xl font-bold text-gray-800">
+              {progressModal.stage} Opportunities ({progressModal.data.length})
+            </h2>
+            <button onClick={() => setProgressModal({
+              ...progressModal,
+              isOpen: false
+            })} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+
+          <div className="overflow-auto p-3 sm:p-6 flex-1">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="py-3 px-4 font-semibold text-gray-600">Opportunity ID</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600">Client</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600 w-1/3">Progress</th>
+                  <th className="py-3 px-4 font-semibold text-gray-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {progressModal.data.length > 0 ? progressModal.data.map(opp => <tr key={opp._id} className="border-b border-gray-100 hover:bg-gray-50">
+                  <td className="py-3 px-4 font-mono text-primary-blue font-bold">
+                    {opp.opportunityNumber}
+                  </td>
+                  <td className="py-3 px-4 font-semibold">
+                    {opp.client?.companyName || 'Unknown Client'}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 rounded-full" style={{
+                          width: `${opp.progressPercentage || 0}%`
+                        }}></div>
+                      </div>
+                      <span className="text-xs font-bold text-gray-700 w-8">{opp.progressPercentage || 0}%</span>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button onClick={() => navigate(`/opportunities/${opp._id}`)} className="text-primary-blue hover:underline text-sm font-bold">
+                      OPEN
+                    </button>
+                  </td>
+                </tr>) : <tr>
+                  <td colSpan="4" className="py-8 text-center text-gray-500 italic">
+                    No opportunities found in this stage.
+                  </td>
+                </tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>}
     </div>
   );
 };
