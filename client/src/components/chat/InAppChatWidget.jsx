@@ -130,8 +130,9 @@ const InAppChatWidget = () => {
     });
   };
 
-  const refreshUsersAndConversations = async () => {
-    setLoadingConversations(true);
+  const refreshUsersAndConversations = async (options = {}) => {
+    const silent = Boolean(options.silent);
+    if (!silent) setLoadingConversations(true);
     try {
       const [usersRes, convoRes] = await Promise.all([
         axios.get(`${API_BASE}${API_ENDPOINTS.chat.users}`, authConfig),
@@ -165,23 +166,30 @@ const InAppChatWidget = () => {
       console.error('Failed to load chat bootstrap data:', err);
       addToast('Failed to load chat users', 'error');
     } finally {
-      setLoadingConversations(false);
+      if (!silent) setLoadingConversations(false);
     }
   };
 
-  const loadMessages = async (otherUserId) => {
+  const loadMessages = async (otherUserId, options = {}) => {
+    const silent = Boolean(options.silent);
+    const autoScroll = options.autoScroll !== false;
     if (!otherUserId) return;
-    setLoadingMessages(true);
+    if (!silent) setLoadingMessages(true);
     try {
       const response = await axios.get(`${API_BASE}${API_ENDPOINTS.chat.messagesByUser(otherUserId)}`, authConfig);
       const nextMessages = Array.isArray(response.data?.messages) ? response.data.messages : [];
-      setMessages(nextMessages);
-      scrollToBottom();
+      setMessages((prev) => {
+        const sameLength = prev.length === nextMessages.length;
+        const sameLastId = sameLength ? prev[prev.length - 1]?._id === nextMessages[nextMessages.length - 1]?._id : false;
+        if (sameLength && sameLastId) return prev;
+        if (autoScroll) scrollToBottom();
+        return nextMessages;
+      });
     } catch (err) {
       console.error('Failed to load chat messages:', err);
       addToast('Failed to load messages', 'error');
     } finally {
-      setLoadingMessages(false);
+      if (!silent) setLoadingMessages(false);
     }
   };
 
@@ -230,9 +238,9 @@ const InAppChatWidget = () => {
   useEffect(() => {
     if (!isOpen) return;
     const timer = setInterval(() => {
-      refreshUsersAndConversations();
+      refreshUsersAndConversations({ silent: true });
       if (selectedUserId) {
-        loadMessages(selectedUserId).then(() => markConversationRead(selectedUserId));
+        loadMessages(selectedUserId, { silent: true, autoScroll: false }).then(() => markConversationRead(selectedUserId));
       }
     }, 1000);
     return () => clearInterval(timer);
