@@ -170,6 +170,17 @@ const InAppChatWidget = () => {
     }
   };
 
+  const refreshUnreadConversations = async () => {
+    try {
+      const convoRes = await axios.get(`${API_BASE}${API_ENDPOINTS.chat.conversations}`, authConfig);
+      const convoList = Array.isArray(convoRes.data) ? convoRes.data : [];
+      setConversations(convoList);
+    } catch (err) {
+      // Silent fallback for badge sync
+      console.error('Failed to refresh unread conversations:', err);
+    }
+  };
+
   const loadMessages = async (otherUserId, options = {}) => {
     const silent = Boolean(options.silent);
     const autoScroll = options.autoScroll !== false;
@@ -247,6 +258,14 @@ const InAppChatWidget = () => {
   }, [isOpen, selectedUserId]);
 
   useEffect(() => {
+    if (isOpen) return;
+    const timer = setInterval(() => {
+      refreshUnreadConversations();
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [isOpen]);
+
+  useEffect(() => {
     if (!socket || !currentUserId) return;
 
     const handleIncomingMessage = (message) => {
@@ -267,7 +286,8 @@ const InAppChatWidget = () => {
           avatarDataUrl: fallbackUser?.avatarDataUrl || '',
           unreadCount: 0
         };
-        const unreadCount = senderId !== currentUserId && selectedUserId !== otherId ? Number(base.unreadCount || 0) + 1 : 0;
+        const shouldIncrementUnread = senderId !== currentUserId && (!isOpen || selectedUserId !== otherId);
+        const unreadCount = shouldIncrementUnread ? Number(base.unreadCount || 0) + 1 : 0;
         const updated = {
           ...base,
           name: fallbackUser?.name || base.name,
@@ -284,7 +304,8 @@ const InAppChatWidget = () => {
       setConversations((prev) => {
         const existing = prev.find((row) => row.user?._id === otherId);
         const row = existing || { user: fallbackUser, unreadCount: 0, lastMessage: null };
-        const unreadCount = senderId !== currentUserId && selectedUserId !== otherId ? Number(row.unreadCount || 0) + 1 : 0;
+        const shouldIncrementUnread = senderId !== currentUserId && (!isOpen || selectedUserId !== otherId);
+        const unreadCount = shouldIncrementUnread ? Number(row.unreadCount || 0) + 1 : 0;
         const updated = {
           ...row,
           user: {
