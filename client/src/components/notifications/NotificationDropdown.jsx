@@ -296,7 +296,11 @@ const NotificationDropdown = () => {
             const isDeliveryUser = ['Delivery Head', 'Delivery Executive', 'Delivery Manager'].includes(user?.role);
             const targetTab = isDeliveryUser ? 'delivery' : 'sales';
 
-            if (['approval_granted', 'approval_rejected'].includes(notification.type) && notification.opportunityId) {
+            if (notification.targetTab === 'client_list') {
+                navigate('/clients');
+            } else if (notification.targetTab === 'opportunity_list') {
+                navigate('/opportunities');
+            } else if (['approval_granted', 'approval_rejected'].includes(notification.type) && notification.opportunityId) {
                 // Route to the opportunity billing tab (sales) for granted/rejected
                 navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: 'sales' } });
             } else if (notification.opportunityId && !['approval_request', 'gp_approval_request'].includes(notification.type)) {

@@ -180,7 +180,8 @@ router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Bu
                 type: 'general',
                 message: `Client "${client.companyName}" was deleted by ${req.user.name}.`,
                 triggeredBy: req.user._id,
-                triggeredByName: req.user.name
+                triggeredByName: req.user.name,
+                targetTab: 'client_list'
             });
         }
 

@@ -1493,7 +1493,8 @@ router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Bu
                 type: 'general',
                 message: `Opportunity "${opportunity.opportunityNumber}" was deleted by ${req.user.name}.`,
                 triggeredBy: req.user._id,
-                triggeredByName: req.user.name
+                triggeredByName: req.user.name,
+                targetTab: 'opportunity_list'
             });
         }
 

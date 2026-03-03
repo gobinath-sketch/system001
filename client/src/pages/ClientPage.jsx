@@ -878,14 +878,14 @@ const ClientPage = () => {
           <table className="min-w-full text-left text-[16px] relative">
             <thead className="border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
               <tr>
-                <th className="px-6 py-3 font-semibold text-gray-900">Company Name</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Contact Person</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Contact Info</th>
-                {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>}
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Company Name</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Contact Person</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Designation</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Location</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Contact Info</th>
+                {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900 w-[10%]">Created By</th>}
                 <th className="px-6 py-3 font-semibold text-gray-900 text-center">Opp. given</th>
-                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Add Opportunity</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 text-center whitespace-nowrap">Add Opportunity</th>
                 {isSalesRole && <th className="px-6 py-3 font-semibold text-gray-900 text-center">Actions</th>}
               </tr>
             </thead>
@@ -935,8 +935,8 @@ const ClientPage = () => {
                       <button onClick={(e) => {
                         e.stopPropagation();
                         setDeleteModal({ isOpen: true, clientId: client._id });
-                      }} className="bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors p-2 rounded-md" title="Delete Client">
-                        <Trash2 size={16} />
+                      }} className="bg-red-100 hover:bg-red-200 text-red-600 transition-colors p-2 rounded-md" title="Delete Client">
+                        <Trash2 size={20} />
                       </button>
                     </div>
                   </td>}

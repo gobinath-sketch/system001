@@ -477,8 +477,8 @@ const OpportunityPage = () => {
                     <button onClick={(e) => {
                       e.stopPropagation();
                       setDeleteModal({ isOpen: true, oppId: opp._id });
-                    }} className="bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors p-2 rounded-md" title="Delete Opportunity">
-                      <Trash2 size={16} />
+                    }} className="bg-red-100 hover:bg-red-200 text-red-600 transition-colors p-2 rounded-md" title="Delete Opportunity">
+                      <Trash2 size={20} />
                     </button>
                   </div>
                 </td>}
