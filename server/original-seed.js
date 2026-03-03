@@ -56,11 +56,27 @@ const PEOPLE = [
   },
   {
     department: 'delivery',
-    name: 'Lakshmi Prasanna',
-    designation: 'Delivery & Operations Head',
+    name: 'Lakshmi P',
+    designation: 'Delivery Head',
     email: 'lakshmi.p@gktech.ai',
     reportingManager: 'Senthil Kumar S / Lakshmi S',
-    accessToBeGiven: 'Delivery Team'
+    accessToBeGiven: 'Delivery Head'
+  },
+  {
+    department: 'delivery',
+    name: 'Santhosh S',
+    designation: 'Delivery executive',
+    email: 'Santhosh.S@gktech.ai',
+    reportingManager: 'Lakshmi P',
+    accessToBeGiven: 'Delivery Executive'
+  },
+  {
+    department: 'delivery',
+    name: 'Monisha M',
+    designation: 'Delivery executive',
+    email: 'Monisha.M@gktech.ai',
+    reportingManager: 'Lakshmi P',
+    accessToBeGiven: 'Delivery Executive'
   }
 ];
 
@@ -68,7 +84,8 @@ const ROLE_BY_ACCESS = {
   'Sales Executive': 'Sales Executive',
   'Sales Manager': 'Sales Manager',
   'Business Head': 'Business Head',
-  'Delivery Team': 'Delivery Team'
+  'Delivery Head': 'Delivery Head',
+  'Delivery Executive': 'Delivery Executive'
 };
 
 const normalizeName = (value = '') =>
@@ -83,11 +100,11 @@ const splitManagerCandidates = (value = '') =>
     .map((v) => v.trim())
     .filter(Boolean);
 
-const buildCreatorCode = (role, index) => {
-  if (role === 'Business Head') return `B${index}`;
-  if (role === 'Sales Manager') return `M${index}`;
-  if (role === 'Delivery Team') return `D${index}`;
-  return `E${index}`;
+const getPrefix = (role) => {
+  if (role === 'Business Head') return 'B';
+  if (role === 'Sales Manager') return 'M';
+  if (role === 'Delivery Head' || role === 'Delivery Executive') return 'D';
+  return 'E';
 };
 
 const seedFromSheet = async () => {
@@ -112,10 +129,10 @@ const seedFromSheet = async () => {
   });
 
   const counters = {
-    'Business Head': maxCounters['B'] + 1,
-    'Sales Manager': maxCounters['M'] + 1,
-    'Sales Executive': maxCounters['E'] + 1,
-    'Delivery Team': maxCounters['D'] + 1
+    'B': maxCounters['B'] + 1,
+    'M': maxCounters['M'] + 1,
+    'E': maxCounters['E'] + 1,
+    'D': maxCounters['D'] + 1
   };
 
   const byName = new Map(allUsers.map((u) => [normalizeName(u.name), u]));
@@ -124,10 +141,11 @@ const seedFromSheet = async () => {
   for (const person of PEOPLE) {
     const email = String(person.email || '').trim().toLowerCase();
     const role = ROLE_BY_ACCESS[person.accessToBeGiven] || 'Sales Executive';
+    const prefix = getPrefix(role);
 
     let user = await User.findOne({ email });
     if (!user) {
-      const creatorCode = buildCreatorCode(role, counters[role]++);
+      const creatorCode = `${prefix}${counters[prefix]++}`;
       user = new User({
         name: person.name,
         email,
@@ -138,9 +156,9 @@ const seedFromSheet = async () => {
     } else {
       user.name = person.name;
       user.role = role;
-      user.password = hashedPassword; // Overwrite old passwords
+      // Do NOT overwrite user.password to preserve existing users' passwords on the remote server
       if (!user.creatorCode) {
-        user.creatorCode = buildCreatorCode(role, counters[role]++);
+        user.creatorCode = `${prefix}${counters[prefix]++}`;
       }
     }
 

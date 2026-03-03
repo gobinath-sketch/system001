@@ -356,6 +356,7 @@ const OpportunitySchema = new mongoose.Schema({
         default: null
     },
 
+    isDeleted: { type: Boolean, default: false },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now }
 });
