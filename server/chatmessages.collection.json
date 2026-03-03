@@ -1,0 +1,23 @@
+{
+  "collection": "chatmessages",
+  "documents": [
+    {
+      "participantsKey": "USER_ID_1:USER_ID_2",
+      "sender": "USER_OBJECT_ID",
+      "receiver": "USER_OBJECT_ID",
+      "text": "Hello",
+      "attachment": {
+        "originalName": "sample.pdf",
+        "mimeType": "application/pdf",
+        "size": 102400,
+        "path": "uploads/chat/chat-123456789-sample.pdf",
+        "provider": "local",
+        "key": "",
+        "url": ""
+      },
+      "readAt": null,
+      "createdAt": "2026-03-03T10:00:00.000Z",
+      "updatedAt": "2026-03-03T10:00:00.000Z"
+    }
+  ]
+}

@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 5000;
 const path = require('path');
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors(corsOptions));
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
