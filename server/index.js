@@ -104,6 +104,14 @@ io.on('connection', (socket) => {
         // console.log(`User ${userId} joined room`);
     });
 
+    socket.on('chat_typing', ({ toUserId, fromUserId, isTyping }) => {
+        if (!toUserId || !fromUserId) return;
+        io.to(String(toUserId)).emit('chat_typing', {
+            fromUserId: String(fromUserId),
+            isTyping: Boolean(isTyping)
+        });
+    });
+
     socket.on('disconnect', () => {
         // console.log('User disconnected:', socket.id);
     });

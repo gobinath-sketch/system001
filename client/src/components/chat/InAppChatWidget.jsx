@@ -81,6 +81,14 @@ const toReplyPreview = (msg) => {
   return '';
 };
 
+const TypingDots = () => (
+  <div className="inline-flex items-center gap-1 px-1 py-1">
+    <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:0ms]" />
+    <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:120ms]" />
+    <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:240ms]" />
+  </div>
+);
+
 const Avatar = ({ name, avatarDataUrl, sizeClass = 'h-10 w-10' }) => {
   if (avatarDataUrl) {
     return (
@@ -130,6 +138,7 @@ const InAppChatWidget = () => {
   const [editText, setEditText] = useState('');
   const [forwardMessage, setForwardMessage] = useState(null);
   const [swipeOffsets, setSwipeOffsets] = useState({});
+  const [typingByUser, setTypingByUser] = useState({});
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
   const actionMenuRef = useRef(null);
@@ -143,6 +152,8 @@ const InAppChatWidget = () => {
   });
   const dragStartRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0, moved: false });
   const panelDragRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0 });
+  const typingStopTimerRef = useRef(null);
+  const typingStateRef = useRef({ toUserId: '', isTyping: false });
 
   const currentUserId = user?._id || user?.id || '';
 
@@ -425,6 +436,11 @@ const InAppChatWidget = () => {
       removeMessageLocally(messageId);
     };
 
+    const handleTyping = ({ fromUserId, isTyping }) => {
+      if (!fromUserId || String(fromUserId) === String(currentUserId)) return;
+      setTypingByUser((prev) => ({ ...prev, [String(fromUserId)]: Boolean(isTyping) }));
+    };
+
     const handleEntityUpdated = (payload) => {
       if (payload?.entity === 'user' && isOpen) {
         refreshUsersAndConversations();
@@ -435,15 +451,57 @@ const InAppChatWidget = () => {
     socket.on('chat_message:read', handleRead);
     socket.on('chat_message:updated', handleMessageUpdated);
     socket.on('chat_message:hidden', handleMessageHidden);
+    socket.on('chat_typing', handleTyping);
     socket.on('entity_updated', handleEntityUpdated);
     return () => {
       socket.off('chat_message:new', handleIncomingMessage);
       socket.off('chat_message:read', handleRead);
       socket.off('chat_message:updated', handleMessageUpdated);
       socket.off('chat_message:hidden', handleMessageHidden);
+      socket.off('chat_typing', handleTyping);
       socket.off('entity_updated', handleEntityUpdated);
     };
   }, [socket, currentUserId, selectedUserId, isOpen]);
+
+  useEffect(() => {
+    if (!socket || !currentUserId || !selectedUserId || !isOpen) return;
+    const nextText = editingMessageId ? editText : draftText;
+    const hasText = Boolean(String(nextText || '').trim());
+
+    if (hasText) {
+      if (!typingStateRef.current.isTyping || typingStateRef.current.toUserId !== selectedUserId) {
+        socket.emit('chat_typing', {
+          toUserId: selectedUserId,
+          fromUserId: currentUserId,
+          isTyping: true
+        });
+        typingStateRef.current = { toUserId: selectedUserId, isTyping: true };
+      }
+      if (typingStopTimerRef.current) clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = setTimeout(() => {
+        socket.emit('chat_typing', {
+          toUserId: selectedUserId,
+          fromUserId: currentUserId,
+          isTyping: false
+        });
+        typingStateRef.current = { toUserId: '', isTyping: false };
+      }, 1200);
+      return;
+    }
+
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+      typingStopTimerRef.current = null;
+    }
+    if (typingStateRef.current.isTyping && typingStateRef.current.toUserId === selectedUserId) {
+      socket.emit('chat_typing', {
+        toUserId: selectedUserId,
+        fromUserId: currentUserId,
+        isTyping: false
+      });
+      typingStateRef.current = { toUserId: '', isTyping: false };
+    }
+  }, [draftText, editText, editingMessageId, socket, currentUserId, selectedUserId, isOpen]);
 
   useEffect(() => {
     if (!actionMessageId) return undefined;
@@ -464,9 +522,20 @@ const InAppChatWidget = () => {
     if (longPressTimerRef.current) {
       clearTimeout(longPressTimerRef.current);
     }
+    if (typingStopTimerRef.current) {
+      clearTimeout(typingStopTimerRef.current);
+    }
   }, []);
 
   const onSelectUser = (nextUserId) => {
+    if (socket && typingStateRef.current.isTyping && typingStateRef.current.toUserId) {
+      socket.emit('chat_typing', {
+        toUserId: typingStateRef.current.toUserId,
+        fromUserId: currentUserId,
+        isTyping: false
+      });
+      typingStateRef.current = { toUserId: '', isTyping: false };
+    }
     setSelectedUserId(nextUserId);
     setMessages([]);
     setDraftText('');
@@ -547,6 +616,14 @@ const InAppChatWidget = () => {
 
     setSending(true);
     setUploadProgress(0);
+    if (socket && typingStateRef.current.isTyping && selectedUserId) {
+      socket.emit('chat_typing', {
+        toUserId: selectedUserId,
+        fromUserId: currentUserId,
+        isTyping: false
+      });
+      typingStateRef.current = { toUserId: '', isTyping: false };
+    }
     try {
       const token = sessionStorage.getItem('token');
       let created = null;
@@ -1227,6 +1304,11 @@ const InAppChatWidget = () => {
                       );
                     })
                   )}
+                  {selectedUserId && typingByUser[String(selectedUserId)] ? (
+                    <div className="flex justify-start">
+                      <TypingDots />
+                    </div>
+                  ) : null}
                   <div ref={messagesEndRef} />
                 </div>
 
