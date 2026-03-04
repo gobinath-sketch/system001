@@ -1133,7 +1133,7 @@ const InAppChatWidget = () => {
           )}
 
           <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#c8d4e6] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#c8d4e6] bg-gradient-to-b from-[#dde6f3] via-[#e4ecf7] to-[#ecf2f9] flex flex-col`}>
-            <div data-chat-drag-handle className="px-4 py-3 border-b border-[#c8d4e6] bg-[#d2ddee] flex items-center justify-between cursor-move select-none">
+            <div data-chat-drag-handle className="h-[46px] px-4 border-b border-[#c8d4e6] bg-[#d2ddee] flex items-center justify-between cursor-move select-none">
               <div>
                 <h3 className="text-[16px] font-extrabold text-slate-900 tracking-[0.06em] uppercase">Chat</h3>
               </div>
@@ -1205,27 +1205,27 @@ const InAppChatWidget = () => {
             )}
             {selectedUser ? (
               <>
-                <div data-chat-drag-handle className="h-[58px] px-3 border-b border-[#ccd7e8] flex items-center gap-2 bg-[#edf3fb]/80 backdrop-blur-sm cursor-move select-none">
+                <div data-chat-drag-handle className="h-[46px] px-3 border-b border-[#ccd7e8] flex items-center gap-2 bg-[#edf3fb]/80 backdrop-blur-sm cursor-move select-none">
                   {isMobileView && (
                     <button
                       type="button"
                       onClick={() => setMobileUsersOpen((prev) => !prev)}
-                      className="h-9 w-9 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center justify-center"
+                      className="h-8 w-8 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center justify-center"
                       aria-label="Toggle users list"
                       title="Users"
                     >
                       <PanelLeft size={16} />
                     </button>
                   )}
-                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-xl border border-[#c4d1e4] bg-white/70 px-2.5 py-1.5">
-                    <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-8 w-8" />
+                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-xl bg-transparent px-1 py-0.5">
+                    <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-7 w-7" />
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-slate-900 truncate">{selectedUser.name}</p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="ml-auto h-9 w-9 rounded-lg hover:bg-rose-50 inline-flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors"
+                    className="ml-auto h-8 w-8 rounded-lg hover:bg-rose-50 inline-flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors"
                     onClick={() => setIsOpen(false)}
                     aria-label="Close chat"
                     title="Close chat"
