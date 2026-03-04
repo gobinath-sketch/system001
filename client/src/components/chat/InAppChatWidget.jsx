@@ -90,6 +90,55 @@ const TypingDots = () => (
   </div>
 );
 
+const UploadingLoader = () => (
+  <>
+    <style>{`
+      .chat-upload-loader { display:inline-flex; align-items:center; gap:6px; min-width:0; }
+      .chat-upload-loader__text { color:#475569; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; }
+      .chat-upload-loader__dot { margin-left:2px; animation:chat-upload-loader-blink 1.5s infinite; }
+      .chat-upload-loader__dot:nth-child(2) { animation-delay:0.3s; }
+      .chat-upload-loader__dot:nth-child(3) { animation-delay:0.6s; }
+      .chat-upload-loader__bar-bg {
+        display:flex; align-items:center; box-sizing:border-box; padding:1px;
+        width:88px; height:10px; background-color:#d4dfec; border-radius:999px;
+        box-shadow:inset -1px 1px 2px rgba(15,23,42,0.2);
+      }
+      .chat-upload-loader__bar {
+        position:relative; display:flex; align-items:center; width:0%; height:8px; overflow:hidden;
+        background:linear-gradient(90deg, #3f8f9c 0%, #7ec8bb 100%); border-radius:999px;
+        animation:chat-upload-loader-fill 3s ease-out infinite;
+      }
+      .chat-upload-loader__shine-wrap { position:absolute; display:flex; align-items:center; gap:8px; }
+      .chat-upload-loader__shine {
+        width:5px; height:12px; opacity:0.35; rotate:35deg;
+        background:linear-gradient(-45deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+      }
+      @keyframes chat-upload-loader-fill { 0% { width:0; } 80% { width:100%; } 100% { width:100%; } }
+      @keyframes chat-upload-loader-blink { 0%, 100% { opacity:0; } 50% { opacity:1; } }
+    `}</style>
+    <div className="chat-upload-loader" aria-label="Uploading">
+      <span className="chat-upload-loader__text">
+        Uploading
+        <span className="chat-upload-loader__dot">.</span>
+        <span className="chat-upload-loader__dot">.</span>
+        <span className="chat-upload-loader__dot">.</span>
+      </span>
+      <div className="chat-upload-loader__bar-bg">
+        <div className="chat-upload-loader__bar">
+          <div className="chat-upload-loader__shine-wrap">
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+);
+
 const getFileMeta = (attachment = {}) => {
   const originalName = String(attachment?.originalName || 'Download file');
   const mimeType = String(attachment?.mimeType || '').toLowerCase();
@@ -1404,22 +1453,44 @@ const InAppChatWidget = () => {
                     </div>
                   )}
                   {pendingFile && (
-                    <div className="mb-2 text-xs bg-white/90 border border-[#c3d0e4] rounded-xl px-2 py-1.5 flex items-center justify-between gap-2 text-slate-700">
-                      <span className="truncate">
-                        {pendingFile.name} ({formatBytes(pendingFile.size)})
-                        {sending && uploadProgress > 0 ? ` - Uploading ${uploadProgress}%` : ''}
-                      </span>
-                      <button
-                        type="button"
-                        className="text-rose-500 hover:text-rose-700 font-medium"
-                        onClick={() => {
-                          setPendingFile(null);
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    (() => {
+                      const fileMeta = getFileMeta({ originalName: pendingFile.name, mimeType: pendingFile.type });
+                      const FileIcon = fileMeta.icon;
+                      return (
+                        <div className={`mb-2 flex items-center gap-2 rounded-xl border px-2.5 py-2 shadow-sm ${fileMeta.tileClass}`}>
+                          <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+                            <FileIcon size={17} className={fileMeta.iconClass} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className={`truncate text-[12px] font-semibold ${fileMeta.titleClass}`}>
+                                {pendingFile.name}
+                              </p>
+                              <span className="shrink-0 text-[11px] text-slate-600">
+                                {formatBytes(pendingFile.size)}
+                                {sending && uploadProgress > 0 ? ` - ${uploadProgress}%` : ''}
+                              </span>
+                              {sending ? <UploadingLoader /> : null}
+                            </div>
+                          </div>
+                          {fileMeta.ext ? (
+                            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${fileMeta.extBadgeClass}`}>
+                              {fileMeta.ext}
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="shrink-0 text-rose-500 hover:text-rose-700 text-xs font-semibold"
+                            onClick={() => {
+                              setPendingFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })()
                   )}
                   <div className={`flex items-center gap-2 ${isMobileView ? 'w-full' : ''}`}>
                     <input ref={fileInputRef} type="file" className="hidden" onChange={onPickFile} />
