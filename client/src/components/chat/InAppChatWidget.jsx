@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import {
-  Send, Paperclip, X, Search, Download, PanelLeft, Reply, Pencil, Trash2, Copy, Forward
+  Send, Paperclip, X, Search, PanelLeft, Reply, Pencil, Trash2, Copy, Forward,
+  File, FileArchive, FileText, FileSpreadsheet, FileImage, FileVideoCamera, FileMusic, FileCode, FileType
 } from 'lucide-react';
 import { API_BASE, API_ENDPOINTS, uploadUrl } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
@@ -88,6 +89,32 @@ const TypingDots = () => (
     <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:240ms]" />
   </div>
 );
+
+const getFileMeta = (attachment = {}) => {
+  const originalName = String(attachment?.originalName || 'Download file');
+  const mimeType = String(attachment?.mimeType || '').toLowerCase();
+  const parts = originalName.split('.');
+  const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+  const byExt = ext || (mimeType.split('/')[1] || '').toLowerCase();
+
+  const archive = new Set(['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz']);
+  const docs = new Set(['pdf', 'doc', 'docx', 'txt', 'rtf', 'md']);
+  const sheets = new Set(['xls', 'xlsx', 'csv', 'ods']);
+  const images = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'heic']);
+  const videos = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v']);
+  const audio = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a']);
+  const code = new Set(['js', 'jsx', 'ts', 'tsx', 'json', 'xml', 'html', 'css', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb', 'sh', 'sql', 'yml', 'yaml']);
+
+  if (archive.has(byExt)) return { icon: FileArchive, iconClass: 'text-amber-600', ext: byExt || 'zip' };
+  if (docs.has(byExt)) return { icon: FileText, iconClass: 'text-sky-700', ext: byExt || 'doc' };
+  if (sheets.has(byExt)) return { icon: FileSpreadsheet, iconClass: 'text-emerald-700', ext: byExt || 'xls' };
+  if (images.has(byExt)) return { icon: FileImage, iconClass: 'text-fuchsia-700', ext: byExt || 'img' };
+  if (videos.has(byExt)) return { icon: FileVideoCamera, iconClass: 'text-violet-700', ext: byExt || 'vid' };
+  if (audio.has(byExt)) return { icon: FileMusic, iconClass: 'text-rose-700', ext: byExt || 'aud' };
+  if (code.has(byExt)) return { icon: FileCode, iconClass: 'text-cyan-700', ext: byExt || 'code' };
+  if (byExt) return { icon: FileType, iconClass: 'text-slate-700', ext: byExt };
+  return { icon: File, iconClass: 'text-slate-700', ext: '' };
+};
 
 const Avatar = ({ name, avatarDataUrl, sizeClass = 'h-10 w-10' }) => {
   if (avatarDataUrl) {
@@ -1285,15 +1312,28 @@ const InAppChatWidget = () => {
                                       </p>
                                     ) : null}
                                     {msg.attachment ? (
-                                      <a
-                                        href={getAttachmentHref(msg.attachment)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="mt-2 inline-flex items-center gap-2 text-xs font-medium underline underline-offset-2 text-blue-700"
-                                      >
-                                        <Download size={13} />
-                                        {msg.attachment.originalName || 'Download file'}
-                                      </a>
+                                      (() => {
+                                        const fileMeta = getFileMeta(msg.attachment);
+                                        const FileIcon = fileMeta.icon;
+                                        return (
+                                          <a
+                                            href={getAttachmentHref(msg.attachment)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="mt-2 inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-300/80 bg-white/85 px-2.5 py-1.5 no-underline"
+                                          >
+                                            <FileIcon size={15} className={fileMeta.iconClass} />
+                                            <span className="truncate text-[12px] font-medium text-slate-800 hover:underline underline-offset-2">
+                                              {msg.attachment.originalName || 'Download file'}
+                                            </span>
+                                            {fileMeta.ext ? (
+                                              <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600">
+                                                {fileMeta.ext}
+                                              </span>
+                                            ) : null}
+                                          </a>
+                                        );
+                                      })()
                                     ) : null}
                                   </>
                                 )}
