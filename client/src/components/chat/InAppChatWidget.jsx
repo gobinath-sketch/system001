@@ -105,15 +105,22 @@ const getFileMeta = (attachment = {}) => {
   const audio = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a']);
   const code = new Set(['js', 'jsx', 'ts', 'tsx', 'json', 'xml', 'html', 'css', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb', 'sh', 'sql', 'yml', 'yaml']);
 
-  if (archive.has(byExt)) return { icon: FileArchive, iconClass: 'text-amber-600', ext: byExt || 'zip' };
-  if (docs.has(byExt)) return { icon: FileText, iconClass: 'text-sky-700', ext: byExt || 'doc' };
-  if (sheets.has(byExt)) return { icon: FileSpreadsheet, iconClass: 'text-emerald-700', ext: byExt || 'xls' };
-  if (images.has(byExt)) return { icon: FileImage, iconClass: 'text-fuchsia-700', ext: byExt || 'img' };
-  if (videos.has(byExt)) return { icon: FileVideoCamera, iconClass: 'text-violet-700', ext: byExt || 'vid' };
-  if (audio.has(byExt)) return { icon: FileMusic, iconClass: 'text-rose-700', ext: byExt || 'aud' };
-  if (code.has(byExt)) return { icon: FileCode, iconClass: 'text-cyan-700', ext: byExt || 'code' };
-  if (byExt) return { icon: FileType, iconClass: 'text-slate-700', ext: byExt };
-  return { icon: File, iconClass: 'text-slate-700', ext: '' };
+  const common = {
+    ext: byExt,
+    tileClass: 'bg-white border-[#c1cfdf]',
+    titleClass: 'text-slate-800',
+    extBadgeClass: 'bg-slate-200 text-slate-700'
+  };
+
+  if (archive.has(byExt)) return { ...common, icon: FileArchive, iconClass: 'text-amber-600', extBadgeClass: 'bg-amber-100 text-amber-800' };
+  if (docs.has(byExt)) return { ...common, icon: FileText, iconClass: 'text-sky-700', extBadgeClass: 'bg-sky-100 text-sky-800' };
+  if (sheets.has(byExt)) return { ...common, icon: FileSpreadsheet, iconClass: 'text-emerald-700', extBadgeClass: 'bg-emerald-100 text-emerald-800' };
+  if (images.has(byExt)) return { ...common, icon: FileImage, iconClass: 'text-fuchsia-700', extBadgeClass: 'bg-fuchsia-100 text-fuchsia-800' };
+  if (videos.has(byExt)) return { ...common, icon: FileVideoCamera, iconClass: 'text-violet-700', extBadgeClass: 'bg-violet-100 text-violet-800' };
+  if (audio.has(byExt)) return { ...common, icon: FileMusic, iconClass: 'text-rose-700', extBadgeClass: 'bg-rose-100 text-rose-800' };
+  if (code.has(byExt)) return { ...common, icon: FileCode, iconClass: 'text-cyan-700', extBadgeClass: 'bg-cyan-100 text-cyan-800' };
+  if (byExt) return { ...common, icon: FileType, iconClass: 'text-slate-700' };
+  return { ...common, icon: File, iconClass: 'text-slate-700', ext: '' };
 };
 
 const Avatar = ({ name, avatarDataUrl, sizeClass = 'h-10 w-10' }) => {
@@ -1320,14 +1327,16 @@ const InAppChatWidget = () => {
                                             href={getAttachmentHref(msg.attachment)}
                                             target="_blank"
                                             rel="noreferrer"
-                                            className="mt-2 inline-flex max-w-full items-center gap-2 rounded-lg border border-slate-300/80 bg-white/85 px-2.5 py-1.5 no-underline"
+                                            className={`mt-2 flex max-w-full items-center gap-2 rounded-xl border px-2.5 py-2 no-underline shadow-sm ${fileMeta.tileClass}`}
                                           >
-                                            <FileIcon size={15} className={fileMeta.iconClass} />
-                                            <span className="truncate text-[12px] font-medium text-slate-800 hover:underline underline-offset-2">
+                                            <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+                                              <FileIcon size={17} className={fileMeta.iconClass} />
+                                            </span>
+                                            <span className={`min-w-0 flex-1 truncate text-[12px] font-semibold ${fileMeta.titleClass}`}>
                                               {msg.attachment.originalName || 'Download file'}
                                             </span>
                                             {fileMeta.ext ? (
-                                              <span className="shrink-0 rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-semibold uppercase text-slate-600">
+                                              <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${fileMeta.extBadgeClass}`}>
                                                 {fileMeta.ext}
                                               </span>
                                             ) : null}
