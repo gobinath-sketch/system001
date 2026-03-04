@@ -87,6 +87,26 @@ const toObjectId = (value) => new mongoose.Types.ObjectId(String(value));
 
 const getParticipantsKey = (id1, id2) => [String(id1), String(id2)].sort().join(':');
 
+const getPreviewMessage = (message) => {
+    if (!message) return null;
+    const sender = message.sender && typeof message.sender === 'object'
+        ? {
+            _id: String(message.sender._id || message.sender),
+            name: message.sender.name || '',
+            role: message.sender.role || '',
+            avatarDataUrl: message.sender.settings?.profile?.avatarDataUrl || ''
+        }
+        : { _id: String(message.sender || '') };
+    return {
+        _id: String(message._id),
+        sender,
+        text: message.text || '',
+        attachment: message.attachment || null,
+        deletedForEveryoneAt: message.deletedForEveryoneAt || null,
+        createdAt: message.createdAt
+    };
+};
+
 const serializeMessage = (message) => ({
     _id: String(message._id),
     sender: message.sender && typeof message.sender === 'object' ? {
@@ -104,6 +124,11 @@ const serializeMessage = (message) => ({
     text: message.text || '',
     attachment: message.attachment || null,
     readAt: message.readAt || null,
+    replyTo: getPreviewMessage(message.replyTo),
+    editedAt: message.editedAt || null,
+    deletedForEveryoneAt: message.deletedForEveryoneAt || null,
+    isForwarded: Boolean(message.isForwarded),
+    forwardedFrom: getPreviewMessage(message.forwardedFrom),
     createdAt: message.createdAt,
     updatedAt: message.updatedAt
 });
@@ -114,17 +139,36 @@ const emitMessage = (senderId, receiverId, payload) => {
     global.io.to(String(receiverId)).emit('chat_message:new', payload);
 };
 
-const createAndEmitMessage = async ({ senderId, receiverId, text, attachment }) => {
+const emitMessageUpdated = (senderId, receiverId, payload) => {
+    if (!global.io) return;
+    global.io.to(String(senderId)).emit('chat_message:updated', payload);
+    global.io.to(String(receiverId)).emit('chat_message:updated', payload);
+};
+
+const createAndEmitMessage = async ({ senderId, receiverId, text, attachment, replyTo = null, isForwarded = false, forwardedFrom = null }) => {
     const message = await ChatMessage.create({
         participantsKey: getParticipantsKey(senderId, receiverId),
         sender: senderId,
         receiver: receiverId,
         text: String(text || '').trim(),
-        attachment: attachment || null
+        attachment: attachment || null,
+        replyTo: replyTo || null,
+        isForwarded: Boolean(isForwarded),
+        forwardedFrom: forwardedFrom || null
     });
     const populated = await ChatMessage.findById(message._id)
         .populate('sender', 'name role settings.profile.avatarDataUrl')
-        .populate('receiver', 'name role settings.profile.avatarDataUrl');
+        .populate('receiver', 'name role settings.profile.avatarDataUrl')
+        .populate({
+            path: 'replyTo',
+            select: '_id sender text attachment deletedForEveryoneAt createdAt',
+            populate: { path: 'sender', select: 'name role settings.profile.avatarDataUrl' }
+        })
+        .populate({
+            path: 'forwardedFrom',
+            select: '_id sender text attachment deletedForEveryoneAt createdAt',
+            populate: { path: 'sender', select: 'name role settings.profile.avatarDataUrl' }
+        });
     const payload = serializeMessage(populated);
     emitMessage(senderId, receiverId, payload);
     return payload;
@@ -173,7 +217,8 @@ router.get('/conversations', protect, async (req, res) => {
         const conversations = await ChatMessage.aggregate([
             {
                 $match: {
-                    $or: [{ sender: currentUserId }, { receiver: currentUserId }]
+                    $or: [{ sender: currentUserId }, { receiver: currentUserId }],
+                    deletedForUsers: { $ne: currentUserId }
                 }
             },
             { $sort: { createdAt: -1 } },
@@ -221,6 +266,7 @@ router.get('/conversations', protect, async (req, res) => {
                 text: row.lastMessage.text || '',
                 attachment: row.lastMessage.attachment || null,
                 readAt: row.lastMessage.readAt || null,
+                deletedForEveryoneAt: row.lastMessage.deletedForEveryoneAt || null,
                 createdAt: row.lastMessage.createdAt
             }
         })));
@@ -249,7 +295,8 @@ router.get('/messages/:otherUserId', protect, async (req, res) => {
             $or: [
                 { sender: req.user._id, receiver: otherUserId },
                 { sender: otherUserId, receiver: req.user._id }
-            ]
+            ],
+            deletedForUsers: { $ne: toObjectId(req.user._id) }
         };
         if (before && !Number.isNaN(before.getTime())) {
             query.createdAt = { $lt: before };
@@ -259,7 +306,17 @@ router.get('/messages/:otherUserId', protect, async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(limit)
             .populate('sender', 'name role settings.profile.avatarDataUrl')
-            .populate('receiver', 'name role settings.profile.avatarDataUrl');
+            .populate('receiver', 'name role settings.profile.avatarDataUrl')
+            .populate({
+                path: 'replyTo',
+                select: '_id sender text attachment deletedForEveryoneAt createdAt',
+                populate: { path: 'sender', select: 'name role settings.profile.avatarDataUrl' }
+            })
+            .populate({
+                path: 'forwardedFrom',
+                select: '_id sender text attachment deletedForEveryoneAt createdAt',
+                populate: { path: 'sender', select: 'name role settings.profile.avatarDataUrl' }
+            });
 
         res.json({
             user: {
@@ -285,6 +342,8 @@ router.post('/messages', protect, (req, res) => {
         try {
             const { receiverId } = req.body || {};
             const text = String(req.body?.text || '').trim();
+            const replyToMessageId = String(req.body?.replyToMessageId || '').trim();
+            const forwardFromMessageId = String(req.body?.forwardFromMessageId || '').trim();
             const cfg = getFeatureConfig();
 
             if (!receiverId || !mongoose.Types.ObjectId.isValid(receiverId)) {
@@ -304,6 +363,31 @@ router.post('/messages', protect, (req, res) => {
 
             if (req.file && Number(req.file.size || 0) > cfg.maxFileSizeBytes) {
                 return res.status(400).json({ message: `File exceeds ${Math.round(cfg.maxFileSizeBytes / (1024 * 1024))}MB limit` });
+            }
+
+            let replyTo = null;
+            if (replyToMessageId) {
+                if (!mongoose.Types.ObjectId.isValid(replyToMessageId)) {
+                    return res.status(400).json({ message: 'Invalid reply target' });
+                }
+                replyTo = await ChatMessage.findOne({
+                    _id: replyToMessageId,
+                    participantsKey: getParticipantsKey(req.user._id, receiverId)
+                }).select('_id');
+                if (!replyTo) return res.status(404).json({ message: 'Reply target not found' });
+            }
+
+            let forwardedFrom = null;
+            if (forwardFromMessageId) {
+                if (!mongoose.Types.ObjectId.isValid(forwardFromMessageId)) {
+                    return res.status(400).json({ message: 'Invalid forward source' });
+                }
+                forwardedFrom = await ChatMessage.findOne({
+                    _id: forwardFromMessageId,
+                    $or: [{ sender: req.user._id }, { receiver: req.user._id }],
+                    deletedForUsers: { $ne: toObjectId(req.user._id) }
+                }).select('_id');
+                if (!forwardedFrom) return res.status(404).json({ message: 'Forward source not found' });
             }
 
             let attachment = null;
@@ -328,7 +412,10 @@ router.post('/messages', protect, (req, res) => {
                 senderId: req.user._id,
                 receiverId,
                 text,
-                attachment
+                attachment,
+                replyTo: replyTo?._id || null,
+                isForwarded: Boolean(forwardedFrom),
+                forwardedFrom: forwardedFrom?._id || null
             });
 
             return res.status(201).json(payload);
@@ -465,10 +552,41 @@ router.post('/uploads/:uploadId/complete', protect, async (req, res) => {
             mimeType: session.mimeType
         });
 
+        const replyToMessageId = String(req.body?.replyToMessageId || '').trim();
+        const forwardFromMessageId = String(req.body?.forwardFromMessageId || '').trim();
+
+        let replyTo = null;
+        if (replyToMessageId) {
+            if (!mongoose.Types.ObjectId.isValid(replyToMessageId)) {
+                return res.status(400).json({ message: 'Invalid reply target' });
+            }
+            replyTo = await ChatMessage.findOne({
+                _id: replyToMessageId,
+                participantsKey: getParticipantsKey(req.user._id, session.receiverId)
+            }).select('_id');
+            if (!replyTo) return res.status(404).json({ message: 'Reply target not found' });
+        }
+
+        let forwardedFrom = null;
+        if (forwardFromMessageId) {
+            if (!mongoose.Types.ObjectId.isValid(forwardFromMessageId)) {
+                return res.status(400).json({ message: 'Invalid forward source' });
+            }
+            forwardedFrom = await ChatMessage.findOne({
+                _id: forwardFromMessageId,
+                $or: [{ sender: req.user._id }, { receiver: req.user._id }],
+                deletedForUsers: { $ne: toObjectId(req.user._id) }
+            }).select('_id');
+            if (!forwardedFrom) return res.status(404).json({ message: 'Forward source not found' });
+        }
+
         const payload = await createAndEmitMessage({
             senderId: req.user._id,
             receiverId: session.receiverId,
             text: String(req.body?.text || '').trim(),
+            replyTo: replyTo?._id || null,
+            isForwarded: Boolean(forwardedFrom),
+            forwardedFrom: forwardedFrom?._id || null,
             attachment: {
                 originalName: session.originalName,
                 mimeType: session.mimeType,
@@ -487,6 +605,167 @@ router.post('/uploads/:uploadId/complete', protect, async (req, res) => {
     } catch (err) {
         console.error('Failed to complete chunk upload:', err);
         return res.status(500).json({ message: 'Failed to finalize upload' });
+    }
+});
+
+router.patch('/messages/:messageId', protect, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const text = String(req.body?.text || '').trim();
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({ message: 'Invalid message id' });
+        }
+        if (!text) return res.status(400).json({ message: 'Message text is required' });
+
+        const message = await ChatMessage.findById(messageId);
+        if (!message) return res.status(404).json({ message: 'Message not found' });
+        if (String(message.sender) !== String(req.user._id)) {
+            return res.status(403).json({ message: 'You can edit only your own messages' });
+        }
+        if (message.deletedForEveryoneAt) {
+            return res.status(400).json({ message: 'Deleted message cannot be edited' });
+        }
+
+        message.text = text;
+        message.editedAt = new Date();
+        await message.save();
+
+        const populated = await ChatMessage.findById(message._id)
+            .populate('sender', 'name role settings.profile.avatarDataUrl')
+            .populate('receiver', 'name role settings.profile.avatarDataUrl')
+            .populate({
+                path: 'replyTo',
+                select: '_id sender text attachment deletedForEveryoneAt createdAt',
+                populate: { path: 'sender', select: 'name role settings.profile.avatarDataUrl' }
+            })
+            .populate({
+                path: 'forwardedFrom',
+                select: '_id sender text attachment deletedForEveryoneAt createdAt',
+                populate: { path: 'sender', select: 'name role settings.profile.avatarDataUrl' }
+            });
+        const payload = serializeMessage(populated);
+        emitMessageUpdated(populated.sender._id, populated.receiver._id, payload);
+
+        return res.json(payload);
+    } catch (err) {
+        console.error('Failed to edit message:', err);
+        return res.status(500).json({ message: 'Failed to edit message' });
+    }
+});
+
+router.post('/messages/:messageId/forward', protect, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const receiverIds = Array.isArray(req.body?.receiverIds) ? req.body.receiverIds : [];
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({ message: 'Invalid message id' });
+        }
+        if (!receiverIds.length) {
+            return res.status(400).json({ message: 'At least one receiver is required' });
+        }
+
+        const source = await ChatMessage.findOne({
+            _id: messageId,
+            $or: [{ sender: req.user._id }, { receiver: req.user._id }],
+            deletedForUsers: { $ne: toObjectId(req.user._id) }
+        });
+        if (!source) return res.status(404).json({ message: 'Message not found' });
+        if (source.deletedForEveryoneAt) {
+            return res.status(400).json({ message: 'Deleted message cannot be forwarded' });
+        }
+        if (!source.text && !source.attachment) {
+            return res.status(400).json({ message: 'Nothing to forward' });
+        }
+
+        const uniqueReceiverIds = [...new Set(receiverIds.map((id) => String(id).trim()).filter(Boolean))]
+            .filter((id) => mongoose.Types.ObjectId.isValid(id) && id !== String(req.user._id));
+        if (!uniqueReceiverIds.length) {
+            return res.status(400).json({ message: 'No valid receiver selected' });
+        }
+
+        const existingUsers = await User.find({ _id: { $in: uniqueReceiverIds } }).select('_id');
+        const allowedReceiverIds = new Set(existingUsers.map((u) => String(u._id)));
+        const payloads = [];
+        for (const receiverId of uniqueReceiverIds) {
+            if (!allowedReceiverIds.has(receiverId)) continue;
+            // Clone attachment metadata to preserve source file reference.
+            const attachment = source.attachment ? { ...source.attachment } : null;
+            // eslint-disable-next-line no-await-in-loop
+            const payload = await createAndEmitMessage({
+                senderId: req.user._id,
+                receiverId,
+                text: source.text || '',
+                attachment,
+                isForwarded: true,
+                forwardedFrom: source._id
+            });
+            payloads.push(payload);
+        }
+
+        return res.status(201).json({ messages: payloads });
+    } catch (err) {
+        console.error('Failed to forward message:', err);
+        return res.status(500).json({ message: 'Failed to forward message' });
+    }
+});
+
+router.delete('/messages/:messageId', protect, async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const mode = String(req.body?.mode || 'me').trim().toLowerCase();
+        if (!mongoose.Types.ObjectId.isValid(messageId)) {
+            return res.status(400).json({ message: 'Invalid message id' });
+        }
+        if (!['me', 'everyone'].includes(mode)) {
+            return res.status(400).json({ message: 'Invalid delete mode' });
+        }
+
+        const message = await ChatMessage.findById(messageId);
+        if (!message) return res.status(404).json({ message: 'Message not found' });
+
+        const isParticipant = String(message.sender) === String(req.user._id) || String(message.receiver) === String(req.user._id);
+        if (!isParticipant) return res.status(403).json({ message: 'Not authorized for this message' });
+
+        if (mode === 'me') {
+            await ChatMessage.updateOne(
+                { _id: messageId },
+                { $addToSet: { deletedForUsers: toObjectId(req.user._id) } }
+            );
+            if (global.io) {
+                global.io.to(String(req.user._id)).emit('chat_message:hidden', {
+                    messageId: String(messageId),
+                    userId: String(req.user._id)
+                });
+            }
+            return res.json({ messageId: String(messageId), mode: 'me' });
+        }
+
+        if (String(message.sender) !== String(req.user._id)) {
+            return res.status(403).json({ message: 'Only sender can delete for everyone' });
+        }
+        if (message.deletedForEveryoneAt) {
+            return res.status(400).json({ message: 'Message already deleted for everyone' });
+        }
+
+        message.deletedForEveryoneAt = new Date();
+        message.text = '';
+        message.attachment = null;
+        message.replyTo = null;
+        message.forwardedFrom = null;
+        message.isForwarded = false;
+        message.readAt = message.readAt || new Date();
+        await message.save();
+
+        const populated = await ChatMessage.findById(message._id)
+            .populate('sender', 'name role settings.profile.avatarDataUrl')
+            .populate('receiver', 'name role settings.profile.avatarDataUrl');
+        const payload = serializeMessage(populated);
+        emitMessageUpdated(populated.sender._id, populated.receiver._id, payload);
+
+        return res.json({ mode: 'everyone', message: payload });
+    } catch (err) {
+        console.error('Failed to delete message:', err);
+        return res.status(500).json({ message: 'Failed to delete message' });
     }
 });
 

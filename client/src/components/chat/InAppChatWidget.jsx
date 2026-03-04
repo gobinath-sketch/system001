@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
-import { Send, Paperclip, X, Search, Download } from 'lucide-react';
+import {
+  Send, Paperclip, X, Search, Download, PanelLeft, Reply, Pencil, Trash2, Copy, Forward
+} from 'lucide-react';
 import { API_BASE, API_ENDPOINTS, uploadUrl } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
@@ -68,18 +70,29 @@ const getAttachmentHref = (attachment) => {
   return '';
 };
 
+const deletedMessageLabel = 'This message was deleted';
+
+const toReplyPreview = (msg) => {
+  if (!msg) return '';
+  if (msg.deletedForEveryoneAt) return deletedMessageLabel;
+  if (msg.text) return msg.text;
+  if (msg.attachment?.originalName) return msg.attachment.originalName;
+  if (msg.attachment) return 'Attachment';
+  return '';
+};
+
 const Avatar = ({ name, avatarDataUrl, sizeClass = 'h-10 w-10' }) => {
   if (avatarDataUrl) {
     return (
       <img
         src={avatarDataUrl}
         alt={name || 'User'}
-        className={`${sizeClass} rounded-full object-cover border border-primary-blue/20 shrink-0`}
+        className={`${sizeClass} rounded-full object-cover border border-slate-300/90 shrink-0 shadow-sm`}
       />
     );
   }
   return (
-    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-primary-blue/20 to-blue-400/15 text-primary-blue font-semibold text-xs inline-flex items-center justify-center border border-primary-blue/20 shrink-0`}>
+    <div className={`${sizeClass} rounded-full bg-gradient-to-br from-slate-200 to-blue-100 text-slate-700 font-semibold text-xs inline-flex items-center justify-center border border-slate-300/90 shrink-0`}>
       {getInitials(name)}
     </div>
   );
@@ -108,8 +121,26 @@ const InAppChatWidget = () => {
   const [iconDragging, setIconDragging] = useState(false);
   const [panelPosition, setPanelPosition] = useState({ x: null, y: null });
   const [panelDragging, setPanelDragging] = useState(false);
+  const [isMobileView, setIsMobileView] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 640 : false));
+  const [mobileUsersOpen, setMobileUsersOpen] = useState(false);
+  const [actionMessageId, setActionMessageId] = useState('');
+  const [actionMenuPos, setActionMenuPos] = useState({ x: 0, y: 0 });
+  const [replyTo, setReplyTo] = useState(null);
+  const [editingMessageId, setEditingMessageId] = useState('');
+  const [editText, setEditText] = useState('');
+  const [forwardMessage, setForwardMessage] = useState(null);
+  const [swipeOffsets, setSwipeOffsets] = useState({});
   const fileInputRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const actionMenuRef = useRef(null);
+  const swipeStartRef = useRef({ id: '', x: 0, y: 0, tracking: false });
+  const longPressTimerRef = useRef(null);
+  const longPressStateRef = useRef({
+    id: '',
+    fired: false,
+    startX: 0,
+    startY: 0
+  });
   const dragStartRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0, moved: false });
   const panelDragRef = useRef({ startX: 0, startY: 0, baseX: 0, baseY: 0 });
 
@@ -139,6 +170,33 @@ const InAppChatWidget = () => {
       return haystack.includes(lowered);
     });
   }, [users, query]);
+
+  const actionTargetMessage = useMemo(
+    () => messages.find((msg) => msg._id === actionMessageId) || null,
+    [messages, actionMessageId]
+  );
+
+  const applyMessageUpdate = (updated) => {
+    if (!updated?._id) return;
+    setMessages((prev) => prev.map((msg) => (msg._id === updated._id ? { ...msg, ...updated } : msg)));
+    setUsers((prev) => {
+      const otherId = getUserId(updated.sender) === currentUserId ? getUserId(updated.receiver) : getUserId(updated.sender);
+      if (!otherId) return prev;
+      return prev.map((u) => {
+        if (u._id !== otherId) return u;
+        if (u.lastMessage?._id !== updated._id) return u;
+        return { ...u, lastMessage: { ...u.lastMessage, ...updated } };
+      });
+    });
+    setConversations((prev) => prev.map((row) => {
+      if (!row?.lastMessage?._id || row.lastMessage._id !== updated._id) return row;
+      return { ...row, lastMessage: { ...row.lastMessage, ...updated } };
+    }));
+  };
+
+  const removeMessageLocally = (messageId) => {
+    setMessages((prev) => prev.filter((msg) => msg._id !== messageId));
+  };
 
   const scrollToBottom = () => {
     window.requestAnimationFrame(() => {
@@ -355,6 +413,18 @@ const InAppChatWidget = () => {
       setMessages((prev) => prev.map((msg) => (getUserId(msg.sender) === currentUserId ? { ...msg, readAt: msg.readAt || new Date().toISOString() } : msg)));
     };
 
+    const handleMessageUpdated = (updated) => {
+      const senderId = getUserId(updated?.sender);
+      const receiverId = getUserId(updated?.receiver);
+      if (senderId !== currentUserId && receiverId !== currentUserId) return;
+      applyMessageUpdate(updated);
+    };
+
+    const handleMessageHidden = ({ messageId, userId }) => {
+      if (!messageId || String(userId) !== String(currentUserId)) return;
+      removeMessageLocally(messageId);
+    };
+
     const handleEntityUpdated = (payload) => {
       if (payload?.entity === 'user' && isOpen) {
         refreshUsersAndConversations();
@@ -363,13 +433,38 @@ const InAppChatWidget = () => {
 
     socket.on('chat_message:new', handleIncomingMessage);
     socket.on('chat_message:read', handleRead);
+    socket.on('chat_message:updated', handleMessageUpdated);
+    socket.on('chat_message:hidden', handleMessageHidden);
     socket.on('entity_updated', handleEntityUpdated);
     return () => {
       socket.off('chat_message:new', handleIncomingMessage);
       socket.off('chat_message:read', handleRead);
+      socket.off('chat_message:updated', handleMessageUpdated);
+      socket.off('chat_message:hidden', handleMessageHidden);
       socket.off('entity_updated', handleEntityUpdated);
     };
   }, [socket, currentUserId, selectedUserId, isOpen]);
+
+  useEffect(() => {
+    if (!actionMessageId) return undefined;
+    const onDocClick = (event) => {
+      if (!actionMenuRef.current?.contains(event.target)) {
+        setActionMessageId('');
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('touchstart', onDocClick);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('touchstart', onDocClick);
+    };
+  }, [actionMessageId]);
+
+  useEffect(() => () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+    }
+  }, []);
 
   const onSelectUser = (nextUserId) => {
     setSelectedUserId(nextUserId);
@@ -377,6 +472,12 @@ const InAppChatWidget = () => {
     setDraftText('');
     setPendingFile(null);
     setUploadProgress(0);
+    setActionMessageId('');
+    setReplyTo(null);
+    setEditingMessageId('');
+    setEditText('');
+    setForwardMessage(null);
+    if (isMobileView) setMobileUsersOpen(false);
   };
 
   const onPickFile = (event) => {
@@ -441,6 +542,8 @@ const InAppChatWidget = () => {
     formData.append('receiverId', selectedUserId);
     if (textValue) formData.append('text', textValue);
     if (pendingFile) formData.append('file', pendingFile);
+    if (replyTo?._id) formData.append('replyToMessageId', replyTo._id);
+    if (forwardMessage?._id) formData.append('forwardFromMessageId', forwardMessage._id);
 
     setSending(true);
     setUploadProgress(0);
@@ -492,7 +595,11 @@ const InAppChatWidget = () => {
 
         const completeRes = await axios.post(
           `${API_BASE}${API_ENDPOINTS.chat.completeUpload(uploadId)}`,
-          { text: textValue || '' },
+          {
+            text: textValue || '',
+            replyToMessageId: replyTo?._id || '',
+            forwardFromMessageId: forwardMessage?._id || ''
+          },
           { headers: { Authorization: `Bearer ${token}` } }
         );
         created = completeRes.data;
@@ -509,6 +616,8 @@ const InAppChatWidget = () => {
       setMessages((prev) => (prev.some((msg) => msg._id === created._id) ? prev : [...prev, created]));
       setDraftText('');
       setPendingFile(null);
+      setReplyTo(null);
+      setForwardMessage(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       scrollToBottom();
     } catch (err) {
@@ -523,8 +632,172 @@ const InAppChatWidget = () => {
   const onMessageKeyDown = (event) => {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
-      sendMessage();
+      if (editingMessageId) {
+        saveEditMessage();
+      } else {
+        sendMessage();
+      }
     }
+  };
+
+  const onEditMessage = (msg) => {
+    if (!msg || getUserId(msg.sender) !== currentUserId || msg.deletedForEveryoneAt) return;
+    setEditingMessageId(msg._id);
+    setEditText(msg.text || '');
+    setActionMessageId('');
+  };
+
+  const saveEditMessage = async () => {
+    const nextText = editText.trim();
+    if (!editingMessageId || !nextText) return;
+    try {
+      const res = await axios.patch(
+        `${API_BASE}${API_ENDPOINTS.chat.updateMessage(editingMessageId)}`,
+        { text: nextText },
+        authConfig
+      );
+      applyMessageUpdate(res.data);
+      setEditingMessageId('');
+      setEditText('');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to edit message', 'error');
+    }
+  };
+
+  const copyMessage = async (msg) => {
+    if (!msg || !msg.text) return;
+    try {
+      await navigator.clipboard.writeText(msg.text);
+      addToast('Message copied', 'success');
+    } catch {
+      addToast('Copy failed', 'error');
+    } finally {
+      setActionMessageId('');
+    }
+  };
+
+  const deleteMessage = async (msg, mode) => {
+    if (!msg?._id) return;
+    try {
+      const res = await axios.delete(
+        `${API_BASE}${API_ENDPOINTS.chat.deleteMessage(msg._id)}`,
+        {
+          ...authConfig,
+          data: { mode }
+        }
+      );
+      if (mode === 'me') {
+        removeMessageLocally(msg._id);
+      } else if (res.data?.message) {
+        applyMessageUpdate(res.data.message);
+      }
+      setActionMessageId('');
+      if (replyTo?._id === msg._id) setReplyTo(null);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to delete message', 'error');
+    }
+  };
+
+  const forwardToUser = async (msg, receiverId) => {
+    if (!msg?._id || !receiverId) return;
+    try {
+      await axios.post(
+        `${API_BASE}${API_ENDPOINTS.chat.forwardMessage(msg._id)}`,
+        { receiverIds: [receiverId] },
+        authConfig
+      );
+      setForwardMessage(null);
+      setActionMessageId('');
+      addToast('Message forwarded', 'success');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to forward message', 'error');
+    }
+  };
+
+  const startReplyToMessage = (msg) => {
+    if (!msg?._id) return;
+    setReplyTo(msg);
+    setForwardMessage(null);
+    setActionMessageId('');
+  };
+
+  const onMessageTouchStart = (event, msgId) => {
+    if (!msgId) return;
+    const t = event.touches?.[0];
+    if (!t) return;
+    swipeStartRef.current = { id: msgId, x: t.clientX, y: t.clientY, tracking: true };
+    longPressStateRef.current = {
+      id: msgId,
+      fired: false,
+      startX: t.clientX,
+      startY: t.clientY
+    };
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = window.setTimeout(() => {
+      if (longPressStateRef.current.id !== msgId) return;
+      longPressStateRef.current.fired = true;
+      setActionMessageId(msgId);
+      setActionMenuPos({
+        x: longPressStateRef.current.startX + 10,
+        y: longPressStateRef.current.startY + 10
+      });
+    }, 600);
+  };
+
+  const onMessageTouchMove = (event, msgId) => {
+    if (!msgId || swipeStartRef.current.id !== msgId || !swipeStartRef.current.tracking) return;
+    const t = event.touches?.[0];
+    if (!t) return;
+    const dx = t.clientX - swipeStartRef.current.x;
+    const dy = t.clientY - swipeStartRef.current.y;
+    const lpDx = Math.abs(t.clientX - (longPressStateRef.current.startX || t.clientX));
+    const lpDy = Math.abs(t.clientY - (longPressStateRef.current.startY || t.clientY));
+    if (lpDx > 10 || lpDy > 10) {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+      if (!longPressStateRef.current.fired) {
+        longPressStateRef.current.id = '';
+      }
+    }
+    if (Math.abs(dy) > Math.abs(dx) || dx < 0) return;
+    const offset = Math.min(dx, 92);
+    setSwipeOffsets((prev) => ({ ...prev, [msgId]: offset }));
+  };
+
+  const onMessageTouchEnd = (msg) => {
+    const msgId = msg?._id;
+    if (!msgId) return;
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (longPressStateRef.current.id === msgId && longPressStateRef.current.fired) {
+      setSwipeOffsets((prev) => ({ ...prev, [msgId]: 0 }));
+      swipeStartRef.current = { id: '', x: 0, y: 0, tracking: false };
+      longPressStateRef.current = { id: '', fired: false, startX: 0, startY: 0 };
+      return;
+    }
+    const dx = Number(swipeOffsets[msgId] || 0);
+    if (dx >= 64) {
+      startReplyToMessage(msg);
+    }
+    setSwipeOffsets((prev) => ({ ...prev, [msgId]: 0 }));
+    swipeStartRef.current = { id: '', x: 0, y: 0, tracking: false };
+    longPressStateRef.current = { id: '', fired: false, startX: 0, startY: 0 };
+  };
+
+  const getActionMenuStyle = () => {
+    if (typeof window === 'undefined') return { right: '12px', bottom: '12px' };
+    const menuWidth = 210;
+    const menuHeight = 300;
+    const x = Number(actionMenuPos.x || 0);
+    const y = Number(actionMenuPos.y || 0);
+    return {
+      left: `${Math.max(8, Math.min(x, window.innerWidth - menuWidth - 8))}px`,
+      top: `${Math.max(8, Math.min(y, window.innerHeight - menuHeight - 8))}px`
+    };
   };
 
   useEffect(() => {
@@ -610,7 +883,7 @@ const InAppChatWidget = () => {
     window.addEventListener('touchend', handleEnd);
   };
 
-  const isDesktopViewport = () => typeof window !== 'undefined' && window.innerWidth >= 640;
+  const isDesktopViewport = () => !isMobileView;
 
   const getPanelSize = () => {
     const width = 820;
@@ -704,10 +977,31 @@ const InAppChatWidget = () => {
   };
 
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const updateViewportMode = () => {
+      setIsMobileView(window.innerWidth < 640);
+    };
+    updateViewportMode();
+    window.addEventListener('resize', updateViewportMode);
+    return () => window.removeEventListener('resize', updateViewportMode);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (!isMobileView) {
+      setMobileUsersOpen(false);
+      return;
+    }
+    if (!selectedUserId) {
+      setMobileUsersOpen(true);
+    }
+  }, [isOpen, isMobileView, selectedUserId]);
+
+  useEffect(() => {
     if (!isOpen || !isDesktopViewport()) return;
     if (panelPosition.x !== null && panelPosition.y !== null) return;
     setPanelPosition(getDefaultPanelPosition());
-  }, [isOpen, panelPosition.x, panelPosition.y]);
+  }, [isOpen, isMobileView, panelPosition.x, panelPosition.y]);
 
   useEffect(() => {
     if (!isOpen || panelPosition.x === null || panelPosition.y === null) return;
@@ -743,7 +1037,7 @@ const InAppChatWidget = () => {
 
       {isOpen && (
         <div
-          className={`fixed z-[75] sm:w-[820px] h-[70vh] max-h-[640px] rounded-2xl border border-slate-200/70 bg-white/95 backdrop-blur-xl shadow-[0_25px_60px_rgba(15,23,42,0.25)] overflow-hidden flex ${panelDragging ? 'select-none' : ''} ${panelPosition.x === null || panelPosition.y === null || !isDesktopViewport() ? 'bottom-4 right-4 left-4 sm:left-auto' : ''}`}
+          className={`fixed z-[75] h-[72vh] max-h-[660px] rounded-[28px] border border-[#d2dceb] bg-[#ecf2fb]/95 backdrop-blur-xl shadow-[0_30px_70px_rgba(30,41,59,0.24)] overflow-hidden flex ${panelDragging ? 'select-none' : ''} ${isMobileView ? 'left-2 right-2 bottom-2 h-[76vh] max-h-[76vh] rounded-2xl' : 'sm:w-[840px]'} ${!isMobileView && (panelPosition.x === null || panelPosition.y === null || !isDesktopViewport()) ? 'right-4 left-4 sm:left-auto' : ''}`}
           style={panelPosition.x !== null && panelPosition.y !== null && isDesktopViewport() ? { left: `${panelPosition.x}px`, top: `${panelPosition.y}px` } : undefined}
           onMouseDown={onPanelMouseDown}
           onTouchStart={onPanelTouchStart}
@@ -752,20 +1046,39 @@ const InAppChatWidget = () => {
           onDragLeave={onDragLeave}
           onDrop={onDrop}
         >
-          <aside className="w-[35%] min-w-[250px] max-w-[300px] border-r border-slate-200 bg-[#e8f1ff] flex flex-col">
-            <div data-chat-drag-handle className="px-4 py-3 border-b border-slate-200 bg-white flex items-center justify-between cursor-move select-none">
+          {isMobileView && mobileUsersOpen && (
+            <button
+              type="button"
+              aria-label="Close users list"
+              className="absolute inset-0 z-20 bg-slate-900/25"
+              onClick={() => setMobileUsersOpen(false)}
+            />
+          )}
+
+          <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#c8d4e6] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#c8d4e6] bg-gradient-to-b from-[#dde6f3] via-[#e4ecf7] to-[#ecf2f9] flex flex-col`}>
+            <div data-chat-drag-handle className="px-4 py-3 border-b border-[#c8d4e6] bg-[#d2ddee] flex items-center justify-between cursor-move select-none">
               <div>
-                <h3 className="text-[15px] font-semibold text-slate-900">Chat</h3>
+                <h3 className="text-[15px] font-semibold text-slate-800 tracking-[0.08em] uppercase">Team Chat</h3>
               </div>
+              {isMobileView && (
+                <button
+                  type="button"
+                  className="h-8 w-8 rounded-lg hover:bg-white/60 text-slate-600 inline-flex items-center justify-center"
+                  onClick={() => setMobileUsersOpen(false)}
+                  aria-label="Collapse users"
+                >
+                  <X size={16} />
+                </button>
+              )}
             </div>
-            <div className="p-3 border-b border-slate-200 bg-[#e8f1ff]">
+            <div className="p-3 border-b border-[#cbd6e8] bg-transparent">
               <div className="relative">
-                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search users..."
-                  className="w-full h-9 pl-9 pr-3 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-blue"
+                  className="w-full h-10 pl-9 pr-3 text-sm border border-[#bfcce1] rounded-xl bg-[#f8fbff] text-slate-700 placeholder:text-slate-500 shadow-inner focus:outline-none focus:ring-2 focus:ring-[#9fb4d6] focus:border-[#9fb4d6]"
                 />
               </div>
             </div>
@@ -780,21 +1093,21 @@ const InAppChatWidget = () => {
                     key={person._id}
                     type="button"
                     onClick={() => onSelectUser(person._id)}
-                    className={`w-full px-3 py-2 text-left rounded-xl border transition-all ${selectedUserId === person._id ? 'bg-[#dbe9ff] border-primary-blue/40 shadow-sm' : 'bg-transparent border-transparent hover:bg-[#edf4ff] hover:border-blue-200/70'}`}
+                    className={`w-full px-3 py-2.5 text-left rounded-2xl border transition-all duration-150 ${selectedUserId === person._id ? 'bg-[#b8cbe5] border-[#97afcf] shadow-[0_8px_18px_rgba(71,85,105,0.16)]' : 'bg-white/35 border-transparent hover:bg-white/55 hover:border-[#becde4]'}`}
                   >
                     <div className="flex items-start gap-2.5">
                       <Avatar name={person.name} avatarDataUrl={person.avatarDataUrl} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-900 truncate">{person.name}</p>
-                          <span className="text-[11px] text-slate-400">
+                          <p className="text-sm font-semibold text-slate-800 truncate">{person.name}</p>
+                          <span className="text-[11px] text-slate-500">
                             {person.lastMessageAt ? formatTime(person.lastMessageAt) : ''}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-500 truncate">{person.role}</p>
+                        <p className="text-[11px] text-slate-700/80 truncate">{person.role}</p>
                       </div>
                       {Number(person.unreadCount || 0) > 0 && (
-                        <span className="mt-1 min-w-5 h-5 px-1 rounded-full bg-red-500 text-white text-[11px] font-bold inline-flex items-center justify-center shadow-sm">
+                        <span className="mt-1 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold inline-flex items-center justify-center shadow-sm">
                           {person.unreadCount}
                         </span>
                       )}
@@ -805,7 +1118,7 @@ const InAppChatWidget = () => {
             </div>
           </aside>
 
-          <section className="flex-1 flex flex-col min-w-0 bg-white relative">
+          <section className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_20%_15%,#e9f0fb_0%,#f4f8fd_42%,#edf3fb_100%)] relative overflow-hidden">
             {isDragOver && selectedUserId && (
               <div className="absolute inset-0 z-20 m-3 rounded-2xl border-2 border-dashed border-primary-blue bg-primary-blue/5 pointer-events-none grid place-items-center">
                 <div className="rounded-xl bg-white/90 px-4 py-2 text-sm font-medium text-primary-blue shadow">
@@ -815,16 +1128,27 @@ const InAppChatWidget = () => {
             )}
             {selectedUser ? (
               <>
-                <div data-chat-drag-handle className="h-[56px] px-3 border-b border-slate-200 flex items-center gap-2 bg-white cursor-move select-none">
-                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1.5">
+                <div data-chat-drag-handle className="h-[58px] px-3 border-b border-[#ccd7e8] flex items-center gap-2 bg-[#edf3fb]/80 backdrop-blur-sm cursor-move select-none">
+                  {isMobileView && (
+                    <button
+                      type="button"
+                      onClick={() => setMobileUsersOpen((prev) => !prev)}
+                      className="h-9 w-9 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center justify-center"
+                      aria-label="Toggle users list"
+                      title="Users"
+                    >
+                      <PanelLeft size={16} />
+                    </button>
+                  )}
+                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-xl border border-[#c4d1e4] bg-white/70 px-2.5 py-1.5">
                     <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-8 w-8" />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-900 truncate">{selectedUser.name}</p>
+                      <p className="text-sm font-semibold text-slate-800 truncate">{selectedUser.name}</p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="ml-auto h-9 w-9 rounded-lg hover:bg-red-50 inline-flex items-center justify-center text-red-500 hover:text-red-600 transition-colors"
+                    className="ml-auto h-9 w-9 rounded-lg hover:bg-rose-50 inline-flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors"
                     onClick={() => setIsOpen(false)}
                     aria-label="Close chat"
                     title="Close chat"
@@ -833,29 +1157,69 @@ const InAppChatWidget = () => {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto px-4 py-4 space-y-2 bg-gradient-to-b from-slate-50 to-white">
+                <div className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-4 space-y-2 bg-transparent ${isMobileView ? 'pb-2' : ''}`}>
                   {loadingMessages ? (
                     <div className="text-sm text-slate-500">Loading conversation...</div>
                   ) : messages.length === 0 ? (
                     <div className="text-sm text-slate-500">Start the conversation.</div>
                   ) : (
-                    messages.map((msg, idx) => {
+                    messages.map((msg) => {
                       const mine = getUserId(msg.sender) === currentUserId;
+                      const isDeleted = Boolean(msg.deletedForEveryoneAt);
+                      const swipeOffset = Number(swipeOffsets[msg._id] || 0);
                       return (
                         <div key={msg._id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                          <div className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'bg-gradient-to-br from-[#c9dcff] to-[#a9c8ff] text-slate-900 rounded-br-md' : 'bg-white border border-slate-200 text-slate-900 rounded-bl-md'}`}>
-                            {msg.text ? <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p> : null}
-                            {msg.attachment ? (
-                              <a
-                                href={getAttachmentHref(msg.attachment)}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={`mt-2 inline-flex items-center gap-2 text-xs underline underline-offset-2 ${mine ? 'text-blue-700' : 'text-primary-blue'}`}
-                              >
-                                <Download size={13} />
-                                {msg.attachment.originalName || 'Download file'}
-                              </a>
-                            ) : null}
+                          <div className="relative max-w-[88%]">
+                            {isMobileView && (
+                              <div className={`absolute top-1/2 -translate-y-1/2 ${mine ? '-left-8' : '-right-8'} text-slate-500 transition-opacity ${swipeOffset > 10 ? 'opacity-100' : 'opacity-0'}`}>
+                                <Reply size={16} />
+                              </div>
+                            )}
+                            <div
+                              className="transition-transform duration-150"
+                              style={{ transform: `translateX(${swipeOffset}px)` }}
+                              onTouchStart={(event) => onMessageTouchStart(event, msg._id)}
+                              onTouchMove={(event) => onMessageTouchMove(event, msg._id)}
+                              onTouchEnd={() => onMessageTouchEnd(msg)}
+                              onContextMenu={(event) => {
+                                event.preventDefault();
+                                setActionMessageId(msg._id);
+                                setActionMenuPos({ x: event.clientX + 10, y: event.clientY + 10 });
+                              }}
+                            >
+                              <div className={`rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'bg-gradient-to-br from-[#d7e4f5] to-[#c7d8ee] text-slate-800 border border-[#aec3df] rounded-br-md shadow-[0_8px_16px_rgba(148,163,184,0.22)]' : 'bg-white/88 border border-[#c3d0e4] text-slate-800 rounded-bl-md'}`}>
+                                {msg.isForwarded ? <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Forwarded</p> : null}
+                                {msg.replyTo ? (
+                                  <div className="mb-2 rounded-lg border border-slate-300/80 bg-white/65 px-2 py-1">
+                                    <p className="text-[10px] font-semibold text-slate-600">
+                                      {getUserId(msg.replyTo.sender) === currentUserId ? 'You' : (msg.replyTo.sender?.name || 'Message')}
+                                    </p>
+                                    <p className="text-[11px] text-slate-600 truncate">{toReplyPreview(msg.replyTo)}</p>
+                                  </div>
+                                ) : null}
+                                {isDeleted ? (
+                                  <p className="text-sm italic text-slate-500">{deletedMessageLabel}</p>
+                                ) : (
+                                  <>
+                                    {msg.text ? <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p> : null}
+                                    {msg.attachment ? (
+                                      <a
+                                        href={getAttachmentHref(msg.attachment)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="mt-2 inline-flex items-center gap-2 text-xs underline underline-offset-2 text-blue-700"
+                                      >
+                                        <Download size={13} />
+                                        {msg.attachment.originalName || 'Download file'}
+                                      </a>
+                                    ) : null}
+                                  </>
+                                )}
+                                {msg.editedAt && !isDeleted ? (
+                                  <p className="mt-1 text-[10px] text-slate-500 text-right">edited</p>
+                                ) : null}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -864,16 +1228,57 @@ const InAppChatWidget = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className="border-t border-slate-200 p-3 bg-white">
+                <div className={`border-t border-[#c7d3e5] p-3 bg-[#edf3fb]/90 backdrop-blur-sm ${isMobileView ? 'pb-[max(12px,env(safe-area-inset-bottom))]' : ''}`}>
+                  {replyTo && (
+                    <div className="mb-2 rounded-xl border border-[#c3d0e4] bg-white/85 px-3 py-2 flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold text-slate-600">Replying to {getUserId(replyTo.sender) === currentUserId ? 'yourself' : (replyTo.sender?.name || 'message')}</p>
+                        <p className="text-xs text-slate-600 truncate">{toReplyPreview(replyTo)}</p>
+                      </div>
+                      <button type="button" className="text-slate-500 hover:text-slate-700" onClick={() => setReplyTo(null)} aria-label="Cancel reply">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  )}
+                  {forwardMessage && (
+                    <div className="mb-2 rounded-xl border border-[#c3d0e4] bg-white/85 px-3 py-2">
+                      <p className="text-[11px] font-semibold text-slate-600 mb-2">Forward to...</p>
+                      <div className="max-h-32 overflow-y-auto space-y-1">
+                        {users.filter((u) => u._id !== currentUserId).map((u) => (
+                          <button
+                            key={u._id}
+                            type="button"
+                            onClick={() => forwardToUser(forwardMessage, u._id)}
+                            className="w-full text-left px-2 py-1.5 rounded-lg hover:bg-slate-100 text-sm text-slate-700"
+                          >
+                            {u.name}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="mt-2 text-right">
+                        <button type="button" className="text-xs text-slate-600 hover:text-slate-800" onClick={() => setForwardMessage(null)}>
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {editingMessageId && (
+                    <div className="mb-2 rounded-xl border border-[#c3d0e4] bg-white/85 px-3 py-2 flex items-center justify-between gap-2">
+                      <p className="text-xs text-slate-600">Editing message</p>
+                      <button type="button" className="text-xs text-slate-600 hover:text-slate-800" onClick={() => { setEditingMessageId(''); setEditText(''); }}>
+                        Cancel
+                      </button>
+                    </div>
+                  )}
                   {pendingFile && (
-                    <div className="mb-2 text-xs bg-slate-100 border border-slate-200 rounded-lg px-2 py-1.5 flex items-center justify-between gap-2">
+                    <div className="mb-2 text-xs bg-white/90 border border-[#c3d0e4] rounded-xl px-2 py-1.5 flex items-center justify-between gap-2 text-slate-700">
                       <span className="truncate">
                         {pendingFile.name} ({formatBytes(pendingFile.size)})
                         {sending && uploadProgress > 0 ? ` - Uploading ${uploadProgress}%` : ''}
                       </span>
                       <button
                         type="button"
-                        className="text-red-500 hover:text-red-700 font-medium"
+                        className="text-rose-500 hover:text-rose-700 font-medium"
                         onClick={() => {
                           setPendingFile(null);
                           if (fileInputRef.current) fileInputRef.current.value = '';
@@ -883,42 +1288,59 @@ const InAppChatWidget = () => {
                       </button>
                     </div>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className={`flex items-center gap-2 ${isMobileView ? 'w-full' : ''}`}>
                     <input ref={fileInputRef} type="file" className="hidden" onChange={onPickFile} />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-11 w-11 shrink-0 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 inline-flex items-center justify-center transition-colors"
+                      className="h-11 w-11 shrink-0 rounded-xl border border-[#bccadf] bg-white/90 text-slate-600 hover:bg-white inline-flex items-center justify-center transition-colors"
                       aria-label="Attach file"
                     >
                       <Paperclip size={17} />
                     </button>
                     <input
                       type="text"
-                      value={draftText}
-                      onChange={(e) => setDraftText(e.target.value)}
+                      value={editingMessageId ? editText : draftText}
+                      onChange={(e) => {
+                        if (editingMessageId) {
+                          setEditText(e.target.value);
+                        } else {
+                          setDraftText(e.target.value);
+                        }
+                      }}
                       onKeyDown={onMessageKeyDown}
-                      placeholder="Type your message..."
-                      className="flex-1 h-11 rounded-xl border border-slate-200 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-blue bg-slate-50/70"
+                      placeholder={editingMessageId ? 'Edit your message...' : 'Type your message...'}
+                      className="flex-1 h-11 rounded-xl border border-[#bccadf] px-3 text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#9db2d3] focus:border-[#9db2d3] bg-white/95"
                     />
                     <button
                       type="button"
-                      onClick={sendMessage}
-                      disabled={sending || (!draftText.trim() && !pendingFile)}
-                      className="h-11 w-11 shrink-0 rounded-xl bg-gradient-to-br from-primary-blue to-blue-700 text-white hover:brightness-110 disabled:opacity-60 inline-flex items-center justify-center transition"
-                      aria-label="Send message"
+                      onClick={editingMessageId ? saveEditMessage : sendMessage}
+                      disabled={editingMessageId ? (!editText.trim() || sending) : (sending || (!draftText.trim() && !pendingFile))}
+                      className="h-11 w-11 shrink-0 rounded-xl bg-gradient-to-br from-[#4f739f] to-[#456991] text-white hover:brightness-110 disabled:opacity-60 inline-flex items-center justify-center transition shadow-[0_10px_18px_rgba(71,105,145,0.34)]"
+                      aria-label={editingMessageId ? 'Save edit' : 'Send message'}
                     >
-                      <Send size={16} />
+                      {editingMessageId ? <Pencil size={16} /> : <Send size={16} />}
                     </button>
                   </div>
                 </div>
               </>
             ) : (
               <>
-                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-slate-200 flex items-center justify-end bg-white cursor-move select-none">
+                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-[#ccd8e8] flex items-center justify-between bg-[#edf3fb] cursor-move select-none">
+                  {isMobileView ? (
+                    <button
+                      type="button"
+                      onClick={() => setMobileUsersOpen((prev) => !prev)}
+                      className="h-9 px-3 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center gap-2 text-sm font-medium"
+                      aria-label="Toggle users list"
+                    >
+                      <PanelLeft size={15} />
+                      Chats
+                    </button>
+                  ) : <div />}
                   <button
                     type="button"
-                    className="h-9 w-9 rounded-lg hover:bg-red-50 inline-flex items-center justify-center text-red-500 hover:text-red-600 transition-colors"
+                    className="h-9 w-9 rounded-lg hover:bg-rose-50 inline-flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors"
                     onClick={() => setIsOpen(false)}
                     aria-label="Close chat"
                     title="Close chat"
@@ -932,6 +1354,40 @@ const InAppChatWidget = () => {
               </>
             )}
           </section>
+        </div>
+      )}
+      {actionMessageId && actionTargetMessage && (
+        <div
+          ref={actionMenuRef}
+          className="fixed z-[130] min-w-[200px] rounded-2xl border border-slate-300/90 bg-white/98 backdrop-blur-sm shadow-[0_16px_36px_rgba(15,23,42,0.18)] py-1.5"
+          style={getActionMenuStyle()}
+        >
+          <button type="button" className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 inline-flex items-center gap-2" onClick={() => startReplyToMessage(actionTargetMessage)}>
+            <Reply size={14} /> Reply
+          </button>
+          {!actionTargetMessage.deletedForEveryoneAt && actionTargetMessage.text ? (
+            <button type="button" className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 inline-flex items-center gap-2" onClick={() => copyMessage(actionTargetMessage)}>
+              <Copy size={14} /> Copy
+            </button>
+          ) : null}
+          {!actionTargetMessage.deletedForEveryoneAt && getUserId(actionTargetMessage.sender) === currentUserId && actionTargetMessage.text ? (
+            <button type="button" className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 inline-flex items-center gap-2" onClick={() => onEditMessage(actionTargetMessage)}>
+              <Pencil size={14} /> Edit
+            </button>
+          ) : null}
+          {!actionTargetMessage.deletedForEveryoneAt ? (
+            <button type="button" className="w-full px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 inline-flex items-center gap-2" onClick={() => { setForwardMessage(actionTargetMessage); setActionMessageId(''); }}>
+              <Forward size={14} /> Forward
+            </button>
+          ) : null}
+          <button type="button" className="w-full px-3 py-2 text-left text-sm hover:bg-rose-50 text-rose-600 inline-flex items-center gap-2" onClick={() => deleteMessage(actionTargetMessage, 'me')}>
+            <Trash2 size={14} /> Delete for me
+          </button>
+          {!actionTargetMessage.deletedForEveryoneAt && getUserId(actionTargetMessage.sender) === currentUserId ? (
+            <button type="button" className="w-full px-3 py-2 text-left text-sm hover:bg-rose-50 text-rose-600 inline-flex items-center gap-2" onClick={() => deleteMessage(actionTargetMessage, 'everyone')}>
+              <Trash2 size={14} /> Delete for everyone
+            </button>
+          ) : null}
         </div>
       )}
     </>

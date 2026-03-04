@@ -16,7 +16,13 @@ const ChatMessageSchema = new mongoose.Schema({
     receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     text: { type: String, default: '', trim: true, maxlength: 3000 },
     attachment: { type: ChatAttachmentSchema, default: null },
-    readAt: { type: Date, default: null }
+    readAt: { type: Date, default: null },
+    replyTo: { type: mongoose.Schema.Types.ObjectId, ref: 'ChatMessage', default: null },
+    editedAt: { type: Date, default: null },
+    deletedForEveryoneAt: { type: Date, default: null },
+    deletedForUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    isForwarded: { type: Boolean, default: false },
+    forwardedFrom: { type: mongoose.Schema.Types.ObjectId, ref: 'ChatMessage', default: null }
 }, { timestamps: true });
 
 ChatMessageSchema.index({ sender: 1, receiver: 1, createdAt: -1 });
