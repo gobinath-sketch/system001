@@ -5,6 +5,10 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 
 const router = express.Router();
+const PROFILE_AVATAR_MAX_BYTES = Number.parseInt(
+    process.env.PROFILE_AVATAR_MAX_BYTES || process.env.CHAT_MAX_FILE_SIZE_BYTES || String(100 * 1024 * 1024),
+    10
+);
 
 const SETTINGS_ALLOWED_FIELDS = {
     profile: ['firstName', 'lastName', 'email', 'backupEmail', 'phone', 'designation', 'department', 'language', 'timezone', 'weekStartsOn', 'avatarDataUrl'],
@@ -54,6 +58,16 @@ const sanitizeSettingsPayload = (payload = {}) => {
     }
 
     return out;
+};
+
+const getBase64DataUrlSizeBytes = (value = '') => {
+    const str = String(value || '');
+    const commaIndex = str.indexOf(',');
+    if (!str.startsWith('data:') || commaIndex < 0) return 0;
+    const base64 = str.slice(commaIndex + 1);
+    if (!base64) return 0;
+    const padding = (base64.endsWith('==') ? 2 : (base64.endsWith('=') ? 1 : 0));
+    return Math.max(0, Math.floor((base64.length * 3) / 4) - padding);
 };
 
 const ensureSettingsShape = (user) => {
@@ -112,6 +126,14 @@ router.get('/me', protect, async (req, res) => {
 router.put('/me', protect, async (req, res) => {
     try {
         const updates = sanitizeSettingsPayload(req.body || {});
+        if (typeof updates?.profile?.avatarDataUrl === 'string' && updates.profile.avatarDataUrl.trim().startsWith('data:')) {
+            const avatarSize = getBase64DataUrlSizeBytes(updates.profile.avatarDataUrl.trim());
+            if (avatarSize > PROFILE_AVATAR_MAX_BYTES) {
+                return res.status(400).json({
+                    message: `Profile picture exceeds ${Math.round(PROFILE_AVATAR_MAX_BYTES / (1024 * 1024))}MB limit`
+                });
+            }
+        }
         const user = await User.findById(req.user._id);
         if (!user) return res.status(404).json({ message: 'User not found' });
         ensureSettingsShape(user);
