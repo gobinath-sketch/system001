@@ -1132,8 +1132,8 @@ const InAppChatWidget = () => {
             />
           )}
 
-          <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#c8d4e6] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#c8d4e6] bg-gradient-to-b from-[#dde6f3] via-[#e4ecf7] to-[#ecf2f9] flex flex-col`}>
-            <div data-chat-drag-handle className="h-[46px] px-4 border-b border-[#c8d4e6] bg-[#d2ddee] flex items-center justify-between cursor-move select-none">
+          <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#b9d6d1] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#b9d6d1] bg-gradient-to-b from-[#d8efea] via-[#e1f4f0] to-[#ecf9f6] flex flex-col`}>
+            <div data-chat-drag-handle className="h-[46px] px-4 border-b border-[#b9d6d1] bg-[#cce7e2] flex items-center justify-between cursor-move select-none">
               <div>
                 <h3 className="text-[16px] font-extrabold text-slate-900 tracking-[0.06em] uppercase">Chat</h3>
               </div>
@@ -1148,7 +1148,7 @@ const InAppChatWidget = () => {
                 </button>
               )}
             </div>
-            <div className="p-3 border-b border-[#cbd6e8] bg-transparent">
+            <div className="p-3 border-b border-[#c2ddd8] bg-transparent">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -1170,7 +1170,7 @@ const InAppChatWidget = () => {
                     key={person._id}
                     type="button"
                     onClick={() => onSelectUser(person._id)}
-                    className={`w-full px-3 py-2.5 text-left rounded-2xl border transition-all duration-150 ${selectedUserId === person._id ? 'bg-[#b8cbe5] border-[#97afcf] shadow-[0_8px_18px_rgba(71,85,105,0.16)]' : 'bg-white/35 border-transparent hover:bg-white/55 hover:border-[#becde4]'}`}
+                    className={`w-full px-3 py-2.5 text-left rounded-2xl border transition-all duration-150 ${selectedUserId === person._id ? 'bg-[#b7dfd7] border-[#86c7ba] shadow-[0_8px_18px_rgba(71,85,105,0.16)]' : 'bg-white/35 border-transparent hover:bg-white/55 hover:border-[#b7d7d2]'}`}
                   >
                     <div className="flex items-start gap-2.5">
                       <Avatar name={person.name} avatarDataUrl={person.avatarDataUrl} />
@@ -1195,7 +1195,7 @@ const InAppChatWidget = () => {
             </div>
           </aside>
 
-          <section className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_20%_15%,#e9f0fb_0%,#f4f8fd_42%,#edf3fb_100%)] relative overflow-hidden">
+          <section className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_20%_15%,#e7f5f1_0%,#f3fbf9_42%,#eaf7f3_100%)] relative overflow-hidden">
             {isDragOver && selectedUserId && (
               <div className="absolute inset-0 z-20 m-3 rounded-2xl border-2 border-dashed border-primary-blue bg-primary-blue/5 pointer-events-none grid place-items-center">
                 <div className="rounded-xl bg-white/90 px-4 py-2 text-sm font-medium text-primary-blue shadow">
@@ -1205,12 +1205,12 @@ const InAppChatWidget = () => {
             )}
             {selectedUser ? (
               <>
-                <div data-chat-drag-handle className="h-[46px] px-3 border-b border-[#ccd7e8] flex items-center gap-2 bg-[#edf3fb]/80 backdrop-blur-sm cursor-move select-none">
+                <div data-chat-drag-handle className="h-[46px] px-3 border-b border-[#c2ddd8] flex items-center gap-2 bg-[#eaf7f4]/90 backdrop-blur-sm cursor-move select-none">
                   {isMobileView && (
                     <button
                       type="button"
                       onClick={() => setMobileUsersOpen((prev) => !prev)}
-                      className="h-8 w-8 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center justify-center"
+                      className="h-8 w-8 rounded-lg border border-[#b9d6d1] bg-white/80 text-slate-700 inline-flex items-center justify-center"
                       aria-label="Toggle users list"
                       title="Users"
                     >
@@ -1312,7 +1312,7 @@ const InAppChatWidget = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className={`border-t border-[#c7d3e5] p-3 bg-[#edf3fb]/90 backdrop-blur-sm ${isMobileView ? 'pb-[max(12px,env(safe-area-inset-bottom))]' : ''}`}>
+                <div className={`border-t border-[#c2ddd8] p-3 bg-[#eaf7f4]/90 backdrop-blur-sm ${isMobileView ? 'pb-[max(12px,env(safe-area-inset-bottom))]' : ''}`}>
                   {replyTo && (
                     <div className="mb-2 rounded-xl border border-[#c3d0e4] bg-white/85 px-3 py-2 flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -1377,7 +1377,7 @@ const InAppChatWidget = () => {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-11 w-11 shrink-0 rounded-xl border border-[#bccadf] bg-white/90 text-slate-600 hover:bg-white inline-flex items-center justify-center transition-colors"
+                      className="h-11 w-11 shrink-0 rounded-xl border border-[#b9d6d1] bg-white/90 text-slate-600 hover:bg-white inline-flex items-center justify-center transition-colors"
                       aria-label="Attach file"
                     >
                       <Paperclip size={17} />
@@ -1394,13 +1394,13 @@ const InAppChatWidget = () => {
                       }}
                       onKeyDown={onMessageKeyDown}
                       placeholder={editingMessageId ? 'Edit your message...' : 'Type your message...'}
-                      className="flex-1 h-11 rounded-xl border border-[#bccadf] px-3 text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#9db2d3] focus:border-[#9db2d3] bg-white/95"
+                      className="flex-1 h-11 rounded-xl border border-[#b9d6d1] px-3 text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#7ec8bb] focus:border-[#7ec8bb] bg-white/95"
                     />
                     <button
                       type="button"
                       onClick={editingMessageId ? saveEditMessage : sendMessage}
                       disabled={editingMessageId ? (!editText.trim() || sending) : (sending || (!draftText.trim() && !pendingFile))}
-                      className="h-11 w-11 shrink-0 rounded-xl bg-gradient-to-br from-[#4f739f] to-[#456991] text-white hover:brightness-110 disabled:opacity-60 inline-flex items-center justify-center transition shadow-[0_10px_18px_rgba(71,105,145,0.34)]"
+                      className="h-11 w-11 shrink-0 rounded-xl bg-gradient-to-br from-[#3f8f9c] to-[#337786] text-white hover:brightness-110 disabled:opacity-60 inline-flex items-center justify-center transition shadow-[0_10px_18px_rgba(51,119,134,0.34)]"
                       aria-label={editingMessageId ? 'Save edit' : 'Send message'}
                     >
                       {editingMessageId ? <Pencil size={16} /> : <Send size={16} />}
@@ -1410,12 +1410,12 @@ const InAppChatWidget = () => {
               </>
             ) : (
               <>
-                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-[#ccd8e8] flex items-center justify-between bg-[#edf3fb] cursor-move select-none">
+                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-[#c2ddd8] flex items-center justify-between bg-[#eaf7f4] cursor-move select-none">
                   {isMobileView ? (
                     <button
                       type="button"
                       onClick={() => setMobileUsersOpen((prev) => !prev)}
-                      className="h-9 px-3 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center gap-2 text-sm font-medium"
+                      className="h-9 px-3 rounded-lg border border-[#b9d6d1] bg-white/80 text-slate-700 inline-flex items-center gap-2 text-sm font-medium"
                       aria-label="Toggle users list"
                     >
                       <PanelLeft size={15} />
