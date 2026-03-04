@@ -61,9 +61,11 @@ const chatRoutes = require('./routes/chatRoutes');
 
 // Force Restart Tracker
 const notificationRoutes = require('./routes/notifications');
+const userRoutes = require('./routes/userRoutes');
 
 // Route middleware
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/dashboard', dashboardRoutes);

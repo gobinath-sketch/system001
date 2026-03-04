@@ -9,6 +9,11 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/api/auth/login',
   },
+  users: {
+    root: '/api/users',
+    byId: (id) => `/api/users/${id}`,
+    resetPassword: (id) => `/api/users/${id}/reset-password`,
+  },
   clients: {
     root: '/api/clients',
     checkDuplicate: '/api/clients/check-duplicate',
