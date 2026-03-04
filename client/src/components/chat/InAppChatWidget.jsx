@@ -1058,7 +1058,7 @@ const InAppChatWidget = () => {
           <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#c8d4e6] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#c8d4e6] bg-gradient-to-b from-[#dde6f3] via-[#e4ecf7] to-[#ecf2f9] flex flex-col`}>
             <div data-chat-drag-handle className="px-4 py-3 border-b border-[#c8d4e6] bg-[#d2ddee] flex items-center justify-between cursor-move select-none">
               <div>
-                <h3 className="text-[15px] font-semibold text-slate-800 tracking-[0.08em] uppercase">Team Chat</h3>
+                <h3 className="text-[16px] font-extrabold text-slate-900 tracking-[0.06em] uppercase">Chat</h3>
               </div>
               {isMobileView && (
                 <button
@@ -1078,7 +1078,7 @@ const InAppChatWidget = () => {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search users..."
-                  className="w-full h-10 pl-9 pr-3 text-sm border border-[#bfcce1] rounded-xl bg-[#f8fbff] text-slate-700 placeholder:text-slate-500 shadow-inner focus:outline-none focus:ring-2 focus:ring-[#9fb4d6] focus:border-[#9fb4d6]"
+                  className="w-full h-10 pl-9 pr-3 text-sm font-medium border border-[#bfcce1] rounded-xl bg-[#f8fbff] text-slate-800 placeholder:text-slate-500 shadow-inner focus:outline-none focus:ring-2 focus:ring-[#9fb4d6] focus:border-[#9fb4d6]"
                 />
               </div>
             </div>
@@ -1099,12 +1099,12 @@ const InAppChatWidget = () => {
                       <Avatar name={person.name} avatarDataUrl={person.avatarDataUrl} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="text-sm font-semibold text-slate-800 truncate">{person.name}</p>
-                          <span className="text-[11px] text-slate-500">
+                          <p className="text-sm font-bold text-slate-900 truncate">{person.name}</p>
+                          <span className="text-[11px] font-medium text-slate-600">
                             {person.lastMessageAt ? formatTime(person.lastMessageAt) : ''}
                           </span>
                         </div>
-                        <p className="text-[11px] text-slate-700/80 truncate">{person.role}</p>
+                        <p className="text-[12px] font-medium text-slate-700/90 truncate">{person.role}</p>
                       </div>
                       {Number(person.unreadCount || 0) > 0 && (
                         <span className="mt-1 min-w-5 h-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold inline-flex items-center justify-center shadow-sm">
@@ -1143,7 +1143,7 @@ const InAppChatWidget = () => {
                   <div className="inline-flex max-w-[70%] items-center gap-2 rounded-xl border border-[#c4d1e4] bg-white/70 px-2.5 py-1.5">
                     <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-8 w-8" />
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-slate-800 truncate">{selectedUser.name}</p>
+                      <p className="text-sm font-bold text-slate-900 truncate">{selectedUser.name}</p>
                     </div>
                   </div>
                   <button
@@ -1188,26 +1188,31 @@ const InAppChatWidget = () => {
                               }}
                             >
                               <div className={`rounded-2xl px-3.5 py-2.5 shadow-sm ${mine ? 'bg-gradient-to-br from-[#d7e4f5] to-[#c7d8ee] text-slate-800 border border-[#aec3df] rounded-br-md shadow-[0_8px_16px_rgba(148,163,184,0.22)]' : 'bg-white/88 border border-[#c3d0e4] text-slate-800 rounded-bl-md'}`}>
-                                {msg.isForwarded ? <p className="text-[10px] uppercase tracking-wide text-slate-500 mb-1">Forwarded</p> : null}
+                                {msg.isForwarded ? <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-600 mb-1">Forwarded</p> : null}
                                 {msg.replyTo ? (
                                   <div className="mb-2 rounded-lg border border-slate-300/80 bg-white/65 px-2 py-1">
-                                    <p className="text-[10px] font-semibold text-slate-600">
+                                    <p className="text-[10px] font-bold text-slate-700">
                                       {getUserId(msg.replyTo.sender) === currentUserId ? 'You' : (msg.replyTo.sender?.name || 'Message')}
                                     </p>
-                                    <p className="text-[11px] text-slate-600 truncate">{toReplyPreview(msg.replyTo)}</p>
+                                    <p className="text-[11px] font-medium text-slate-700 truncate">{toReplyPreview(msg.replyTo)}</p>
                                   </div>
                                 ) : null}
                                 {isDeleted ? (
-                                  <p className="text-sm italic text-slate-500">{deletedMessageLabel}</p>
+                                  <p className="text-sm italic font-medium text-slate-600">{deletedMessageLabel}</p>
                                 ) : (
                                   <>
-                                    {msg.text ? <p className="text-sm whitespace-pre-wrap break-words">{msg.text}</p> : null}
+                                    {msg.text ? (
+                                      <p className="text-sm font-medium text-slate-900 whitespace-pre-wrap break-words">
+                                        {msg.text}
+                                        {msg.editedAt ? <span className="ml-1 text-[10px] font-medium italic tracking-wide text-slate-500/90 align-baseline leading-none">(edited)</span> : null}
+                                      </p>
+                                    ) : null}
                                     {msg.attachment ? (
                                       <a
                                         href={getAttachmentHref(msg.attachment)}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="mt-2 inline-flex items-center gap-2 text-xs underline underline-offset-2 text-blue-700"
+                                        className="mt-2 inline-flex items-center gap-2 text-xs font-medium underline underline-offset-2 text-blue-700"
                                       >
                                         <Download size={13} />
                                         {msg.attachment.originalName || 'Download file'}
@@ -1215,9 +1220,6 @@ const InAppChatWidget = () => {
                                     ) : null}
                                   </>
                                 )}
-                                {msg.editedAt && !isDeleted ? (
-                                  <p className="mt-1 text-[10px] text-slate-500 text-right">edited</p>
-                                ) : null}
                               </div>
                             </div>
                           </div>
@@ -1232,8 +1234,8 @@ const InAppChatWidget = () => {
                   {replyTo && (
                     <div className="mb-2 rounded-xl border border-[#c3d0e4] bg-white/85 px-3 py-2 flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="text-[11px] font-semibold text-slate-600">Replying to {getUserId(replyTo.sender) === currentUserId ? 'yourself' : (replyTo.sender?.name || 'message')}</p>
-                        <p className="text-xs text-slate-600 truncate">{toReplyPreview(replyTo)}</p>
+                        <p className="text-[11px] font-bold text-slate-700">Replying to {getUserId(replyTo.sender) === currentUserId ? 'yourself' : (replyTo.sender?.name || 'message')}</p>
+                        <p className="text-xs font-medium text-slate-700 truncate">{toReplyPreview(replyTo)}</p>
                       </div>
                       <button type="button" className="text-slate-500 hover:text-slate-700" onClick={() => setReplyTo(null)} aria-label="Cancel reply">
                         <X size={14} />
@@ -1310,7 +1312,7 @@ const InAppChatWidget = () => {
                       }}
                       onKeyDown={onMessageKeyDown}
                       placeholder={editingMessageId ? 'Edit your message...' : 'Type your message...'}
-                      className="flex-1 h-11 rounded-xl border border-[#bccadf] px-3 text-sm text-slate-800 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#9db2d3] focus:border-[#9db2d3] bg-white/95"
+                      className="flex-1 h-11 rounded-xl border border-[#bccadf] px-3 text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#9db2d3] focus:border-[#9db2d3] bg-white/95"
                     />
                     <button
                       type="button"
