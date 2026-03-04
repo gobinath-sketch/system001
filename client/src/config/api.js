@@ -9,6 +9,11 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/api/auth/login',
   },
+  users: {
+    root: '/api/users',
+    byId: (id) => `/api/users/${id}`,
+    resetPassword: (id) => `/api/users/${id}/reset-password`,
+  },
   clients: {
     root: '/api/clients',
     checkDuplicate: '/api/clients/check-duplicate',
@@ -74,6 +79,21 @@ export const API_ENDPOINTS = {
     exportData: '/api/settings/me/export-data',
     requestDeactivation: '/api/settings/me/request-deactivation',
     exportProfileCard: '/api/settings/me/export-profile-card',
+  },
+  chat: {
+    users: '/api/chat/users',
+    conversations: '/api/chat/conversations',
+    messagesByUser: (userId) => `/api/chat/messages/${userId}`,
+    sendMessage: '/api/chat/messages',
+    updateMessage: (messageId) => `/api/chat/messages/${messageId}`,
+    deleteMessage: (messageId) => `/api/chat/messages/${messageId}`,
+    forwardMessage: (messageId) => `/api/chat/messages/${messageId}/forward`,
+    uploadConfig: '/api/chat/uploads/config',
+    initiateUpload: '/api/chat/uploads/initiate',
+    uploadChunk: (uploadId, index) => `/api/chat/uploads/${uploadId}/chunk?index=${index}`,
+    completeUpload: (uploadId) => `/api/chat/uploads/${uploadId}/complete`,
+    cancelUpload: (uploadId) => `/api/chat/uploads/${uploadId}`,
+    markConversationRead: (userId) => `/api/chat/conversations/${userId}/read`,
   },
 };
 

@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 5000;
 const path = require('path');
 
 // Middleware
-app.use(express.json());
+app.use(express.json({ limit: '100mb' }));
+app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors(corsOptions));
 app.use((req, res, next) => {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
@@ -56,12 +57,15 @@ const smeRoutes = require('./routes/smeRoutes');
 
 const reportRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settingsRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 // Force Restart Tracker
 const notificationRoutes = require('./routes/notifications');
+const userRoutes = require('./routes/userRoutes');
 
 // Route middleware
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
@@ -74,6 +78,7 @@ app.use('/api/smes', smeRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes.router);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
     res.send('ERP API Running');
@@ -97,6 +102,14 @@ io.on('connection', (socket) => {
     socket.on('join_room', (userId) => {
         socket.join(userId);
         // console.log(`User ${userId} joined room`);
+    });
+
+    socket.on('chat_typing', ({ toUserId, fromUserId, isTyping }) => {
+        if (!toUserId || !fromUserId) return;
+        io.to(String(toUserId)).emit('chat_typing', {
+            fromUserId: String(fromUserId),
+            isTyping: Boolean(isTyping)
+        });
     });
 
     socket.on('disconnect', () => {

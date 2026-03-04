@@ -273,7 +273,7 @@ router.get('/delivery-users', protect, async (req, res) => {
 // @access  Private
 router.get('/', protect, async (req, res) => {
     try {
-        let filter = {};
+        let filter = { isDeleted: { $ne: true } };
 
         if (req.user.role !== 'Director' && req.user.role !== 'Finance') {
             // Delivery hierarchy: Delivery Head sees all, Executive sees only assigned
@@ -951,34 +951,6 @@ router.put('/:id/expenses', protect, authorize('Delivery Head', 'Delivery Execut
     }
 });
 
-// @route   DELETE /api/opportunities/:id
-// @desc    Delete opportunity (Sales only, if not in delivery)
-// @access  Private (Sales Executive, Sales Manager)
-router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head'), async (req, res) => {
-    try {
-        const opportunity = await Opportunity.findById(req.params.id);
-
-        if (!opportunity) {
-            return res.status(404).json({ message: 'Opportunity not found' });
-        }
-
-        // Check if user has permission (creator or their manager)
-        const accessibleUserIds = await getAccessibleUserIds(req.user);
-        if (!accessibleUserIds.includes(opportunity.createdBy.toString()) && req.user.role !== 'Sales Manager') {
-            return res.status(403).json({ message: 'Not authorized to delete this opportunity' });
-        }
-
-        // Prevent deletion if in delivery phase
-        if (opportunity.commonDetails.status === 'In Progress' || opportunity.commonDetails.status === 'Completed') {
-            return res.status(400).json({ message: 'Cannot delete opportunity in delivery phase' });
-        }
-
-        await opportunity.deleteOne();
-        res.json({ message: 'Opportunity deleted' });
-    } catch (error) {
-        res.status(500).json({ message: error.message });
-    }
-});
 
 // @route   GET /api/opportunities/:id/progress
 // @desc    Get detailed progress breakdown for an opportunity
@@ -1482,6 +1454,53 @@ router.post('/:id/upload-expense-doc', protect, authorize('Delivery Head', 'Deli
     } catch (err) {
         console.error('Upload Error:', err);
         res.status(500).json({ message: err.message });
+    }
+});
+
+// @route   DELETE /api/opportunities/:id
+// @desc    Soft delete an opportunity
+// @access  Private (Sales Executive, Sales Manager, Business Head, Super Admin, Director)
+router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head', 'Super Admin', 'Director'), async (req, res) => {
+    try {
+
+        const opportunity = await Opportunity.findById(req.params.id);
+
+        if (!opportunity) {
+            console.log("Opportunity not found");
+            return res.status(404).json({ message: 'Opportunity not found' });
+        }
+
+        // Only allow creators or higher ups in their chain to delete.
+        const accessibleUserIds = await getAccessibleUserIds(req.user);
+        const accessibleUserIdsStrs = accessibleUserIds.map(id => id.toString());
+
+        if (req.user.role !== 'Director' && req.user.role !== 'Super Admin' && !accessibleUserIdsStrs.includes(opportunity.createdBy ? opportunity.createdBy.toString() : '')) {
+            return res.status(403).json({ message: 'You do not have permission to delete this opportunity' });
+        }
+
+        // Prevent deletion if in delivery phase
+        if (opportunity.commonDetails && (opportunity.commonDetails.status === 'In Progress' || opportunity.commonDetails.status === 'Completed')) {
+            return res.status(400).json({ message: 'Cannot delete opportunity in delivery phase' });
+        }
+
+        opportunity.isDeleted = true;
+        await opportunity.save();
+
+        // Notify reporting manager
+        if (req.user.reportingManager) {
+            await Notification.create({
+                recipientId: req.user.reportingManager,
+                type: 'general',
+                message: `Opportunity "${opportunity.opportunityNumber}" was deleted by ${req.user.name}.`,
+                triggeredBy: req.user._id,
+                triggeredByName: req.user.name,
+                targetTab: 'opportunity_list'
+            });
+        }
+
+        res.json({ message: 'Opportunity deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 

@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const Client = require('../models/Client');
 const User = require('../models/User');
+const Opportunity = require('../models/Opportunity');
+const Notification = require('../models/Notification');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { normalizeSector } = require('../utils/sector');
 
@@ -94,7 +96,7 @@ router.get('/', protect, async (req, res) => {
         const accessibleUserIds = await getAccessibleUserIds(req.user);
         console.log('📋 Accessible user IDs:', accessibleUserIds);
 
-        let filter = {};
+        let filter = { isDeleted: { $ne: true } };
         if (accessibleUserIds.length > 0) {
             filter.createdBy = { $in: accessibleUserIds };
         }
@@ -105,8 +107,17 @@ router.get('/', protect, async (req, res) => {
             .populate('createdBy', 'name creatorCode')
             .sort({ createdAt: -1 });
 
-        console.log(`✅ Found ${clients.length} clients`);
-        res.json(clients);
+        // Calculate 'Opp. given' for each client
+        const clientsWithCount = await Promise.all(clients.map(async (client) => {
+            const oppGiven = await Opportunity.countDocuments({
+                client: client._id,
+                isDeleted: { $ne: true }
+            });
+            return { ...client.toObject(), oppGiven };
+        }));
+
+        console.log(`✅ Found ${clientsWithCount.length} clients`);
+        res.json(clientsWithCount);
     } catch (error) {
         console.error('❌ Error fetching clients:', error);
         res.status(500).json({ message: error.message });
@@ -143,6 +154,41 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Busin
     } catch (error) {
         console.error('❌ Error updating client:', error.message);
         res.status(400).json({ message: error.message });
+    }
+});
+
+// @route   DELETE /api/clients/:id
+// @desc    Soft delete a client
+// @access  Private (Sales Executive, Sales Manager, Business Head, Super Admin, Director)
+router.delete('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Business Head', 'Super Admin', 'Director'), async (req, res) => {
+    try {
+        console.log(`🗑️ Soft deleting client ${req.params.id}`);
+
+        let client = await Client.findById(req.params.id);
+
+        if (!client) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        client.isDeleted = true;
+        await client.save();
+
+        // Notify reporting manager
+        if (req.user.reportingManager) {
+            await Notification.create({
+                recipientId: req.user.reportingManager,
+                type: 'general',
+                message: `Client "${client.companyName}" was deleted by ${req.user.name}.`,
+                triggeredBy: req.user._id,
+                triggeredByName: req.user.name,
+                targetTab: 'client_list'
+            });
+        }
+
+        res.json({ message: 'Client deleted successfully' });
+    } catch (error) {
+        console.error('❌ Error deleting client:', error.message);
+        res.status(500).json({ message: error.message });
     }
 });
 

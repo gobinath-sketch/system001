@@ -9,7 +9,7 @@ import { useSocket } from '../context/SocketContext';
 import { validateMobile, validateEmail, validateLinkedIn } from '../utils/validation';
 import { API_BASE } from '../config/api';
 import IntlPhoneField from '../components/form/IntlPhoneField';
-import CountrySelectField from '../components/form/CountrySelectField';
+import AlertModal from '../components/ui/AlertModal';
 const CLIENT_DRAFT_KEY = 'erp_client_drafts_v1';
 const LEGACY_CLIENT_DRAFT_KEY = 'erp_client_create_draft_v1';
 
@@ -101,6 +101,8 @@ const ClientPage = () => {
   const [filterCreator, setFilterCreator] = useState('');
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateClientData, setDuplicateClientData] = useState(null);
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, clientId: null });
+
   const checkDuplicate = async name => {
     // Skip check if empty or if we are editing the same client and name hasn't changed (case insensitive)
     if (!name) return;
@@ -208,6 +210,21 @@ const ClientPage = () => {
     } catch (err) {
       console.error('Error fetching clients:', err);
       addToast('Failed to load clients. Please try again.', 'error');
+    }
+  };
+
+  const handleDeleteClient = async (clientId) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      await axios.delete(`${API_BASE}/api/clients/${clientId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      addToast('Client deleted successfully', 'success');
+      fetchClients();
+    } catch (err) {
+      console.error('Error deleting client:', err);
+      const msg = err.response?.data?.message || 'Failed to delete client';
+      addToast(msg, 'error');
     }
   };
 
@@ -643,6 +660,9 @@ const ClientPage = () => {
       </div>
     </div>
   </div>;
+
+  const isSalesRole = ['Sales Executive', 'Sales Manager', 'Business Head'].includes(user?.role);
+
   return <div className="p-3 sm:p-5 relative">
     {/* Contact Detail Modal */}
     {selectedContact && <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }} onClick={() => setSelectedContact(null)}>
@@ -858,13 +878,15 @@ const ClientPage = () => {
           <table className="min-w-full text-left text-[16px] relative">
             <thead className="border-b border-gray-200 sticky top-0 bg-white z-10 shadow-sm">
               <tr>
-                <th className="px-6 py-3 font-semibold text-gray-900">Company Name</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Contact Person</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Designation</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Location</th>
-                <th className="px-6 py-3 font-semibold text-gray-900">Contact Info</th>
-                {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900">Created By</th>}
-                <th className="px-6 py-3 font-semibold text-gray-900">Add Opportunity</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Company Name</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Contact Person</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Designation</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Location</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Contact Info</th>
+                {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900 w-[10%]">Created By</th>}
+                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Opp. given</th>
+                <th className="px-6 py-3 font-semibold text-gray-900 text-center whitespace-nowrap">Add Opportunity</th>
+                {isSalesRole && <th className="px-6 py-3 font-semibold text-gray-900 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -890,19 +912,34 @@ const ClientPage = () => {
                   {['Sales Manager', 'Business Head'].includes(user?.role) && <td className="px-6 py-4 text-gray-500">
                     {client.createdBy?.name || 'N/A'}
                   </td>}
-                  <td className="px-6 py-4">
-                    <button onClick={e => {
-                      e.stopPropagation();
-                      navigate('/opportunities', {
-                        state: {
-                          createOpportunity: true,
-                          clientId: client._id
-                        }
-                      });
-                    }} className="text-white bg-blue-900 p-2 rounded-md transition-colors" title="Create Opportunity">
-                      <Plus size={20} />
-                    </button>
+                  <td className="px-6 py-4 text-center font-medium text-gray-800">
+                    {client.oppGiven || 0}
                   </td>
+                  <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center">
+                      <button onClick={e => {
+                        e.stopPropagation();
+                        navigate('/opportunities', {
+                          state: {
+                            createOpportunity: true,
+                            clientId: client._id
+                          }
+                        });
+                      }} className="text-white bg-blue-900 p-2 rounded-md transition-colors" title="Create Opportunity">
+                        <Plus size={20} />
+                      </button>
+                    </div>
+                  </td>
+                  {isSalesRole && <td className="px-6 py-4 text-center">
+                    <div className="flex justify-center">
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteModal({ isOpen: true, clientId: client._id });
+                      }} className="bg-red-100 hover:bg-red-200 text-red-600 transition-colors p-2 rounded-md" title="Delete Client">
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  </td>}
                 </tr>;
               }) : <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
@@ -914,6 +951,22 @@ const ClientPage = () => {
         </div>
       </div>
     </>}
+
+
+    {/* Delete Confirmation Modal */}
+    <AlertModal
+      isOpen={deleteModal.isOpen}
+      onClose={() => setDeleteModal({ isOpen: false, clientId: null })}
+      title="Delete Client"
+      message="Are you sure you want to delete this client? This action will remove the client from your view and notify your reporting manager."
+      confirmText="Yes, Delete"
+      cancelText="Cancel"
+      type="danger"
+      onConfirm={() => {
+        handleDeleteClient(deleteModal.clientId);
+        setDeleteModal({ isOpen: false, clientId: null });
+      }}
+    />
   </div>;
 };
 export default ClientPage;

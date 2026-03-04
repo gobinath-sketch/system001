@@ -77,6 +77,7 @@ const OpportunityPage = () => {
   const [filterType, setFilterType] = useState('');
   const [filterMonth, setFilterMonth] = useState('');
   const [filterYear, setFilterYear] = useState('');
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, oppId: null });
 
   // Status Modal State
   const [statusModal, setStatusModal] = useState({
@@ -154,6 +155,21 @@ const OpportunityPage = () => {
       console.error('Status update failed', error);
       // Display specific validation message from backend (e.g. missing docs)
       const msg = error.response?.data?.message || 'Failed to update status';
+      addToast(msg, 'error');
+    }
+  };
+
+  const handleDeleteOpportunity = async (oppId) => {
+    try {
+      const token = sessionStorage.getItem('token');
+      await axios.delete(`${API_BASE}/api/opportunities/${oppId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      addToast('Opportunity deleted successfully', 'success');
+      fetchOpportunities();
+    } catch (err) {
+      console.error('Error deleting opportunity:', err);
+      const msg = err.response?.data?.message || 'Failed to delete opportunity';
       addToast(msg, 'error');
     }
   };
@@ -353,7 +369,8 @@ const OpportunityPage = () => {
               </>}
               <th className="px-6 py-2 font-semibold text-gray-900">Type</th>
               <th className="px-6 py-2 font-semibold text-gray-900">Progress</th>
-              <th className="px-6 py-2 font-semibold text-gray-900">Approval Status</th>
+              <th className="px-6 py-2 font-semibold text-gray-900 text-center">Approval Status</th>
+              {isSalesRole && <th className="px-5 py-3.5 font-semibold text-gray-900 w-[80px] text-center">Actions</th>}
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
@@ -451,9 +468,20 @@ const OpportunityPage = () => {
                 </td>
 
                 {/* Status Column (Approval Status) */}
-                <td className="px-6 py-2">
+                <td className="px-6 py-2 text-center">
                   {statusBadge}
                 </td>
+
+                {isSalesRole && <td className="px-5 py-4 text-center">
+                  <div className="flex justify-center">
+                    <button onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteModal({ isOpen: true, oppId: opp._id });
+                    }} className="bg-red-100 hover:bg-red-200 text-red-600 transition-colors p-2 rounded-md" title="Delete Opportunity">
+                      <Trash2 size={20} />
+                    </button>
+                  </div>
+                </td>}
               </tr>;
             }) : <tr>
               <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
@@ -476,6 +504,21 @@ const OpportunityPage = () => {
         isOpen: false
       });
     }} />
+
+    {/* Delete Confirmation Modal */}
+    <AlertModal
+      isOpen={deleteModal.isOpen}
+      onClose={() => setDeleteModal({ isOpen: false, oppId: null })}
+      title="Delete Opportunity"
+      message="Are you sure you want to delete this opportunity? This action will remove the opportunity from your view and notify your reporting manager."
+      confirmText="Yes, Delete"
+      cancelText="Cancel"
+      type="danger"
+      onConfirm={() => {
+        handleDeleteOpportunity(deleteModal.oppId);
+        setDeleteModal({ isOpen: false, oppId: null });
+      }}
+    />
   </div>;
 };
 export default OpportunityPage;

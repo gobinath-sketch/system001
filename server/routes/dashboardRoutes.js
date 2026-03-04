@@ -31,7 +31,7 @@ const getAccessibleUserIds = async (user) => {
 router.get('/stats', protect, async (req, res) => {
     try {
         const { userId } = req.query;
-        let query = {};
+        let query = { isDeleted: { $ne: true } };
         let userIds = [];
 
         // If userId is provided, verify permissions and use it
@@ -126,7 +126,7 @@ router.get('/stats', protect, async (req, res) => {
 router.get('/client-health', protect, async (req, res) => {
     try {
         const { userId } = req.query;
-        let query = {};
+        let query = { isDeleted: { $ne: true } };
 
         if (userId) {
             if (req.user.role === 'Sales Manager' || req.user.role === 'Super Admin' || req.user.role === 'Business Head') {
@@ -198,7 +198,7 @@ router.get('/client-health', protect, async (req, res) => {
 router.get('/all-opportunities', protect, async (req, res) => {
     try {
         const { userId } = req.query;
-        let query = {};
+        let query = { isDeleted: { $ne: true } };
 
         // If userId is provided, verify permissions and use it
         if (userId) {
@@ -282,7 +282,7 @@ router.get('/monthly-trends', protect, async (req, res) => {
         const startOfYear = new Date(year, 0, 1);
         const endOfYear = new Date(year, 11, 31);
 
-        let query = {};
+        let query = { isDeleted: { $ne: true } };
 
         if (req.user.role !== 'Business Head') {
             const userIds = await getAccessibleUserIds(req.user);
@@ -353,7 +353,7 @@ router.get('/monthly-trends', protect, async (req, res) => {
 // @desc    Get recent opportunities for document tracking
 router.get('/recent-opportunities', protect, async (req, res) => {
     try {
-        let query = {};
+        let query = { isDeleted: { $ne: true } };
         if (req.user.role !== 'Business Head') {
             const userIds = await getAccessibleUserIds(req.user);
             query.createdBy = { $in: userIds };
@@ -422,6 +422,7 @@ router.get('/performance/:userId', protect, async (req, res) => {
         // Fetch opportunities based on training month/year (with fallback to createdAt)
         const opportunities = await Opportunity.find({
             createdBy: userId,
+            isDeleted: { $ne: true },
             $or: [
                 {
                     'commonDetails.year': year,
@@ -531,7 +532,7 @@ router.get('/manager/stats', protect, async (req, res) => {
         const teamUserIds = teamMembers.map(u => u._id);
 
         // Query for team's data
-        const query = { createdBy: { $in: teamUserIds } };
+        const query = { createdBy: { $in: teamUserIds }, isDeleted: { $ne: true } };
 
         const totalClients = await Client.countDocuments(query);
         const totalOpportunities = await Opportunity.countDocuments(query);
@@ -576,11 +577,13 @@ router.get('/manager/document-stats', protect, async (req, res) => {
         // Count POs and Invoices
         const poCount = await Opportunity.countDocuments({
             createdBy: { $in: teamUserIds },
+            isDeleted: { $ne: true },
             poDocument: { $exists: true, $ne: null, $ne: '' }
         });
 
         const invoiceCount = await Opportunity.countDocuments({
             createdBy: { $in: teamUserIds },
+            isDeleted: { $ne: true },
             invoiceDocument: { $exists: true, $ne: null, $ne: '' }
         });
 
@@ -630,7 +633,8 @@ router.get('/manager/monthly-performance', protect, async (req, res) => {
 
         // Build query
         let query = {
-            createdBy: { $in: teamUserIds }
+            createdBy: { $in: teamUserIds },
+            isDeleted: { $ne: true }
         };
 
         // If userId specified, filter to that user
@@ -753,6 +757,7 @@ router.get('/manager/team-performance', protect, async (req, res) => {
 
             const opportunities = await Opportunity.find({
                 createdBy: member._id,
+                isDeleted: { $ne: true },
                 $or: [
                     {
                         'commonDetails.year': year,
