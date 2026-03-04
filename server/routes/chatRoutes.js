@@ -21,26 +21,6 @@ if (!fs.existsSync(CHUNK_ROOT_DIR)) {
     fs.mkdirSync(CHUNK_ROOT_DIR, { recursive: true });
 }
 
-const allowedMimeTypes = new Set([
-    'image/png',
-    'image/jpeg',
-    'image/webp',
-    'image/gif',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain',
-    'text/csv',
-    'application/zip',
-    'application/x-zip-compressed',
-    'application/vnd.rar',
-    'application/x-rar-compressed',
-    'video/mp4',
-    'video/quicktime'
-]);
-
 const inMemoryUploadSessions = new Map();
 
 const storage = multer.diskStorage({
@@ -56,8 +36,7 @@ const upload = multer({
     storage,
     limits: { fileSize: getFeatureConfig().singleUploadLimitBytes },
     fileFilter(req, file, cb) {
-        if (allowedMimeTypes.has(file.mimetype)) return cb(null, true);
-        return cb(new Error('Unsupported file type'));
+        return cb(null, true);
     }
 });
 
@@ -76,10 +55,7 @@ const createChunkUpload = () => multer({
     }),
     limits: { fileSize: getFeatureConfig().chunkSizeBytes + 512 * 1024 },
     fileFilter(req, file, cb) {
-        if (!file.mimetype || allowedMimeTypes.has(file.mimetype) || file.mimetype === 'application/octet-stream') {
-            return cb(null, true);
-        }
-        return cb(new Error('Unsupported file type'));
+        return cb(null, true);
     }
 });
 
@@ -450,10 +426,6 @@ router.post('/uploads/initiate', protect, async (req, res) => {
         if (fileSize > cfg.maxFileSizeBytes) {
             return res.status(400).json({ message: `File exceeds ${Math.round(cfg.maxFileSizeBytes / (1024 * 1024))}MB limit` });
         }
-        if (mimeType && !allowedMimeTypes.has(mimeType)) {
-            return res.status(400).json({ message: 'Unsupported file type' });
-        }
-
         const receiver = await User.findById(receiverId).select('_id');
         if (!receiver) return res.status(404).json({ message: 'Receiver not found' });
 
