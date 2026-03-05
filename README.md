@@ -72,34 +72,33 @@ The project helps teams answer these operational questions in one system:
 
 ### A. End-to-End Layered Architecture
 ```mermaid
-flowchart LR
-  U[User Browser] --> FE[React Frontend - Vite]
-  FE -->|HTTP REST + JWT| BE[Express API Server]
-  FE -->|Socket.IO| WS[Socket.IO Server]
-  BE --> DB[(MongoDB)]
-  BE --> FS[(Local Upload Storage)]
-  BE -->|optional| S3[(S3 Attachment Storage)]
-  WS --> FE
+graph LR;
+  U["User Browser"] --> FE["React Frontend (Vite)"];
+  FE -->|"HTTP REST + JWT"| BE["Express API Server"];
+  FE -->|"Socket.IO"| WS["Socket.IO Server"];
+  BE --> DB[("MongoDB")];
+  BE --> FS[("Local Upload Storage")];
+  BE -->|"Optional"| S3[("S3 Attachment Storage")];
+  WS --> FE;
 ```
 
 ### B. Frontend Internal Flow
 ```mermaid
-flowchart LR
-  A[App.jsx] --> B[AuthProvider]
-  B --> C[SocketProvider]
-  C --> D[CurrencyProvider]
-  D --> E[ToastProvider]
-  E --> F[Router + ProtectedRoute/PublicRoute]
-  F --> G[Layout]
-  G --> H[Sidebar + Top Header]
-  G --> I[Page Modules]
-  G --> J[InAppChatWidget]
-
-  I --> I1[Dashboard Pages]
-  I --> I2[Client / Opportunity / Approvals]
-  I --> I3[Delivery / SME]
-  I --> I4[Finance]
-  I --> I5[Settings]
+graph LR;
+  A["App.jsx"] --> B["AuthProvider"];
+  B --> C["SocketProvider"];
+  C --> D["CurrencyProvider"];
+  D --> E["ToastProvider"];
+  E --> F["Router + ProtectedRoute/PublicRoute"];
+  F --> G["Layout"];
+  G --> H["Sidebar + Top Header"];
+  G --> I["Page Modules"];
+  G --> J["InAppChatWidget"];
+  I --> I1["Dashboard Pages"];
+  I --> I2["Client + Opportunity + Approvals"];
+  I --> I3["Delivery + SME"];
+  I --> I4["Finance"];
+  I --> I5["Settings"];
 ```
 
 ### C. API Request Pipeline with Middleware
@@ -108,63 +107,62 @@ sequenceDiagram
   participant UI as React UI
   participant AX as Axios Client
   participant API as Express Route
-  participant MW as protect + authorize
+  participant MW as Auth Middleware
   participant SVC as Route Logic
   participant MDB as MongoDB
   participant IO as Socket.IO
 
   UI->>AX: Trigger action
-  AX->>API: HTTP request + Bearer token
-  API->>MW: Validate JWT + role
-  MW-->>API: allow/deny
+  AX->>API: HTTP request with Bearer token
+  API->>MW: Validate JWT and role
+  MW-->>API: Allow or deny
   API->>SVC: Execute business logic
-  SVC->>MDB: Read/write data
+  SVC->>MDB: Read or write data
   MDB-->>SVC: Result
-  SVC->>IO: Emit realtime event (optional)
+  SVC->>IO: Emit realtime event optional
   SVC-->>AX: JSON response
   AX-->>UI: Update UI state
 ```
 
 ### D. Opportunity Lifecycle Processing Flow
 ```mermaid
-flowchart LR
-  O1[Create Opportunity] --> O2[Sales Updates Details]
-  O2 --> O3[Delivery Updates Expenses/Execution]
-  O3 --> O4[Finance Updates Receivables/Payables]
-  O4 --> O5[Approval Escalation if required]
-  O5 --> O6[Approve/Reject]
-  O6 --> O7[Upload PO/Invoice/Delivery Docs]
-  O7 --> O8[Progress Recalculated]
-  O8 --> O9[Dashboard + Reports + Notifications]
+graph LR;
+  O1["Create Opportunity"] --> O2["Sales Updates Details"];
+  O2 --> O3["Delivery Updates Expenses and Execution"];
+  O3 --> O4["Finance Updates Receivables and Payables"];
+  O4 --> O5["Approval Escalation if Required"];
+  O5 --> O6["Approve or Reject"];
+  O6 --> O7["Upload PO, Invoice, Delivery Docs"];
+  O7 --> O8["Progress Recalculated"];
+  O8 --> O9["Dashboard, Reports, Notifications"];
 ```
 
 ### E. Realtime Event Flow
 ```mermaid
-flowchart LR
-  M[Model Hook / Route Action] --> S[Socket Emit]
-  S --> R1[NotificationDropdown]
-  S --> R2[InAppChatWidget]
-  S --> R3[Dashboard/Pages listening entity_updated]
-  S --> R4[Settings listeners]
-  R1 --> U[User sees instant updates]
-  R2 --> U
-  R3 --> U
-  R4 --> U
+graph LR;
+  M["Model Hook or Route Action"] --> S["Socket Emit"];
+  S --> R1["NotificationDropdown"];
+  S --> R2["InAppChatWidget"];
+  S --> R3["Dashboard and Pages Listeners"];
+  S --> R4["Settings Listeners"];
+  R1 --> U["User Sees Instant Updates"];
+  R2 --> U;
+  R3 --> U;
+  R4 --> U;
 ```
 
 ### F. Backend Module Architecture
 ```mermaid
-flowchart TB
-  IDX[index.js]
-  IDX --> MID[middleware/authMiddleware]
-  IDX --> ROUTES[routes/*]
-  ROUTES --> MODELS[models/*]
-  ROUTES --> UTILS[utils/*]
-  ROUTES --> CTRL[controllers/*]
-  MODELS --> DB[(MongoDB)]
-  ROUTES --> UP[uploads/*]
-  IDX --> IO[Socket.IO]
-  MODELS --> IO
+graph TB;
+  IDX["index.js"] --> MID["middleware/authMiddleware"];
+  IDX --> ROUTES["routes"];
+  ROUTES --> MODELS["models"];
+  ROUTES --> UTILS["utils"];
+  ROUTES --> CTRL["controllers"];
+  MODELS --> DB[("MongoDB")];
+  ROUTES --> UP["uploads"];
+  IDX --> IO["Socket.IO"];
+  MODELS --> IO;
 ```
 ## 5. Role-Based Access Model
 Primary roles used in flows:
@@ -492,4 +490,5 @@ If a new team member reads this project as a workflow system:
 8. Dashboards/reports provide leadership view of execution and profitability.
 
 That is the complete business and technical lifecycle this ERP implements.
+
 
