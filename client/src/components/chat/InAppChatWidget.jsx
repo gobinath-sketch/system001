@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
 import {
-  Send, Paperclip, X, Search, Download, PanelLeft, Reply, Pencil, Trash2, Copy, Forward
+  Send, Paperclip, X, Search, PanelLeft, Reply, Pencil, Trash2, Copy, Forward,
+  File, FileArchive, FileText, FileSpreadsheet, FileImage, FileVideoCamera, FileMusic, FileCode, FileType
 } from 'lucide-react';
 import { API_BASE, API_ENDPOINTS, uploadUrl } from '../../config/api';
 import { useAuth } from '../../context/AuthContext';
@@ -88,6 +89,88 @@ const TypingDots = () => (
     <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:240ms]" />
   </div>
 );
+
+const UploadingLoader = () => (
+  <>
+    <style>{`
+      .chat-upload-loader { display:inline-flex; align-items:center; gap:6px; min-width:0; }
+      .chat-upload-loader__text { color:#475569; font-size:11px; font-weight:700; line-height:1; white-space:nowrap; }
+      .chat-upload-loader__dot { margin-left:2px; animation:chat-upload-loader-blink 1.5s infinite; }
+      .chat-upload-loader__dot:nth-child(2) { animation-delay:0.3s; }
+      .chat-upload-loader__dot:nth-child(3) { animation-delay:0.6s; }
+      .chat-upload-loader__bar-bg {
+        display:flex; align-items:center; box-sizing:border-box; padding:1px;
+        width:88px; height:10px; background-color:#d4dfec; border-radius:999px;
+        box-shadow:inset -1px 1px 2px rgba(15,23,42,0.2);
+      }
+      .chat-upload-loader__bar {
+        position:relative; display:flex; align-items:center; width:0%; height:8px; overflow:hidden;
+        background:linear-gradient(90deg, #3f8f9c 0%, #7ec8bb 100%); border-radius:999px;
+        animation:chat-upload-loader-fill 3s ease-out infinite;
+      }
+      .chat-upload-loader__shine-wrap { position:absolute; display:flex; align-items:center; gap:8px; }
+      .chat-upload-loader__shine {
+        width:5px; height:12px; opacity:0.35; rotate:35deg;
+        background:linear-gradient(-45deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0) 70%);
+      }
+      @keyframes chat-upload-loader-fill { 0% { width:0; } 80% { width:100%; } 100% { width:100%; } }
+      @keyframes chat-upload-loader-blink { 0%, 100% { opacity:0; } 50% { opacity:1; } }
+    `}</style>
+    <div className="chat-upload-loader" aria-label="Uploading">
+      <span className="chat-upload-loader__text">
+        Uploading
+        <span className="chat-upload-loader__dot">.</span>
+        <span className="chat-upload-loader__dot">.</span>
+        <span className="chat-upload-loader__dot">.</span>
+      </span>
+      <div className="chat-upload-loader__bar-bg">
+        <div className="chat-upload-loader__bar">
+          <div className="chat-upload-loader__shine-wrap">
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+            <span className="chat-upload-loader__shine" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </>
+);
+
+const getFileMeta = (attachment = {}) => {
+  const originalName = String(attachment?.originalName || 'Download file');
+  const mimeType = String(attachment?.mimeType || '').toLowerCase();
+  const parts = originalName.split('.');
+  const ext = parts.length > 1 ? parts.pop().toLowerCase() : '';
+  const byExt = ext || (mimeType.split('/')[1] || '').toLowerCase();
+
+  const archive = new Set(['zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz']);
+  const docs = new Set(['pdf', 'doc', 'docx', 'txt', 'rtf', 'md']);
+  const sheets = new Set(['xls', 'xlsx', 'csv', 'ods']);
+  const images = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'heic']);
+  const videos = new Set(['mp4', 'mov', 'avi', 'mkv', 'webm', 'm4v']);
+  const audio = new Set(['mp3', 'wav', 'ogg', 'flac', 'aac', 'm4a']);
+  const code = new Set(['js', 'jsx', 'ts', 'tsx', 'json', 'xml', 'html', 'css', 'py', 'java', 'c', 'cpp', 'cs', 'go', 'php', 'rb', 'sh', 'sql', 'yml', 'yaml']);
+
+  const common = {
+    ext: byExt,
+    tileClass: 'bg-white border-[#c1cfdf]',
+    titleClass: 'text-slate-800',
+    extBadgeClass: 'bg-slate-200 text-slate-700'
+  };
+
+  if (archive.has(byExt)) return { ...common, icon: FileArchive, iconClass: 'text-amber-600', extBadgeClass: 'bg-amber-100 text-amber-800' };
+  if (docs.has(byExt)) return { ...common, icon: FileText, iconClass: 'text-sky-700', extBadgeClass: 'bg-sky-100 text-sky-800' };
+  if (sheets.has(byExt)) return { ...common, icon: FileSpreadsheet, iconClass: 'text-emerald-700', extBadgeClass: 'bg-emerald-100 text-emerald-800' };
+  if (images.has(byExt)) return { ...common, icon: FileImage, iconClass: 'text-fuchsia-700', extBadgeClass: 'bg-fuchsia-100 text-fuchsia-800' };
+  if (videos.has(byExt)) return { ...common, icon: FileVideoCamera, iconClass: 'text-violet-700', extBadgeClass: 'bg-violet-100 text-violet-800' };
+  if (audio.has(byExt)) return { ...common, icon: FileMusic, iconClass: 'text-rose-700', extBadgeClass: 'bg-rose-100 text-rose-800' };
+  if (code.has(byExt)) return { ...common, icon: FileCode, iconClass: 'text-cyan-700', extBadgeClass: 'bg-cyan-100 text-cyan-800' };
+  if (byExt) return { ...common, icon: FileType, iconClass: 'text-slate-700' };
+  return { ...common, icon: File, iconClass: 'text-slate-700', ext: '' };
+};
 
 const Avatar = ({ name, avatarDataUrl, sizeClass = 'h-10 w-10' }) => {
   if (avatarDataUrl) {
@@ -1132,8 +1215,8 @@ const InAppChatWidget = () => {
             />
           )}
 
-          <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#c8d4e6] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#c8d4e6] bg-gradient-to-b from-[#dde6f3] via-[#e4ecf7] to-[#ecf2f9] flex flex-col`}>
-            <div data-chat-drag-handle className="px-4 py-3 border-b border-[#c8d4e6] bg-[#d2ddee] flex items-center justify-between cursor-move select-none">
+          <aside className={`${isMobileView ? `absolute inset-y-0 left-0 z-30 w-[88%] max-w-[320px] min-w-0 border-r border-[#b9d6d1] shadow-[8px_0_24px_rgba(15,23,42,0.22)] transition-transform duration-200 ${mobileUsersOpen ? 'translate-x-0' : '-translate-x-[105%]'}` : 'w-[36%] min-w-[255px] max-w-[310px] border-r'} border-[#b9d6d1] bg-gradient-to-b from-[#d8efea] via-[#e1f4f0] to-[#ecf9f6] flex flex-col`}>
+            <div data-chat-drag-handle className="h-[46px] px-4 border-b border-[#b9d6d1] bg-[#cce7e2] flex items-center justify-between cursor-move select-none">
               <div>
                 <h3 className="text-[16px] font-extrabold text-slate-900 tracking-[0.06em] uppercase">Chat</h3>
               </div>
@@ -1148,7 +1231,7 @@ const InAppChatWidget = () => {
                 </button>
               )}
             </div>
-            <div className="p-3 border-b border-[#cbd6e8] bg-transparent">
+            <div className="p-3 border-b border-[#c2ddd8] bg-transparent">
               <div className="relative">
                 <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
                 <input
@@ -1170,7 +1253,7 @@ const InAppChatWidget = () => {
                     key={person._id}
                     type="button"
                     onClick={() => onSelectUser(person._id)}
-                    className={`w-full px-3 py-2.5 text-left rounded-2xl border transition-all duration-150 ${selectedUserId === person._id ? 'bg-[#b8cbe5] border-[#97afcf] shadow-[0_8px_18px_rgba(71,85,105,0.16)]' : 'bg-white/35 border-transparent hover:bg-white/55 hover:border-[#becde4]'}`}
+                    className={`w-full px-3 py-2.5 text-left rounded-2xl border transition-all duration-150 ${selectedUserId === person._id ? 'bg-[#b7dfd7] border-[#86c7ba] shadow-[0_8px_18px_rgba(71,85,105,0.16)]' : 'bg-white/35 border-transparent hover:bg-white/55 hover:border-[#b7d7d2]'}`}
                   >
                     <div className="flex items-start gap-2.5">
                       <Avatar name={person.name} avatarDataUrl={person.avatarDataUrl} />
@@ -1195,7 +1278,7 @@ const InAppChatWidget = () => {
             </div>
           </aside>
 
-          <section className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_20%_15%,#e9f0fb_0%,#f4f8fd_42%,#edf3fb_100%)] relative overflow-hidden">
+          <section className="flex-1 flex flex-col min-w-0 bg-[radial-gradient(circle_at_20%_15%,#e7f5f1_0%,#f3fbf9_42%,#eaf7f3_100%)] relative overflow-hidden">
             {isDragOver && selectedUserId && (
               <div className="absolute inset-0 z-20 m-3 rounded-2xl border-2 border-dashed border-primary-blue bg-primary-blue/5 pointer-events-none grid place-items-center">
                 <div className="rounded-xl bg-white/90 px-4 py-2 text-sm font-medium text-primary-blue shadow">
@@ -1205,27 +1288,27 @@ const InAppChatWidget = () => {
             )}
             {selectedUser ? (
               <>
-                <div data-chat-drag-handle className="h-[58px] px-3 border-b border-[#ccd7e8] flex items-center gap-2 bg-[#edf3fb]/80 backdrop-blur-sm cursor-move select-none">
+                <div data-chat-drag-handle className="h-[46px] px-3 border-b border-[#c2ddd8] flex items-center gap-2 bg-[#eaf7f4]/90 backdrop-blur-sm cursor-move select-none">
                   {isMobileView && (
                     <button
                       type="button"
                       onClick={() => setMobileUsersOpen((prev) => !prev)}
-                      className="h-9 w-9 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center justify-center"
+                      className="h-8 w-8 rounded-lg border border-[#b9d6d1] bg-white/80 text-slate-700 inline-flex items-center justify-center"
                       aria-label="Toggle users list"
                       title="Users"
                     >
                       <PanelLeft size={16} />
                     </button>
                   )}
-                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-xl border border-[#c4d1e4] bg-white/70 px-2.5 py-1.5">
-                    <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-8 w-8" />
+                  <div className="inline-flex max-w-[70%] items-center gap-2 rounded-xl bg-transparent px-1 py-0.5">
+                    <Avatar name={selectedUser.name} avatarDataUrl={selectedUser.avatarDataUrl} sizeClass="h-7 w-7" />
                     <div className="min-w-0">
                       <p className="text-sm font-bold text-slate-900 truncate">{selectedUser.name}</p>
                     </div>
                   </div>
                   <button
                     type="button"
-                    className="ml-auto h-9 w-9 rounded-lg hover:bg-rose-50 inline-flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors"
+                    className="ml-auto h-8 w-8 rounded-lg hover:bg-rose-50 inline-flex items-center justify-center text-rose-500 hover:text-rose-600 transition-colors"
                     onClick={() => setIsOpen(false)}
                     aria-label="Close chat"
                     title="Close chat"
@@ -1285,15 +1368,30 @@ const InAppChatWidget = () => {
                                       </p>
                                     ) : null}
                                     {msg.attachment ? (
-                                      <a
-                                        href={getAttachmentHref(msg.attachment)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="mt-2 inline-flex items-center gap-2 text-xs font-medium underline underline-offset-2 text-blue-700"
-                                      >
-                                        <Download size={13} />
-                                        {msg.attachment.originalName || 'Download file'}
-                                      </a>
+                                      (() => {
+                                        const fileMeta = getFileMeta(msg.attachment);
+                                        const FileIcon = fileMeta.icon;
+                                        return (
+                                          <a
+                                            href={getAttachmentHref(msg.attachment)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className={`mt-2 flex max-w-full items-center gap-2 rounded-xl border px-2.5 py-2 no-underline shadow-sm ${fileMeta.tileClass}`}
+                                          >
+                                            <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+                                              <FileIcon size={17} className={fileMeta.iconClass} />
+                                            </span>
+                                            <span className={`min-w-0 flex-1 truncate text-[12px] font-semibold ${fileMeta.titleClass}`}>
+                                              {msg.attachment.originalName || 'Download file'}
+                                            </span>
+                                            {fileMeta.ext ? (
+                                              <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${fileMeta.extBadgeClass}`}>
+                                                {fileMeta.ext}
+                                              </span>
+                                            ) : null}
+                                          </a>
+                                        );
+                                      })()
                                     ) : null}
                                   </>
                                 )}
@@ -1312,7 +1410,7 @@ const InAppChatWidget = () => {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <div className={`border-t border-[#c7d3e5] p-3 bg-[#edf3fb]/90 backdrop-blur-sm ${isMobileView ? 'pb-[max(12px,env(safe-area-inset-bottom))]' : ''}`}>
+                <div className={`border-t border-[#c2ddd8] p-3 bg-[#eaf7f4]/90 backdrop-blur-sm ${isMobileView ? 'pb-[max(12px,env(safe-area-inset-bottom))]' : ''}`}>
                   {replyTo && (
                     <div className="mb-2 rounded-xl border border-[#c3d0e4] bg-white/85 px-3 py-2 flex items-start justify-between gap-2">
                       <div className="min-w-0">
@@ -1355,29 +1453,51 @@ const InAppChatWidget = () => {
                     </div>
                   )}
                   {pendingFile && (
-                    <div className="mb-2 text-xs bg-white/90 border border-[#c3d0e4] rounded-xl px-2 py-1.5 flex items-center justify-between gap-2 text-slate-700">
-                      <span className="truncate">
-                        {pendingFile.name} ({formatBytes(pendingFile.size)})
-                        {sending && uploadProgress > 0 ? ` - Uploading ${uploadProgress}%` : ''}
-                      </span>
-                      <button
-                        type="button"
-                        className="text-rose-500 hover:text-rose-700 font-medium"
-                        onClick={() => {
-                          setPendingFile(null);
-                          if (fileInputRef.current) fileInputRef.current.value = '';
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    (() => {
+                      const fileMeta = getFileMeta({ originalName: pendingFile.name, mimeType: pendingFile.type });
+                      const FileIcon = fileMeta.icon;
+                      return (
+                        <div className={`mb-2 flex items-center gap-2 rounded-xl border px-2.5 py-2 shadow-sm ${fileMeta.tileClass}`}>
+                          <span className="shrink-0 inline-flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100">
+                            <FileIcon size={17} className={fileMeta.iconClass} />
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <p className={`truncate text-[12px] font-semibold ${fileMeta.titleClass}`}>
+                                {pendingFile.name}
+                              </p>
+                              <span className="shrink-0 text-[11px] text-slate-600">
+                                {formatBytes(pendingFile.size)}
+                                {sending && uploadProgress > 0 ? ` - ${uploadProgress}%` : ''}
+                              </span>
+                              {sending ? <UploadingLoader /> : null}
+                            </div>
+                          </div>
+                          {fileMeta.ext ? (
+                            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide ${fileMeta.extBadgeClass}`}>
+                              {fileMeta.ext}
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            className="shrink-0 text-rose-500 hover:text-rose-700 text-xs font-semibold"
+                            onClick={() => {
+                              setPendingFile(null);
+                              if (fileInputRef.current) fileInputRef.current.value = '';
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      );
+                    })()
                   )}
                   <div className={`flex items-center gap-2 ${isMobileView ? 'w-full' : ''}`}>
                     <input ref={fileInputRef} type="file" className="hidden" onChange={onPickFile} />
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="h-11 w-11 shrink-0 rounded-xl border border-[#bccadf] bg-white/90 text-slate-600 hover:bg-white inline-flex items-center justify-center transition-colors"
+                      className="h-11 w-11 shrink-0 rounded-xl border border-[#b9d6d1] bg-white/90 text-slate-600 hover:bg-white inline-flex items-center justify-center transition-colors"
                       aria-label="Attach file"
                     >
                       <Paperclip size={17} />
@@ -1394,13 +1514,13 @@ const InAppChatWidget = () => {
                       }}
                       onKeyDown={onMessageKeyDown}
                       placeholder={editingMessageId ? 'Edit your message...' : 'Type your message...'}
-                      className="flex-1 h-11 rounded-xl border border-[#bccadf] px-3 text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#9db2d3] focus:border-[#9db2d3] bg-white/95"
+                      className="flex-1 h-11 rounded-xl border border-[#b9d6d1] px-3 text-sm font-medium text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#7ec8bb] focus:border-[#7ec8bb] bg-white/95"
                     />
                     <button
                       type="button"
                       onClick={editingMessageId ? saveEditMessage : sendMessage}
                       disabled={editingMessageId ? (!editText.trim() || sending) : (sending || (!draftText.trim() && !pendingFile))}
-                      className="h-11 w-11 shrink-0 rounded-xl bg-gradient-to-br from-[#4f739f] to-[#456991] text-white hover:brightness-110 disabled:opacity-60 inline-flex items-center justify-center transition shadow-[0_10px_18px_rgba(71,105,145,0.34)]"
+                      className="h-11 w-11 shrink-0 rounded-xl bg-gradient-to-br from-[#3f8f9c] to-[#337786] text-white hover:brightness-110 disabled:opacity-60 inline-flex items-center justify-center transition shadow-[0_10px_18px_rgba(51,119,134,0.34)]"
                       aria-label={editingMessageId ? 'Save edit' : 'Send message'}
                     >
                       {editingMessageId ? <Pencil size={16} /> : <Send size={16} />}
@@ -1410,12 +1530,12 @@ const InAppChatWidget = () => {
               </>
             ) : (
               <>
-                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-[#ccd8e8] flex items-center justify-between bg-[#edf3fb] cursor-move select-none">
+                <div data-chat-drag-handle className="h-[62px] px-4 border-b border-[#c2ddd8] flex items-center justify-between bg-[#eaf7f4] cursor-move select-none">
                   {isMobileView ? (
                     <button
                       type="button"
                       onClick={() => setMobileUsersOpen((prev) => !prev)}
-                      className="h-9 px-3 rounded-lg border border-[#c4d1e4] bg-white/80 text-slate-700 inline-flex items-center gap-2 text-sm font-medium"
+                      className="h-9 px-3 rounded-lg border border-[#b9d6d1] bg-white/80 text-slate-700 inline-flex items-center gap-2 text-sm font-medium"
                       aria-label="Toggle users list"
                     >
                       <PanelLeft size={15} />
