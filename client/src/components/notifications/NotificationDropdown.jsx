@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { API_BASE } from '../../config/api';
+import notificationSoundSrc from '../../assets/dragon-studio-notification-sound-effect-372475.mp3';
 
 const FILTER_TYPE_GROUPS = {
     approvals: ['approval_request', 'approval_granted', 'approval_rejected', 'approval_status_change', 'gp_approval_request'],
@@ -33,6 +34,10 @@ const NotificationDropdown = () => {
     const [isNavigating, setIsNavigating] = useState(false);
     const [hasAuthError, setHasAuthError] = useState(false);
     const navigationTimerRef = useRef(null);
+    const notificationSoundRef = useRef(null);
+    const lastPlayedNotificationRef = useRef('');
+    const audioUnlockedRef = useRef(false);
+    const hasLoadedNotificationsRef = useRef(false);
     const navigate = useNavigate();
     const { user } = useAuth();
 
@@ -126,6 +131,14 @@ const NotificationDropdown = () => {
                     icon: Briefcase,
                     borderColor: 'border-l-blue-500'
                 };
+            case 'calendar_reminder':
+                return {
+                    bg: 'bg-violet-50',
+                    iconBg: 'bg-violet-100',
+                    iconColor: 'text-violet-700',
+                    icon: BellIcon,
+                    borderColor: 'border-l-violet-500'
+                };
             default:
                 return {
                     bg: 'bg-slate-50',
@@ -149,6 +162,57 @@ const NotificationDropdown = () => {
 
     const { socket } = useSocket();
 
+    useEffect(() => {
+        const audio = new Audio(notificationSoundSrc);
+        audio.preload = 'auto';
+        notificationSoundRef.current = audio;
+
+        const unlockAudio = () => {
+            const currentAudio = notificationSoundRef.current;
+            if (!currentAudio || audioUnlockedRef.current) return;
+            currentAudio.muted = true;
+            const playPromise = currentAudio.play();
+            if (playPromise?.then) {
+                playPromise
+                    .then(() => {
+                        currentAudio.pause();
+                        currentAudio.currentTime = 0;
+                        currentAudio.muted = false;
+                        audioUnlockedRef.current = true;
+                    })
+                    .catch(() => {
+                        currentAudio.muted = false;
+                    });
+            }
+        };
+
+        window.addEventListener('pointerdown', unlockAudio, { once: true });
+        return () => {
+            window.removeEventListener('pointerdown', unlockAudio);
+            if (notificationSoundRef.current) {
+                notificationSoundRef.current.pause();
+                notificationSoundRef.current = null;
+            }
+        };
+    }, []);
+
+    const playNotificationSound = useCallback((notificationId) => {
+        if (!notificationId || lastPlayedNotificationRef.current === notificationId) return;
+        lastPlayedNotificationRef.current = notificationId;
+        const audio = notificationSoundRef.current;
+        if (!audio) return;
+        try {
+            audio.muted = false;
+            audio.currentTime = 0;
+            const playPromise = audio.play();
+            if (playPromise?.catch) {
+                playPromise.catch(() => {});
+            }
+        } catch {
+            // Ignore autoplay/playback failures.
+        }
+    }, []);
+
     const loadNotifications = useCallback(async () => {
         if (hasAuthError) return;
 
@@ -162,9 +226,20 @@ const NotificationDropdown = () => {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
-            setNotifications(res.data.notifications || []);
+            const nextNotifications = res.data.notifications || [];
+            setNotifications((prev) => {
+                if (hasLoadedNotificationsRef.current && nextNotifications.length) {
+                    const previousIds = new Set(prev.map((notification) => notification._id));
+                    const newestUnread = nextNotifications.find((notification) => !notification.isRead && !previousIds.has(notification._id));
+                    if (newestUnread) {
+                        playNotificationSound(newestUnread._id);
+                    }
+                }
+                return nextNotifications;
+            });
             setUnreadCount(res.data.unreadCount || 0);
             setHasAuthError(false);
+            hasLoadedNotificationsRef.current = true;
         } catch (err) {
             if (err.response?.status === 401) {
                 // Stop polling if we get a 401 so we don't spam the console or get into a logout loop
@@ -173,18 +248,15 @@ const NotificationDropdown = () => {
                 console.error('Error fetching notifications:', err);
             }
         }
-    }, [user, hasAuthError]);
+    }, [user, hasAuthError, playNotificationSound]);
 
     useEffect(() => {
         const initialFetchTimer = setTimeout(() => {
             loadNotifications();
         }, 0);
 
-        const intervalId = setInterval(loadNotifications, 1000);
-
         return () => {
             clearTimeout(initialFetchTimer);
-            clearInterval(intervalId);
         };
     }, [loadNotifications]);
 
@@ -200,21 +272,32 @@ const NotificationDropdown = () => {
     useEffect(() => {
         if (!socket) return;
 
-        const handleNewNotification = (newNotification) => {
-            // Prepend new notification to state
-            setNotifications(prev => [newNotification, ...prev]);
-            setUnreadCount(prev => prev + 1);
-
-            // Optional: You could play a sound here
+        const handleSocketConnect = () => {
+            loadNotifications();
         };
 
-        socket.on('notification_received', () => {
-            loadNotifications(); // sync with backend
-        });
+        const handleNewNotification = (newNotification) => {
+            if (!newNotification?._id) {
+                loadNotifications();
+                return;
+            }
+
+            setNotifications(prev => (
+                prev.some(notification => notification._id === newNotification._id)
+                    ? prev
+                    : [newNotification, ...prev]
+            ));
+            setUnreadCount(prev => prev + (newNotification.isRead ? 0 : 1));
+            playNotificationSound(newNotification._id);
+        };
+
+        socket.on('connect', handleSocketConnect);
+        socket.on('notification_received', handleNewNotification);
         return () => {
+            socket.off('connect', handleSocketConnect);
             socket.off('notification_received', handleNewNotification);
         };
-    }, [socket]);
+    }, [socket, loadNotifications, playNotificationSound]);
 
     const filteredNotifications = useMemo(() => {
         let filtered = notifications;
@@ -597,6 +680,13 @@ const NotificationItem = ({ notification, onRead, onNavigate }) => {
                     iconBg: 'bg-blue-100',
                     iconColor: 'text-blue-700',
                     icon: Briefcase
+                };
+            case 'calendar_reminder':
+                return {
+                    bg: 'bg-violet-50/70',
+                    iconBg: 'bg-violet-100',
+                    iconColor: 'text-violet-700',
+                    icon: BellIcon
                 };
             default:
                 return {

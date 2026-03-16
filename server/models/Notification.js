@@ -8,7 +8,7 @@ const NotificationSchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ['expense_edit', 'opportunity_created', 'opportunity_update', 'document_upload', 'general', 'approval_request', 'approval_granted', 'approval_rejected', 'target_achieved', 'target_exceeded'],
+        enum: ['expense_edit', 'opportunity_created', 'opportunity_update', 'document_upload', 'general', 'approval_request', 'approval_granted', 'approval_rejected', 'target_achieved', 'target_exceeded', 'calendar_reminder'],
         required: true
     },
     message: {

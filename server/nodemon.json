@@ -1,0 +1,19 @@
+{
+  "watch": [
+    "index.js",
+    "config",
+    "routes",
+    "models",
+    "services",
+    "middleware",
+    "utils",
+    "email-automation"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules",
+    "uploads",
+    "exports"
+  ],
+  "delay": "300"
+}

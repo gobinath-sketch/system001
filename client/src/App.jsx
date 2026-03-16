@@ -18,6 +18,7 @@ import FinanceDashboard from './pages/finance/FinanceDashboard';
 import FinanceModulePage from './pages/finance/FinanceModulePage';
 import FinanceDetails from './pages/finance/FinanceDetails';
 import SettingsPage from './pages/SettingsPage';
+import EmailAutomationPage from './pages/EmailAutomationPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import { ToastProvider } from './context/ToastContext';
@@ -30,6 +31,7 @@ function App() {
   const approvalRoles = ['Sales Manager', 'Business Head', 'Director', 'Super Admin'];
   const deliveryRoles = ['Delivery Head', 'Delivery Executive', 'Delivery Manager', 'Super Admin'];
   const financeRoles = ['Finance', 'Super Admin'];
+  const automationRoles = ['Sales Executive', 'Sales Manager', 'Business Head', 'Director', 'Finance', 'Super Admin'];
 
   useEffect(() => {
     const handleWheel = () => {
@@ -77,6 +79,7 @@ function App() {
               <Route path="/finance" element={<ProtectedRoute allowedRoles={financeRoles}><Layout><FinanceModulePage /></Layout></ProtectedRoute>} />
               <Route path="/finance/:id" element={<ProtectedRoute allowedRoles={financeRoles}><Layout><FinanceDetails /></Layout></ProtectedRoute>} />
               <Route path="/settings" element={<ProtectedRoute allowedRoles={allRoles}><Layout><SettingsPage /></Layout></ProtectedRoute>} />
+              <Route path="/automation/email" element={<ProtectedRoute allowedRoles={automationRoles}><Layout><EmailAutomationPage /></Layout></ProtectedRoute>} />
             </Routes>
           </Router>
         </ToastProvider>

@@ -767,8 +767,8 @@ const SalesExecutiveDashboard = ({
     </div>
 
     {/* Document Status Modal */}
-    {showDocModal && <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[85vh] flex flex-col">
+    {showDocModal && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setShowDocModal(false)}>
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
         <div className="p-6 border-b flex justify-between items-center bg-gray-50 rounded-t-xl">
           <h2 className="text-xl font-bold text-gray-800">Document Status Overview</h2>
           <button onClick={() => setShowDocModal(false)} className="text-gray-500 hover:text-gray-700">
@@ -777,36 +777,36 @@ const SalesExecutiveDashboard = ({
         </div>
 
         <div className="overflow-auto p-3 sm:p-6 flex-1">
-          <table className="w-full text-left border-collapse">
+          <table className="w-full text-left border-collapse text-base">
             <thead>
               <tr className="border-b border-gray-200">
-                <th className="py-3 px-4 font-semibold text-gray-600">Opportunity ID</th>
-                <th className="py-3 px-4 font-semibold text-gray-600">Client</th>
-                <th className="py-3 px-4 font-semibold text-gray-600 text-center">PO Status</th>
-                <th className="py-3 px-4 font-semibold text-gray-600 text-center">Invoice Status</th>
-                <th className="py-3 px-4 font-semibold text-gray-600">Actions</th>
+                <th className="py-4 px-5 font-semibold text-gray-600 text-base">Opportunity ID</th>
+                <th className="py-4 px-5 font-semibold text-gray-600 text-base">Client</th>
+                <th className="py-4 px-5 font-semibold text-gray-600 text-base text-center">PO Status</th>
+                <th className="py-4 px-5 font-semibold text-gray-600 text-base text-center">Invoice Status</th>
+                <th className="py-4 px-5 font-semibold text-gray-600 text-base">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredOpps.map(opp => <tr key={opp._id} className="border-b border-gray-100 hover:bg-gray-50">
-                <td className="py-3 px-4 font-mono text-primary-blue">{opp.opportunityNumber}</td>
-                <td className="py-3 px-4 text-gray-800">{opp.clientName}</td>
-                <td className="py-3 px-4 text-center">
-                  {opp.poDocument ? <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                    <CheckCircle size={12} className="mr-1" /> Uploaded
-                  </span> : <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
+                <td className="py-4 px-5 font-mono font-bold text-primary-blue text-base">{opp.opportunityNumber}</td>
+                <td className="py-4 px-5 text-gray-800 text-base">{opp.clientName}</td>
+                <td className="py-4 px-5 text-center">
+                  {opp.poDocument ? <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-medium">
+                    <CheckCircle size={14} className="mr-1" /> Uploaded
+                  </span> : <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 text-sm font-medium">
                     Pending
                   </span>}
                 </td>
-                <td className="py-3 px-4 text-center">
-                  {opp.invoiceDocument ? <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-medium">
-                    <CheckCircle size={12} className="mr-1" /> Uploaded
-                  </span> : <span className="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-medium">
+                <td className="py-4 px-5 text-center">
+                  {opp.invoiceDocument ? <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-green-100 text-green-700 text-sm font-medium">
+                    <CheckCircle size={14} className="mr-1" /> Uploaded
+                  </span> : <span className="inline-flex items-center px-3 py-1.5 rounded-full bg-gray-100 text-gray-500 text-sm font-medium">
                     Pending
                   </span>}
                 </td>
-                <td className="py-3 px-4">
-                  <button onClick={() => navigate(`/opportunities/${opp._id}`)} className="text-primary-blue hover:underline text-sm">
+                <td className="py-4 px-5">
+                  <button onClick={() => navigate(`/opportunities/${opp._id}`)} className="text-primary-blue hover:underline text-base font-semibold">
                     View
                   </button>
                 </td>
