@@ -1,7 +1,7 @@
 const EmailIngestion = require('../models/EmailIngestion');
 const { extractFromEmail } = require('./extractionService');
-const { upsertFromExtraction } = require('./mappingService');
 const { enrichExtraction } = require('./contextEnrichmentService');
+const { executeExtraction } = require('./executionService');
 
 function autoThreshold() {
     const value = Number(process.env.MAIL_AUTOMATION_AUTO_THRESHOLD || 0.9);
@@ -71,18 +71,22 @@ async function processNormalizedEmail(message, options = {}) {
             return ingestion;
         }
 
-        const entityResult = await upsertFromExtraction({
+        const entityResult = await executeExtraction({
             extraction,
             emailMeta: {
                 subject: ingestion.subject,
                 fromEmail: ingestion.fromEmail,
                 fromName: ingestion.fromName
-            }
+            },
+            actorId: options.actorId || null
         });
 
         ingestion.linkedEntities = {
             clientId: entityResult.clientId,
-            opportunityId: entityResult.opportunityId
+            opportunityId: entityResult.opportunityId,
+            calendarEventId: entityResult.calendarEventId || '',
+            calendarEventWebLink: entityResult.calendarEventWebLink || '',
+            calendarEventSubject: entityResult.calendarEventSubject || ''
         };
         ingestion.status = 'processed';
         appendLog(ingestion, 'AI auto-processed successfully');
@@ -101,20 +105,23 @@ async function processNormalizedEmail(message, options = {}) {
     }
 }
 
-async function approveQueuedItem({ ingestionId, reviewerId, notes }) {
+async function approveQueuedItem({ ingestionId, reviewerId, notes, draftExtraction }) {
     const doc = await EmailIngestion.findById(ingestionId);
     if (!doc) throw new Error('Ingestion item not found');
     if (doc.status !== 'needs_review' && doc.status !== 'failed') {
         throw new Error(`Item cannot be approved from status: ${doc.status}`);
     }
 
-    const entityResult = await upsertFromExtraction({
-        extraction: doc.extraction,
+    const approvedExtraction = draftExtraction || doc.extraction;
+
+    const entityResult = await executeExtraction({
+        extraction: approvedExtraction,
         emailMeta: {
             subject: doc.subject,
             fromEmail: doc.fromEmail,
             fromName: doc.fromName
-        }
+        },
+        actorId: reviewerId || null
     });
 
     doc.decision = {
@@ -123,9 +130,18 @@ async function approveQueuedItem({ ingestionId, reviewerId, notes }) {
         reviewedBy: reviewerId || null,
         reviewedAt: new Date()
     };
+    doc.extraction = approvedExtraction;
+    doc.classification = {
+        intent: approvedExtraction?.intent || doc.classification?.intent || 'ignore',
+        reason: approvedExtraction?.reason || doc.classification?.reason || ''
+    };
+    doc.confidence = Number(approvedExtraction?.confidence ?? doc.confidence ?? 0);
     doc.linkedEntities = {
         clientId: entityResult.clientId,
-        opportunityId: entityResult.opportunityId
+        opportunityId: entityResult.opportunityId,
+        calendarEventId: entityResult.calendarEventId || '',
+        calendarEventWebLink: entityResult.calendarEventWebLink || '',
+        calendarEventSubject: entityResult.calendarEventSubject || ''
     };
     doc.status = 'processed';
     appendLog(doc, 'Manually approved and processed');

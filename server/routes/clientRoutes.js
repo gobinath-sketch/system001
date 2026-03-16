@@ -98,7 +98,19 @@ router.get('/', protect, async (req, res) => {
 
         let filter = { isDeleted: { $ne: true } };
         if (accessibleUserIds.length > 0) {
-            filter.createdBy = { $in: accessibleUserIds };
+            const relatedOpportunityClientIds = await Opportunity.find({
+                isDeleted: { $ne: true },
+                createdBy: { $in: accessibleUserIds },
+                client: { $ne: null }
+            }).distinct('client');
+
+            filter = {
+                isDeleted: { $ne: true },
+                $or: [
+                    { createdBy: { $in: accessibleUserIds } },
+                    { _id: { $in: relatedOpportunityClientIds } }
+                ]
+            };
         }
 
         console.log('🔎 Filter being used:', filter);
