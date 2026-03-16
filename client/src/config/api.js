@@ -1,8 +1,11 @@
 const fallbackBase = `${window.location.protocol}//${window.location.hostname}:5000`;
-//const server_api_url = 'https://project.globalknowledgetech.com:5006';
+const serverApiUrl = 'https://project.globalknowledgetech.com:5006';
+const envBase = (import.meta.env.VITE_API_BASE || '').trim();
+const isProductionHost = window.location.hostname === 'project.globalknowledgetech.com';
+const resolvedBase = envBase || (isProductionHost ? serverApiUrl : fallbackBase);
 
-export const API_BASE = fallbackBase;
-export const SOCKET_URL = fallbackBase;
+export const API_BASE = resolvedBase;
+export const SOCKET_URL = resolvedBase;
 
 // Central endpoint registry for maintainability.
 export const API_ENDPOINTS = {
@@ -95,7 +98,28 @@ export const API_ENDPOINTS = {
     cancelUpload: (uploadId) => `/api/chat/uploads/${uploadId}`,
     markConversationRead: (userId) => `/api/chat/conversations/${userId}/read`,
   },
+  emailAutomation: {
+    health: '/api/email-automation/health',
+    tokenCheck: '/api/email-automation/graph/token-check',
+    ingestPull: '/api/email-automation/ingest/pull',
+    ingestSelected: '/api/email-automation/ingest/selected',
+    mailboxMessages: '/api/email-automation/mailbox/messages',
+    mailboxMessageById: (id) => `/api/email-automation/mailbox/messages/${id}`,
+    calendarEvents: '/api/email-automation/calendar/events',
+    calendarEventById: (id) => `/api/email-automation/calendar/events/${id}`,
+    teams: '/api/email-automation/teams',
+    teamChannels: (teamId) => `/api/email-automation/teams/${teamId}/channels`,
+    channelMessages: (teamId, channelId) => `/api/email-automation/teams/${teamId}/channels/${channelId}/messages`,
+    chatsAuthUrl: '/api/email-automation/chats/auth/url',
+    chats: '/api/email-automation/chats',
+    chatMessages: (chatId) => `/api/email-automation/chats/${chatId}/messages`,
+    queue: '/api/email-automation/queue',
+    queueReview: (id) => `/api/email-automation/queue/${id}/review`,
+    history: '/api/email-automation/history',
+  },
 };
 
 export const apiUrl = (path) => `${API_BASE}${path}`;
 export const uploadUrl = (relativePath = '') => `${API_BASE}/${String(relativePath).replace(/^\/+/, '')}`;
+
+
