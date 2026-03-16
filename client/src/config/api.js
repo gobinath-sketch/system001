@@ -50,6 +50,13 @@ export const API_ENDPOINTS = {
     managerDocuments: '/api/dashboard/manager/documents',
     managerSetTarget: (userId) => `/api/dashboard/manager/set-target/${userId}`,
     businessHeadTeam: '/api/dashboard/business-head/team-structure',
+    delivery: {
+      kpis: '/api/dashboard/delivery/kpis',
+      overview: '/api/dashboard/delivery/overview',
+      teamPerformance: '/api/dashboard/delivery/team-performance',
+      revenueTrend: '/api/dashboard/delivery/revenue-trend',
+      topVendors: '/api/dashboard/delivery/top-vendors'
+    }
   },
   approvals: {
     root: '/api/approvals',
