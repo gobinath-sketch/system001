@@ -48,6 +48,31 @@ function normalizeMap(mapValue) {
     return mapValue;
 }
 
+function normalizeModeOfTraining(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+
+    const normalized = raw.toLowerCase().replace(/[^a-z]/g, '');
+    const modeAliases = new Map([
+        ['vilt', 'Virtual'],
+        ['virtual', 'Virtual'],
+        ['virtualinstructorledtraining', 'Virtual'],
+        ['online', 'Virtual'],
+        ['remote', 'Virtual'],
+        ['webbased', 'Virtual'],
+        ['ilt', 'Classroom'],
+        ['classroom', 'Classroom'],
+        ['inperson', 'Classroom'],
+        ['onsite', 'Classroom'],
+        ['offline', 'Classroom'],
+        ['f2f', 'Classroom'],
+        ['hybrid', 'Hybrid'],
+        ['blended', 'Hybrid']
+    ]);
+
+    return modeAliases.get(normalized) || raw;
+}
+
 function sanitizeCommonDetails(input) {
     const out = input || {};
     if (!isMeaningful(out.trainerDetails)) {
@@ -100,6 +125,22 @@ function sanitizeCommonDetails(input) {
     return out;
 }
 
+function sanitizeTypeSpecificDetails(input) {
+    if (!isMeaningful(input)) return undefined;
+
+    const out = { ...(input || {}) };
+    if (out.modeOfTraining) {
+        out.modeOfTraining = normalizeModeOfTraining(out.modeOfTraining);
+    }
+
+    const allowedModes = new Set(['Virtual', 'Classroom', 'Hybrid']);
+    if (out.modeOfTraining && !allowedModes.has(out.modeOfTraining)) {
+        delete out.modeOfTraining;
+    }
+
+    return out;
+}
+
 function sanitizeFinanceDetails(input) {
     if (!isMeaningful(input)) return undefined;
     const out = input || {};
@@ -126,6 +167,14 @@ async function findAutomationActor() {
         throw new Error('No user found for automation actor. Set EMAIL_AUTOMATION_USER_EMAIL.');
     }
     return fallback;
+}
+
+async function findExecutionActor(actorId) {
+    if (actorId && isValidObjectId(actorId)) {
+        const byId = await User.findById(actorId);
+        if (byId) return byId;
+    }
+    return findAutomationActor();
 }
 
 async function findOrCreateClient(extraction, actor, emailMeta) {
@@ -161,6 +210,11 @@ async function findOrCreateClient(extraction, actor, emailMeta) {
 }
 
 async function findExistingOpportunity(extraction, clientId) {
+    const intent = String(extraction?.intent || '').trim();
+    if (intent !== 'opportunity_update') {
+        return null;
+    }
+
     const explicit = String(extraction?.opportunity?.opportunityNumber || '').trim();
     if (explicit) {
         const byNumber = await Opportunity.findOne({
@@ -230,7 +284,9 @@ function mergeOpportunityFields(opportunity, extraction, actor, actionLabel) {
         opportunity.assignedTo = src.assignedTo;
     }
 
-    opportunity.typeSpecificDetails = mergeMeaningful(opportunity.typeSpecificDetails || {}, src.typeSpecificDetails || {});
+    opportunity.typeSpecificDetails = sanitizeTypeSpecificDetails(
+        mergeMeaningful(opportunity.typeSpecificDetails || {}, src.typeSpecificDetails || {})
+    );
     opportunity.commonDetails = sanitizeCommonDetails(mergeMeaningful(opportunity.commonDetails || {}, src.commonDetails || {}));
     opportunity.expenses = mergeMeaningful(opportunity.expenses || {}, src.expenses || {});
     const safeExpenseDocs = normalizeMap(opportunity.expenseDocuments);
@@ -258,15 +314,15 @@ function mergeOpportunityFields(opportunity, extraction, actor, actionLabel) {
     });
 }
 
-async function upsertFromExtraction({ extraction, emailMeta }) {
-    const actor = await findAutomationActor();
+async function upsertFromExtraction({ extraction, emailMeta, actorId = null }) {
+    const actor = await findExecutionActor(actorId);
     const client = await findOrCreateClient(extraction, actor, emailMeta);
 
     let opportunity = await findExistingOpportunity(extraction, client?._id);
     if (!opportunity) {
         const opportunityNumber = await generateOpportunityNumber(actor);
         const src = extraction?.opportunity || {};
-        const mergedTypeSpecific = mergeMeaningful({}, src.typeSpecificDetails || {});
+        const mergedTypeSpecific = sanitizeTypeSpecificDetails(mergeMeaningful({}, src.typeSpecificDetails || {}));
         const mergedCommon = sanitizeCommonDetails(mergeMeaningful({
             trainingSector: client?.sector || 'Enterprise',
             status: 'Active',

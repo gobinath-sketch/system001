@@ -48,6 +48,16 @@ function stripHtml(html = '') {
         .trim();
 }
 
+function toGraphDateTime(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    // Keep local date-time strings local so Graph can apply the provided timeZone correctly.
+    if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/.test(raw)) {
+        return raw.length === 16 ? `${raw}:00` : raw;
+    }
+    return new Date(raw).toISOString();
+}
+
 function normalizeGraphMessage(message, mailbox, options = {}) {
     const bodyContent = message?.body?.content || '';
     const fromAddress = message?.from?.emailAddress || {};
@@ -279,6 +289,70 @@ async function fetchCalendarEventById({ mailbox, eventId }) {
     };
 }
 
+async function createCalendarEvent({ mailbox, event }) {
+    if (!mailbox) throw new Error('mailbox is required');
+    if (!event?.subject || !event?.start || !event?.end) {
+        throw new Error('event subject, start, and end are required');
+    }
+
+    const token = await getGraphAccessToken();
+    const timezone = String(event.timeZone || process.env.GRAPH_TIMEZONE || 'Asia/Kolkata').trim();
+    const url = `${GRAPH_BASE_URL}/users/${encodeURIComponent(mailbox)}/events`;
+
+    const payload = {
+        subject: String(event.subject).trim(),
+        start: {
+            dateTime: toGraphDateTime(event.start),
+            timeZone: timezone
+        },
+        end: {
+            dateTime: toGraphDateTime(event.end),
+            timeZone: timezone
+        },
+        isAllDay: Boolean(event.isAllDay),
+        body: {
+            contentType: 'text',
+            content: String(event.bodyText || '').slice(0, 5000)
+        }
+    };
+
+    if (String(event.location || '').trim()) {
+        payload.location = { displayName: String(event.location).trim() };
+    }
+
+    if (Array.isArray(event.attendees) && event.attendees.length) {
+        payload.attendees = event.attendees
+            .filter((attendee) => attendee?.email)
+            .map((attendee) => ({
+                emailAddress: {
+                    address: attendee.email,
+                    name: attendee.name || attendee.email
+                },
+                type: 'required'
+            }));
+    }
+
+    const created = await httpJson(url, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+            Prefer: `outlook.timezone="${timezone}"`
+        },
+        body: JSON.stringify(payload)
+    });
+
+    return {
+        id: created.id,
+        subject: created.subject || '(No Subject)',
+        start: created.start?.dateTime || null,
+        end: created.end?.dateTime || null,
+        webLink: created.webLink || '',
+        organizer: created.organizer?.emailAddress?.address || '',
+        location: created.location?.displayName || ''
+    };
+}
+
 async function fetchJoinedTeams({ mailbox, top = 50 }) {
     if (!mailbox) throw new Error('mailbox is required');
     const token = await getGraphAccessToken();
@@ -336,6 +410,7 @@ module.exports = {
     fetchMessageById,
     fetchCalendarEvents,
     fetchCalendarEventById,
+    createCalendarEvent,
     fetchJoinedTeams,
     fetchTeamChannels,
     fetchChannelMessages,

@@ -1,0 +1,171 @@
+Corporate
+Dear Knowledge Partners in Bcc line,
+Skilling : Azure Training
+We have a training requirement to train around 30 India based employees on “Azure training “
+In line with this requirement, pls do share a detailed training plan along with trainer profiles and commercials at the earliest.
+• Azure Containerization Platform, Azure Kubernetes Services, & Dockerization (How to build Docker image, Push image into AKS etc.).
+• Pipeline setup and deployment
+• Shared AKS concept
+• Authorization and authentication
+• DB creation (Postgres)
+• Azure DevOps
+• Monitoring Tools
+Hi Team,
+We have a new requirement on AI/ML Training.
+Based on the below topics, kindly share the trainer profile & availability, costing, ToC, etc. at the earliest possible time.
+Note: Participants should be able to do Data Analytics, build machine learning model, deep learning, and computer vision.
+Computer Vision/AI - OpenSource Tools(Python /pandas/OpenCV /Pytorch/keras/Hugging face transformers)
+Data Analytics, Statistical modelling, ML, AI, Deep learning,
+NLP concepts- Tokenization, Stemming and Lemmatization, NER, Sentiment Analysis, Topic Modeling, Text classification
+Model Deployment- Exporting model, Integration with other applications, model serving and continuous learning
+Generative AI – Variational Autoencoders, GANs, Autoregressive models
+LLM/Gen AI on Azure, ML model fine tuning, model deployment
+HI Team,
+APMP Training & Certification Pricing
+I wanted to extend our thanks once again for the support you provided last year in delivering the APMP training and certification for our teams. The experience was smooth.
+As we begin planning for this year’s development initiatives, we already have a few nominations lined up for APMP Foundation and Intermediate levels. While we are still finalizing some of the internal setup requirements at our end, we wanted to proactively check with you on the latest training and certification costs for both levels so we can factor them into our planning.
+It would be helpful if you could share the updated pricing structure, along with any changes, batch size requirements, or package options (if applicable).
+Thank you once again for your support, and we look forward to hearing from you.
+Hi Training Partner
+We would like to explore the possibility of conducting an Airflow training program to upskill approximately 20 associates. This training will help strengthen our team’s capabilities and support upcoming project requirements. Below are the topics and details that need to be covered as part of the VILT session.
+Could you please share profiles of trainers with relevant Airflow delivery experience? Additionally, kindly provide the proposed timelines, lab setup details, commercials, and confirm your availability for a scoping/evaluation call within the next two days.
+Topic 1:
+Airflow Fundamentals & Architecture
+Subtopics:
+Why move from TIDAL → Airflow (limitations vs benefits)
+Explains the limitations of TIDAL in modern data ecosystems and how Apache Airflow provides better scalability, visibility, extensibility, and cloud-native orchestration.
+Webserver
+Provides the Airflow UI used by support teams to monitor DAG runs, task status, logs, retries, and failures.
+Scheduler
+Responsible for scheduling DAGs, triggering task instances, and ensuring workflows run according to defined intervals and dependencies.
+Metadata Database
+Stores all Airflow state information such as DAG runs, task instances, execution history, and variables.
+Executor
+Defines how tasks are executed (local, distributed, Kubernetes, etc.) and controls task parallelism.
+Workers
+Actual nodes/processes where Airflow tasks run and perform job execution.
+DAG, Task, Operator, Hook, Connection
+Introduces core Airflow concepts used to define workflows, individual job steps, integrations, and external system connectivity.
+Airflow UI walkthrough
+Demonstrates how to navigate DAG views, task logs, execution timelines, and error details from a support perspective.
+Hands-On
+Access Airflow UI
+Log in to the Airflow web interface and become familiar with dashboards and navigation.
+Explore sample DAGs
+Review existing DAGs to understand structure, dependencies, and scheduling behavior.
+Identify task states & logs
+Learn how to interpret task states such as success, failed, retry, and running, and analyze logs for troubleshooting.
+Topic 2:
+DAGs & Scheduling (TIDAL Mapping)
+Subtopics:
+DAG structure & scheduling concepts
+Explains how workflows are defined as DAGs and how scheduling drives execution timing.
+CRON vs Airflow schedule_interval
+Compares traditional CRON expressions with Airflow’s scheduling and execution-date-based model.
+Task dependencies (parallel vs sequential)
+Shows how tasks can run sequentially or in parallel based on dependency definitions.
+Retries, SLA, timeout
+Covers fault tolerance features used to manage failures, performance expectations, and delayed tasks.
+Backfill & catchup
+Explains how Airflow handles missed schedules and historical data reprocessing.
+TIDAL → Airflow Mapping
+Job → Task
+A single executable unit in TIDAL maps to an individual task in Airflow.
+Job Group → DAG
+A collection of related TIDAL jobs is represented as one Airflow DAG.
+Calendars → schedule_interval
+TIDAL calendars are replaced by Airflow scheduling expressions.
+Job dependencies → task dependencies
+Upstream and downstream relationships are explicitly defined in DAG logic.
+Alerts → callbacks / email / Slack
+Notification handling moves to Airflow callbacks and integrations.Hands-On
+Create a simple DAG
+Build a basic Airflow DAG with multiple tasks and dependencies.
+Convert a TIDAL workflow into an Airflow DAG (conceptual)
+Understand how an existing TIDAL job flow would be represented in Airflow.
+Topic 3:
+Tool-Specific Integrations
+Subtopics:
+Airflow + AWS Lambda
+Demonstrates how Airflow triggers serverless functions in AWS Lambda and handles execution outcomes.
+Common Lambda failures (IAM, timeout, payload issues)
+Covers frequent support issues related to permissions, execution limits, and input data.
+Airflow + Databricks
+Explains orchestration of analytics jobs on Databricks using native operators.
+DatabricksSubmitRunOperator
+Used to submit and monitor Databricks jobs directly from Airflow.
+Job failures, cluster issues
+Focuses on diagnosing failures caused by cluster availability, job configuration, or runtime errors.
+Airflow + IICS
+Shows how Airflow triggers Informatica IICS tasks via REST APIs.
+Secure agent dependency
+Explains the role of secure agents and how their availability affects execution.
+Airflow + BDM
+Covers orchestration of Spark and Hadoop workloads using Informatica BDM.
+Hadoop / Spark job orchestration
+Explains how Airflow manages big data processing dependencies and execution order.
+Hands-On
+Trigger sample jobs (mock or sandbox)
+Execute sample integrations to observe normal and failed behavior.
+Simulate task failures and recovery
+Practice identifying root causes and performing recovery actions.
+Topic 4:
+Monitoring, Alerting & Troubleshooting
+Subtopics:
+Reading task & scheduler logs
+Learn where logs are stored and how to analyze them for execution issues.
+DAG not appearing
+Troubleshoot common causes such as syntax errors, paused DAGs, or scheduler issues.
+Scheduler down
+Understand symptoms and impact when the scheduler is unavailable.
+Task stuck in running
+Identify reasons such as worker failures, external system hangs, or executor limits.
+Zombie tasks
+Learn how Airflow detects and handles tasks that lose worker communication.
+Retry vs rerun vs clear
+Clarifies different recovery actions and when each should be used.
+SLA misses & alerting
+Explains how SLA monitoring works and how alerts are generated.
+Airflow variables & connections
+Shows how runtime configuration and credentials are managed centrally.
+Secrets handling (overview)
+High-level overview of secure credential storage using external secret managers.
+Hands-On
+Break a DAG intentionally
+Create controlled failures to understand system behavior.
+Diagnose and fix issues
+Use logs and UI tools to identify and resolve problems.
+Practice rerun & recovery
+Perform real support recovery actions end to end.
+Dear Knowledge Partners in Bcc line,
+We have a training requirement to train around 5 India based employees on GitLab Duo AI Platform
+In line with this requirement, pls do share a detailed training plan along with trainer profiles and commercials at the earliest.
+GitLab Duo AI Platform for the DevSecOps
+1. Code Generation
+2. Unit Test case integration
+3. Security Code Scanning
+4. IDE Integration
+5. Pipeline setup and troubleshoot pipeline issues
+6. Codereview for the MR
+7. QA Automations
+8. AWS/Azure configuration Help
+Azure AI foundry enablement & support
+We have a requirement to train 20 participants (India) in Azure AI foundry enablement & support. Kindy confirm the feasibility with cost details and slots for scoping calls at the earliest.
+
+Hi Team,
+We have a request to train associates for JBPM Course.
+Request your support on this training program, if yes please help us sharing updated trainer profile, course agenda, costing, batch size, training dates along with availability slots for scoping call to take it forward with the client.
+Mode of Training: Online
+Dear knowledge partners in BCC line,
+We are looking for Java and Android training for 15 associates.
+Attached the TOC for the same.Please help with the training quote ,duration, training topics and lab details
+Looking forward for your response .
+
+[TABLE]
+Academy Training - Request Template | Academy Training - Request Template | Academy Training - Request Template
+1. Program Name <Skill name to be trained (mandatory) and Vendor name (if known)> | 1. Program Name <Skill name to be trained (mandatory) and Vendor name (if known)> | Azure AI foundry enablement & support
+2. Number of associates (Participant split - Geo wise) | 2. Number of associates (Participant split - Geo wise) | 20 - India
+3 .Scope of Services | 1. Topics to be covered/ TOC summary <Mandatory> | Azure AI foundry enablement & support BU expecting TOC from the SME including the pre-requisites, Modules etc..
+3 .Scope of Services | 2. Training mode – ILT/VILT, Self-paced, Access to learning content along with practice lab, certification vouchers | VILT
+4.Comments (if any) | 4.Comments (if any) | 
+5. Lab required | 5. Lab required | Yes

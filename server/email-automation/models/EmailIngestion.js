@@ -38,7 +38,10 @@ const EmailIngestionSchema = new mongoose.Schema(
         },
         linkedEntities: {
             clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'Client', default: null },
-            opportunityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Opportunity', default: null }
+            opportunityId: { type: mongoose.Schema.Types.ObjectId, ref: 'Opportunity', default: null },
+            calendarEventId: { type: String, default: '' },
+            calendarEventWebLink: { type: String, default: '' },
+            calendarEventSubject: { type: String, default: '' }
         },
         processingLog: [{
             at: { type: Date, default: Date.now },
@@ -57,4 +60,3 @@ EmailIngestionSchema.index({ mailbox: 1, receivedAt: -1 });
 EmailIngestionSchema.index({ conversationId: 1, receivedAt: -1 });
 
 module.exports = mongoose.models.EmailIngestion || mongoose.model('EmailIngestion', EmailIngestionSchema);
-

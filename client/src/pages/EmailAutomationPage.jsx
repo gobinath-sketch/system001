@@ -39,6 +39,22 @@ const StatusBadge = ({ value }) => {
     );
 };
 
+const cloneValue = (value) => JSON.parse(JSON.stringify(value || {}));
+
+const updateNestedValue = (source, path, value) => {
+    const next = cloneValue(source);
+    let cursor = next;
+    for (let index = 0; index < path.length - 1; index += 1) {
+        const key = path[index];
+        if (cursor[key] === undefined || cursor[key] === null || typeof cursor[key] !== 'object') {
+            cursor[key] = typeof path[index + 1] === 'number' ? [] : {};
+        }
+        cursor = cursor[key];
+    }
+    cursor[path[path.length - 1]] = value;
+    return next;
+};
+
 const EmailAutomationPage = () => {
     const { addToast } = useToast();
     const navigate = useNavigate();
@@ -66,6 +82,9 @@ const EmailAutomationPage = () => {
     const [mailDetail, setMailDetail] = useState(null);
     const [mailDetailLoading, setMailDetailLoading] = useState(false);
     const [activeSource, setActiveSource] = useState('email');
+    const [reviewModalItem, setReviewModalItem] = useState(null);
+    const [reviewDraft, setReviewDraft] = useState(null);
+    const [reviewSubmitting, setReviewSubmitting] = useState(false);
 
     const [calendarLoading, setCalendarLoading] = useState(false);
     const [calendarEvents, setCalendarEvents] = useState([]);
@@ -455,19 +474,40 @@ const EmailAutomationPage = () => {
         ]);
     };
 
+    const openReviewModal = (item) => {
+        setReviewModalItem(item);
+        setReviewDraft(cloneValue(item?.extraction || {}));
+    };
 
-    const reviewItem = async (id, action) => {
+    const closeReviewModal = () => {
+        setReviewModalItem(null);
+        setReviewDraft(null);
+        setReviewSubmitting(false);
+    };
+
+    const updateReviewDraftField = (path, value) => {
+        setReviewDraft((current) => updateNestedValue(current, path, value));
+    };
+
+    const reviewItem = async (id, action, draftExtraction = null) => {
+        setReviewSubmitting(true);
         try {
             await axios.post(`${API_BASE}${API_ENDPOINTS.emailAutomation.queueReview(id)}`, {
                 action,
-                notes: action === 'approve' ? 'Approved from UI review queue' : 'Rejected from UI review queue'
+                notes: action === 'approve' ? 'Approved from UI review queue' : 'Rejected from UI review queue',
+                draftExtraction: action === 'approve' ? draftExtraction : null
             }, {
                 headers: authHeaders()
             });
             addToast(`Item ${action}d`, action === 'approve' ? 'success' : 'info');
             await Promise.all([fetchQueue(), fetchHistory()]);
+            if (action === 'approve' || action === 'reject') {
+                closeReviewModal();
+            }
         } catch (error) {
             addToast(error?.response?.data?.message || `Failed to ${action} item`, 'error');
+        } finally {
+            setReviewSubmitting(false);
         }
     };
 
@@ -761,9 +801,9 @@ const EmailAutomationPage = () => {
                                         <td className="px-4 py-2">{Number(item.confidence || 0).toFixed(2)}</td>
                                         <td className="px-4 py-2">
                                             <div className="flex items-center gap-2">
-                                                <button onClick={() => reviewItem(item._id, 'approve')} className="px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700 text-xs flex items-center gap-1">
-                                                    <CheckCircle2 size={14} />
-                                                    Approve
+                                                <button onClick={() => openReviewModal(item)} className="px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-xs flex items-center gap-1">
+                                                    <ShieldCheck size={14} />
+                                                    Review
                                                 </button>
                                                 <button onClick={() => reviewItem(item._id, 'reject')} className="px-2 py-1 rounded bg-red-600 text-white hover:bg-red-700 text-xs flex items-center gap-1">
                                                     <XCircle size={14} />
@@ -821,6 +861,16 @@ const EmailAutomationPage = () => {
                                                     >
                                                         Opp: {item.linkedEntities.opportunityId.opportunityNumber || 'Open'}
                                                     </button>
+                                                )}
+                                                {item?.linkedEntities?.calendarEventWebLink && (
+                                                    <a
+                                                        href={item.linkedEntities.calendarEventWebLink}
+                                                        target="_blank"
+                                                        rel="noreferrer"
+                                                        className="px-2 py-1 text-xs rounded bg-violet-50 text-violet-700 border border-violet-200"
+                                                    >
+                                                        Event: {item.linkedEntities.calendarEventSubject || 'Open'}
+                                                    </a>
                                                 )}
                                             </div>
                                         </td>
@@ -1045,6 +1095,273 @@ const EmailAutomationPage = () => {
                                 </table>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {reviewModalItem && reviewDraft && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[88vh] overflow-hidden">
+                        <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
+                            <div>
+                                <h3 className="text-base font-semibold text-slate-900">AI Review Confirmation</h3>
+                                <p className="text-xs text-slate-500 mt-1">
+                                    Review the extracted details, edit anything missing, then confirm the final create/update action.
+                                </p>
+                            </div>
+                            <button onClick={closeReviewModal} className="px-2 py-1 text-sm rounded border hover:bg-slate-100">
+                                Close
+                            </button>
+                        </div>
+
+                        <div className="p-4 overflow-auto max-h-[74vh] space-y-5">
+                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                <div className="lg:col-span-2 bg-white border rounded-lg p-4 space-y-4">
+                                    <div>
+                                        <div className="text-xs text-slate-500 mb-1">Source email</div>
+                                        <div className="text-sm font-semibold text-slate-900">{reviewModalItem.subject || '(No subject)'}</div>
+                                        <div className="text-sm text-slate-600 mt-1">{reviewModalItem.fromName || reviewModalItem.fromEmail || '-'}</div>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Intent</label>
+                                            <input
+                                                value={reviewDraft.intent || ''}
+                                                onChange={(e) => updateReviewDraftField(['intent'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Confidence</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="1"
+                                                step="0.01"
+                                                value={reviewDraft.confidence ?? 0}
+                                                onChange={(e) => updateReviewDraftField(['confidence'], Number(e.target.value))}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">AI Reason</label>
+                                        <textarea
+                                            rows={3}
+                                            value={reviewDraft.reason || ''}
+                                            onChange={(e) => updateReviewDraftField(['reason'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
+                                    <div className="text-sm font-semibold text-blue-900">Prepared actions</div>
+                                    <div className="text-xs text-slate-600">
+                                        The approval below will use the edited draft in this screen.
+                                    </div>
+                                    <ul className="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                                        <li>{reviewDraft?.client?.companyName ? 'Client create/update ready' : 'No client name extracted yet'}</li>
+                                        <li>{reviewDraft?.opportunity?.requirementSummary ? 'Opportunity data present' : 'Opportunity data is limited'}</li>
+                                        <li>{reviewDraft?.meeting?.shouldCreateEvent ? 'Calendar event will be created on approval' : 'No calendar event will be created'}</li>
+                                    </ul>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                <div className="bg-white border rounded-lg p-4 space-y-4">
+                                    <div className="text-sm font-semibold text-slate-900">Client Draft</div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Company Name</label>
+                                        <input
+                                            value={reviewDraft?.client?.companyName || ''}
+                                            onChange={(e) => updateReviewDraftField(['client', 'companyName'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Sector</label>
+                                        <input
+                                            value={reviewDraft?.client?.sector || ''}
+                                            onChange={(e) => updateReviewDraftField(['client', 'sector'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Primary Contact</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.name || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'name'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Primary Email</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.email || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'email'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="bg-white border rounded-lg p-4 space-y-4">
+                                    <div className="text-sm font-semibold text-slate-900">Opportunity Draft</div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Type</label>
+                                        <input
+                                            value={reviewDraft?.opportunity?.type || ''}
+                                            onChange={(e) => updateReviewDraftField(['opportunity', 'type'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Requirement Summary</label>
+                                        <textarea
+                                            rows={4}
+                                            value={reviewDraft?.opportunity?.requirementSummary || ''}
+                                            onChange={(e) => updateReviewDraftField(['opportunity', 'requirementSummary'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Participants</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={reviewDraft?.opportunity?.participants || 0}
+                                                onChange={(e) => updateReviewDraftField(['opportunity', 'participants'], Number(e.target.value))}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Days</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                value={reviewDraft?.opportunity?.days || 0}
+                                                onChange={(e) => updateReviewDraftField(['opportunity', 'days'], Number(e.target.value))}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white border rounded-lg p-4 space-y-4">
+                                <div className="flex items-center justify-between gap-3">
+                                    <div>
+                                        <div className="text-sm font-semibold text-slate-900">Meeting / Calendar Event Draft</div>
+                                        <div className="text-xs text-slate-500 mt-1">If enabled, approving this item will also create an Outlook calendar event.</div>
+                                    </div>
+                                    <label className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                                        <input
+                                            type="checkbox"
+                                            checked={Boolean(reviewDraft?.meeting?.shouldCreateEvent)}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'shouldCreateEvent'], e.target.checked)}
+                                        />
+                                        Create calendar event
+                                    </label>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Event Subject</label>
+                                        <input
+                                            value={reviewDraft?.meeting?.subject || ''}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'subject'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Time Zone</label>
+                                        <input
+                                            value={reviewDraft?.meeting?.timeZone || ''}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'timeZone'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Start</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={reviewDraft?.meeting?.start ? String(reviewDraft.meeting.start).slice(0, 16) : ''}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'start'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">End</label>
+                                        <input
+                                            type="datetime-local"
+                                            value={reviewDraft?.meeting?.end ? String(reviewDraft.meeting.end).slice(0, 16) : ''}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'end'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Location</label>
+                                        <input
+                                            value={reviewDraft?.meeting?.location || ''}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'location'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Meeting Link</label>
+                                        <input
+                                            value={reviewDraft?.meeting?.meetingLink || ''}
+                                            onChange={(e) => updateReviewDraftField(['meeting', 'meetingLink'], e.target.value)}
+                                            className="w-full border rounded-lg px-3 py-2 text-sm"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Description</label>
+                                    <textarea
+                                        rows={3}
+                                        value={reviewDraft?.meeting?.description || ''}
+                                        onChange={(e) => updateReviewDraftField(['meeting', 'description'], e.target.value)}
+                                        className="w-full border rounded-lg px-3 py-2 text-sm"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="px-4 py-3 border-t bg-slate-50 flex flex-wrap items-center justify-end gap-2">
+                            <button
+                                onClick={closeReviewModal}
+                                className="px-4 py-2 rounded-lg border text-sm hover:bg-white"
+                                disabled={reviewSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => reviewItem(reviewModalItem._id, 'reject')}
+                                className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm hover:bg-red-700"
+                                disabled={reviewSubmitting}
+                            >
+                                {reviewSubmitting ? 'Saving...' : 'Reject'}
+                            </button>
+                            <button
+                                onClick={() => reviewItem(reviewModalItem._id, 'approve', reviewDraft)}
+                                className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm hover:bg-green-700 flex items-center gap-2"
+                                disabled={reviewSubmitting}
+                            >
+                                <CheckCircle2 size={14} />
+                                {reviewSubmitting ? 'Approving...' : 'Confirm & Create'}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

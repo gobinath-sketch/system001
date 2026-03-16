@@ -228,13 +228,13 @@ router.get('/teams/:teamId/channels/:channelId/messages', protect, authorize('Di
 
 router.post('/queue/:id/review', protect, authorize('Director', 'Business Head', 'Sales Manager', 'Sales Executive', 'Finance', 'Super Admin'), async (req, res) => {
     try {
-        const { action, notes = '' } = req.body || {};
+        const { action, notes = '', draftExtraction = null } = req.body || {};
         if (!['approve', 'reject'].includes(action)) {
             return res.status(400).json({ message: 'action must be approve or reject' });
         }
 
         const result = action === 'approve'
-            ? await approveQueuedItem({ ingestionId: req.params.id, reviewerId: req.user._id, notes })
+            ? await approveQueuedItem({ ingestionId: req.params.id, reviewerId: req.user._id, notes, draftExtraction })
             : await rejectQueuedItem({ ingestionId: req.params.id, reviewerId: req.user._id, notes });
 
         res.json(result);

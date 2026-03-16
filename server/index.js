@@ -71,6 +71,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/opportunities', opportunityRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/dashboard/delivery', require('./routes/deliveryDashboardRoutes'));
 // Vendor Routes removed
 
 app.use('/api/approvals', approvalRoutes);
