@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Briefcase, Package, FileText, ChevronLeft, ChevronRight, CreditCard, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, Briefcase, Package, FileText, ChevronLeft, ChevronRight, CreditCard, Settings, Inbox } from 'lucide-react';
 import LogoutButton from '../common/LogoutButton';
 const Sidebar = ({
   isMobileOpen = false,
@@ -70,6 +70,10 @@ const Sidebar = ({
         icon: Briefcase,
         path: '/opportunities'
       }, {
+        label: 'Automation',
+        icon: Inbox,
+        path: '/automation/email'
+      }, {
         label: 'Settings',
         icon: Settings,
         path: '/settings'
@@ -94,6 +98,10 @@ const Sidebar = ({
         label: 'Approvals',
         icon: FileText,
         path: '/approvals'
+      }, {
+        label: 'Automation',
+        icon: Inbox,
+        path: '/automation/email'
       }, {
         label: 'Settings',
         icon: Settings,
@@ -133,6 +141,10 @@ const Sidebar = ({
         icon: CreditCard,
         path: '/finance'
       }, {
+        label: 'Automation',
+        icon: Inbox,
+        path: '/automation/email'
+      }, {
         label: 'Settings',
         icon: Settings,
         path: '/settings'
@@ -158,6 +170,10 @@ const Sidebar = ({
         icon: FileText,
         path: '/approvals'
       }, {
+        label: 'Automation',
+        icon: Inbox,
+        path: '/automation/email'
+      }, {
         label: 'Settings',
         icon: Settings,
         path: '/settings'
@@ -182,6 +198,10 @@ const Sidebar = ({
         label: 'Approvals',
         icon: FileText,
         path: '/approvals'
+      }, {
+        label: 'Automation',
+        icon: Inbox,
+        path: '/automation/email'
       }, {
         label: 'Settings',
         icon: Settings,

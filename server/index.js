@@ -58,10 +58,12 @@ const smeRoutes = require('./routes/smeRoutes');
 const reportRoutes = require('./routes/reports');
 const settingsRoutes = require('./routes/settingsRoutes');
 const chatRoutes = require('./routes/chatRoutes');
+const emailAutomationRoutes = require('./email-automation/routes/emailAutomationRoutes');
 
 // Force Restart Tracker
 const notificationRoutes = require('./routes/notifications');
 const userRoutes = require('./routes/userRoutes');
+const { startCalendarReminderService } = require('./services/calendarReminderService');
 
 // Route middleware
 app.use('/api/auth', authRoutes);
@@ -79,6 +81,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/settings', settingsRoutes.router);
 app.use('/api/chat', chatRoutes);
+app.use('/api/email-automation', emailAutomationRoutes);
 
 app.get('/', (req, res) => {
     res.send('ERP API Running');
@@ -118,3 +121,4 @@ io.on('connection', (socket) => {
 });
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+startCalendarReminderService();
