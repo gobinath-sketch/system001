@@ -238,8 +238,7 @@ async function generateOpportunityNumber(actor) {
     const today = new Date();
     const yy = today.getFullYear().toString().slice(-2);
     const mm = String(today.getMonth() + 1).padStart(2, '0');
-    const codeRaw = actor?.creatorCode || actor?.name || 'AI';
-    const code = String(codeRaw).replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase().padEnd(2, 'X');
+    const code = (actor?.name ? String(actor.name).substring(0, 2) : 'XX').toUpperCase();
     const prefix = `GKT${yy}${code}${mm}`;
     const last = await Opportunity.findOne({ opportunityNumber: new RegExp(`^${prefix}`) }).sort({ opportunityNumber: -1 });
     const serial = last ? String(Number(last.opportunityNumber.slice(-3)) + 1).padStart(3, '0') : '001';

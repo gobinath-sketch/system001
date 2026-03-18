@@ -102,7 +102,6 @@ const ClientPage = () => {
   const [filterCreator, setFilterCreator] = useState('');
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   const [duplicateClientData, setDuplicateClientData] = useState(null);
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, clientId: null });
 
   const checkDuplicate = async name => {
     // Skip check if empty or if we are editing the same client and name hasn't changed (case insensitive)
@@ -211,21 +210,6 @@ const ClientPage = () => {
     } catch (err) {
       console.error('Error fetching clients:', err);
       addToast('Failed to load clients. Please try again.', 'error');
-    }
-  };
-
-  const handleDeleteClient = async (clientId) => {
-    try {
-      const token = sessionStorage.getItem('token');
-      await axios.delete(`${API_BASE}/api/clients/${clientId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      addToast('Client deleted successfully', 'success');
-      fetchClients();
-    } catch (err) {
-      console.error('Error deleting client:', err);
-      const msg = err.response?.data?.message || 'Failed to delete client';
-      addToast(msg, 'error');
     }
   };
 
@@ -885,9 +869,7 @@ const ClientPage = () => {
                 <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Location</th>
                 <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Contact Info</th>
                 {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900 w-[10%]">Created By</th>}
-                <th className="px-6 py-3 font-semibold text-gray-900 text-center">Opp. given</th>
                 <th className="px-6 py-3 font-semibold text-gray-900 text-center whitespace-nowrap">Add Opportunity</th>
-                {isSalesRole && <th className="px-6 py-3 font-semibold text-gray-900 text-center">Actions</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -931,16 +913,6 @@ const ClientPage = () => {
                       </button>
                     </div>
                   </td>
-                  {isSalesRole && <td className="px-6 py-4 text-center">
-                    <div className="flex justify-center">
-                      <button onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteModal({ isOpen: true, clientId: client._id });
-                      }} className="bg-red-100 hover:bg-red-200 text-red-600 transition-colors p-2 rounded-md" title="Delete Client">
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  </td>}
                 </tr>;
               }) : <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
@@ -954,20 +926,7 @@ const ClientPage = () => {
     </>}
 
 
-    {/* Delete Confirmation Modal */}
-    <AlertModal
-      isOpen={deleteModal.isOpen}
-      onClose={() => setDeleteModal({ isOpen: false, clientId: null })}
-      title="Delete Client"
-      message="Are you sure you want to delete this client? This action will remove the client from your view and notify your reporting manager."
-      confirmText="Yes, Delete"
-      cancelText="Cancel"
-      type="danger"
-      onConfirm={() => {
-        handleDeleteClient(deleteModal.clientId);
-        setDeleteModal({ isOpen: false, clientId: null });
-      }}
-    />
+
   </div>;
 };
 export default ClientPage;
