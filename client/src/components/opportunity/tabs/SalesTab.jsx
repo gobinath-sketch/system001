@@ -9,6 +9,8 @@ import UploadButton from '../../ui/UploadButton';
 import { getTechnologyOptions } from '../../../utils/TechnologyConstants';
 import { API_BASE } from '../../../config/api';
 import CountrySelectField from '../../form/CountrySelectField';
+import CourseAutocomplete from '../../ui/CourseAutocomplete';
+import DurationField from '../../ui/DurationField';
 const SalesTab = forwardRef(({
   opportunity,
   isEditing,
@@ -106,7 +108,7 @@ const SalesTab = forwardRef(({
           expenses: sanitizedExpenses,
           typeSpecificDetails: sanitizedTypeSpecificDetails,
           participants: formData.participants,
-          days: formData.days,
+          days: formData.days, // legacy fallback if needed
           requirementSummary: formData.requirementSummary,
           assignedTo: formData.assignedTo || null
         };
@@ -169,26 +171,35 @@ const SalesTab = forwardRef(({
       }
 
       // Dynamic TOV calculation
-      if (section === 'commonDetails' && (field === 'tovRate' || field === 'tovUnit')) {
-        const rate = field === 'tovRate' ? parseFloat(value) || 0 : newState.commonDetails.tovRate || 0;
-        const unit = field === 'tovUnit' ? value : newState.commonDetails.tovUnit || 'Fixed';
+      if (section === 'commonDetails' && (field === 'tovRate' || field === 'tovUnit' || field === 'durationHours') || section === 'root' && field === 'participants') {
+        const rate = (section === 'commonDetails' && field === 'tovRate') ? (parseFloat(value) || 0) : (newState.commonDetails.tovRate || 0);
+        const unit = (section === 'commonDetails' && field === 'tovUnit') ? value : (newState.commonDetails.tovUnit || 'Fixed');
+        const durationH = (section === 'commonDetails' && field === 'durationHours') ? value : (newState.commonDetails.durationHours || 0);
+        const participants = (section === 'root' && field === 'participants') ? value : (newState.participants || 1);
+        
         let calculatedTov = rate;
-        if (unit === 'Per Day') calculatedTov = rate * (newState.days || 1); else if (unit === 'Per Participant') calculatedTov = rate * (newState.participants || 1);
+        const calcDays = durationH / 8;
+        
+        if (unit === 'Per Day') calculatedTov = rate * (calcDays || 1); 
+        else if (unit === 'Per Hour') calculatedTov = rate * (durationH || 1);
+        else if (unit === 'Per Participant') calculatedTov = rate * (participants || 1);
+        
         newState.commonDetails.tov = calculatedTov;
       }
 
-      // Auto-calculate end date when start date or days changes
-      if (section === 'commonDetails' && field === 'startDate' || section === 'root' && field === 'days') {
-        const startDate = section === 'commonDetails' && field === 'startDate' ? value : newState.commonDetails?.startDate;
-        const days = section === 'root' && field === 'days' ? value : newState.days;
-        if (startDate && days && parseInt(days) > 0) {
+      // Auto-calculate end date when start date or duration changes
+      if (section === 'commonDetails' && (field === 'startDate' || field === 'durationHours')) {
+        const startDate = (section === 'commonDetails' && field === 'startDate') ? value : newState.commonDetails?.startDate;
+        const durationH = (section === 'commonDetails' && field === 'durationHours') ? value : newState.commonDetails?.durationHours;
+        const daysRounded = Math.ceil((durationH || 8) / 8);
+
+        if (startDate && daysRounded > 0) {
           const start = new Date(startDate);
           const end = new Date(start);
           // Add days - 1 (since start date is day 1)
-          end.setDate(start.getDate() + parseInt(days) - 1);
+          end.setDate(start.getDate() + daysRounded - 1);
 
           // Only auto-update if user hasn't manually set end date
-          // (We check if end date is empty or matches previous auto-calculation)
           if (!newState.commonDetails) {
             newState.commonDetails = {};
           }
@@ -579,13 +590,26 @@ const SalesTab = forwardRef(({
             <option value="MCT">MCT</option>
           </select>
         </div>
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-1">Course Code</label>
-          <input type="text" value={formData.commonDetails?.courseCode || ''} onChange={e => handleChange('commonDetails', 'courseCode', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Code" />
-        </div>
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-1">Course Name</label>
-          <input type="text" value={formData.commonDetails?.courseName || ''} onChange={e => handleChange('commonDetails', 'courseName', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Name" />
+        <div className="md:col-span-2">
+          <label className="block text-base font-semibold text-gray-800 mb-1">Course</label>
+          <CourseAutocomplete
+              technology={formData.typeSpecificDetails?.technology || opportunity.typeSpecificDetails?.technology}
+              trainingRequirement={formData.typeSpecificDetails?.trainingName || formData.requirementSummary}
+              value={
+                  formData.commonDetails?.courseCode && formData.commonDetails?.courseName
+                  ? `${formData.commonDetails.courseCode} - ${formData.commonDetails.courseName}`
+                  : formData.commonDetails?.courseName || formData.commonDetails?.courseCode || ''
+              }
+              onChange={(code, name, durationHours) => {
+                  handleChange('commonDetails', 'courseCode', code);
+                  handleChange('commonDetails', 'courseName', name);
+                  if (durationHours !== null) {
+                      handleChange('commonDetails', 'durationHours', durationHours);
+                  }
+              }}
+              disabled={!isEditing}
+              className={inputClass}
+          />
         </div>
 
         {/* Month/Year Selection */}
@@ -606,10 +630,15 @@ const SalesTab = forwardRef(({
           </div>
         </div>
 
-        {/* No. of Days - Smaller visual width (w-1/2) */}
+        {/* Duration */}
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-1">No. of Days</label>
-          <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', parseInt(e.target.value) || 0)} disabled={!isEditing} className={`${inputClass} w-2/3`} placeholder="0" />
+          <label className="block text-base font-semibold text-gray-800 mb-1">Duration</label>
+          <DurationField 
+              durationHours={formData.commonDetails?.durationHours}
+              onChange={val => handleChange('commonDetails', 'durationHours', val)}
+              disabled={!isEditing}
+              className={`${inputClass} !w-auto`}
+          />
         </div>
 
         {/* Start and End Date Side-by-Side */}

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { API_BASE, API_ENDPOINTS } from '../config/api';
 import { useToast } from '../context/ToastContext';
 import { RefreshCw, Inbox, CheckCircle2, XCircle, ShieldCheck, Mail, Filter, CalendarDays, Users, MessageSquare } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const authHeaders = () => ({
     Authorization: `Bearer ${sessionStorage.getItem('token') || ''}`
@@ -58,6 +58,7 @@ const updateNestedValue = (source, path, value) => {
 const EmailAutomationPage = () => {
     const { addToast } = useToast();
     const navigate = useNavigate();
+    const location = useLocation();
 
     const [health, setHealth] = useState(null);
     const [checking, setChecking] = useState(false);
@@ -81,7 +82,7 @@ const EmailAutomationPage = () => {
     const [toDate, setToDate] = useState('');
     const [mailDetail, setMailDetail] = useState(null);
     const [mailDetailLoading, setMailDetailLoading] = useState(false);
-    const [activeSource, setActiveSource] = useState('email');
+    const [activeSource, setActiveSource] = useState(location.state?.activeSource || 'email');
     const [reviewModalItem, setReviewModalItem] = useState(null);
     const [reviewDraft, setReviewDraft] = useState(null);
     const [reviewSubmitting, setReviewSubmitting] = useState(false);

@@ -267,7 +267,7 @@ router.post('/ingest/pull', protect, authorize('Director', 'Business Head', 'Sal
 
         const results = [];
         for (const msg of messages) {
-            const processed = await processNormalizedEmail(msg, { forceReview });
+            const processed = await processNormalizedEmail(msg, { forceReview, actorId: req.user._id });
             results.push({
                 id: processed._id,
                 status: processed.status,
@@ -310,7 +310,7 @@ router.post('/ingest/selected', protect, authorize('Director', 'Business Head', 
 
         for (const messageId of uniqueMessageIds) {
             const normalized = await fetchMessageById({ mailbox, messageId });
-            const processed = await processNormalizedEmail(normalized, { forceReview });
+            const processed = await processNormalizedEmail(normalized, { forceReview, actorId: req.user._id });
             results.push({
                 messageId,
                 id: processed._id,
@@ -352,7 +352,8 @@ router.post('/ingest/message', protect, authorize('Director', 'Business Head', '
         };
         const result = await processNormalizedEmail(normalized, {
             forceReview: Boolean(body.forceReview),
-            sourceContext: body.sourceContext || {}
+            sourceContext: body.sourceContext || {},
+            actorId: req.user._id
         });
         res.status(201).json(result);
     } catch (error) {
@@ -388,7 +389,8 @@ router.post('/ingest/unified', protect, authorize('Director', 'Business Head', '
 
         const result = await processNormalizedEmail(normalized, {
             forceReview: Boolean(body.forceReview),
-            sourceContext
+            sourceContext,
+            actorId: req.user._id
         });
 
         res.status(201).json(result);

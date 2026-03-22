@@ -390,6 +390,8 @@ const NotificationDropdown = () => {
                 navigate(`/opportunities/${notification.opportunityId}`, { state: { activeTab: targetTab } });
             } else if (['approval_request', 'approval_status_change', 'gp_approval_request'].includes(notification.type)) {
                 navigate('/approvals');
+            } else if (notification.type === 'calendar_reminder') {
+                navigate('/automation/email', { state: { activeSource: 'calendar' } });
             } else {
                 navigate('/dashboard');
             }
