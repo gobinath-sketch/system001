@@ -85,12 +85,26 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Directo
     try {
         const smeData = { ...req.body, createdBy: req.user._id };
 
-        // Parse bankDetails if it's a string (from FormData)
-        if (typeof smeData.bankDetails === 'string') {
+        // Parse bankDetails if it's a string or array (from FormData)
+        if (typeof smeData.bankDetails === 'string' || Array.isArray(smeData.bankDetails)) {
             try {
-                smeData.bankDetails = JSON.parse(smeData.bankDetails);
+                let bdString = Array.isArray(smeData.bankDetails) ? smeData.bankDetails[0] : smeData.bankDetails;
+                smeData.bankDetails = JSON.parse(bdString);
             } catch (e) {
                 return res.status(400).json({ message: 'Invalid bank details format' });
+            }
+        }
+
+        // Parse availability if it's a string or array
+        if (typeof smeData.availability === 'string' || Array.isArray(smeData.availability)) {
+            try {
+                let availString = Array.isArray(smeData.availability) ? smeData.availability[0] : smeData.availability;
+                smeData.availability = JSON.parse(availString);
+                if (!smeData.availability.availableFrom) smeData.availability.availableFrom = null;
+                if (!smeData.availability.availableUntil) smeData.availability.availableUntil = null;
+                if (!smeData.availability.statusOverride) smeData.availability.statusOverride = null;
+            } catch (e) {
+                // Ignore parsing errors
             }
         }
 
@@ -136,12 +150,16 @@ router.post('/', protect, authorize('Sales Executive', 'Sales Manager', 'Directo
 // @access  Private
 router.get('/', protect, async (req, res) => {
     try {
-        const { technology, type, search } = req.query;
+        const { technology, type, classification, status, search } = req.query;
 
         const filter = { isActive: true };
 
+        if (classification) filter.classification = classification;
         if (technology) filter.technology = new RegExp(technology, 'i');
         if (type) filter.smeType = type;
+        if (status) {
+            filter['availability.currentStatus'] = status;
+        }
 
         if (search) {
             const searchRegex = new RegExp(search, 'i');
@@ -162,9 +180,97 @@ router.get('/', protect, async (req, res) => {
     }
 });
 
-// @route   GET /api/smes/vendor/:vendorId
-// @desc    Get all SMEs for a vendor (Legacy support)
-// @access  Private
+// @route   GET /api/smes/recommend
+// @desc    Recommend SMEs based on technology, availability dates, and location
+// @access  Private (Sales, Manager, Director, Delivery Team)
+router.get('/recommend', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Head', 'Delivery Executive'), async (req, res) => {
+    try {
+        const { technology, location, startDate, endDate } = req.query;
+        if (!technology) {
+            return res.status(400).json({ message: 'Technology is required for recommendations' });
+        }
+
+        // We fetch ALL active SMEs and score them in memory because scoring logic is somewhat complex
+        const smes = await SME.find({ isActive: true })
+            .populate('createdBy', 'name email')
+            .lean();
+
+        const reqTech = technology.toLowerCase().trim();
+        const reqLoc = location ? location.toLowerCase().trim() : '';
+        const reqStart = startDate ? new Date(startDate) : null;
+        const reqEnd = endDate ? new Date(endDate) : null;
+
+        const scoredSmes = smes.map(sme => {
+            let score = 0;
+            const matchReasons = [];
+
+            // 1. Technology match (Highest weight: 50, now a MUST HAVE)
+            const smeTech = (sme.technology || '').toLowerCase().trim();
+            if (smeTech && reqTech && (smeTech.includes(reqTech) || reqTech.includes(smeTech))) {
+                score += 50;
+                matchReasons.push('Technology');
+            } else {
+                return null; // Return null to completely ignore this SME
+            }
+
+            // 2. Availability match (High weight: 30)
+            let isAvailable = false;
+            if (sme.availability) {
+                if (sme.availability.statusOverride === 'Available') {
+                    isAvailable = true;
+                } else if (sme.availability.statusOverride === 'Not Available' || sme.availability.statusOverride === 'Engaged') {
+                    isAvailable = false;
+                } else {
+                    // Check date overlap
+                    const availFrom = sme.availability.availableFrom ? new Date(sme.availability.availableFrom) : null;
+                    const availUntil = sme.availability.availableUntil ? new Date(sme.availability.availableUntil) : null;
+                    
+                    if (!availFrom && !availUntil) {
+                        isAvailable = true; // Open availability
+                    } else if (reqStart) {
+                        // Project has dates
+                        const safeEnd = reqEnd || reqStart; // fallback if single day
+                        if ((!availFrom || availFrom <= reqStart) && (!availUntil || availUntil >= safeEnd)) {
+                            isAvailable = true;
+                        }
+                    } else if (sme.availability.currentStatus === 'Available') {
+                        // If no project dates given, just check if they are generally available now
+                        isAvailable = true;
+                    }
+                }
+            } else {
+                isAvailable = true; // No availability set = assume available
+            }
+
+            if (isAvailable) {
+                score += 30;
+                matchReasons.push('Availability');
+            }
+
+            // 3. Location match (Lower weight: 20)
+            if (reqLoc) {
+                const smeLoc = (sme.location || sme.companyLocation || '').toLowerCase();
+                if (smeLoc.includes(reqLoc) || reqLoc.includes(smeLoc)) {
+                    score += 20;
+                    matchReasons.push('Location');
+                }
+            }
+
+            return { ...sme, matchScore: score, matchReasons };
+        }).filter(s => s !== null); // Remove nulls (SMEs that didn't match Technology)
+
+        // Filter out completely irrelevant ones (e.g. 0 score) and sort by score DESC
+        const recommendations = scoredSmes
+            .filter(s => s.matchScore > 0)
+            .sort((a, b) => b.matchScore - a.matchScore)
+            .slice(0, 10); // Return top 10
+
+        res.json(recommendations);
+    } catch (err) {
+        console.error('Recommend SME Error:', err);
+        res.status(500).json({ message: err.message });
+    }
+});
 
 
 // @route   GET /api/smes/:id
@@ -199,12 +305,25 @@ router.put('/:id', protect, authorize('Sales Executive', 'Sales Manager', 'Direc
 
         const updateData = { ...req.body };
 
-        // Parse bankDetails if string
-        if (typeof updateData.bankDetails === 'string') {
+        // Parse bankDetails if string or array
+        if (typeof updateData.bankDetails === 'string' || Array.isArray(updateData.bankDetails)) {
             try {
-                updateData.bankDetails = JSON.parse(updateData.bankDetails);
+                let bdString = Array.isArray(updateData.bankDetails) ? updateData.bankDetails[0] : updateData.bankDetails;
+                updateData.bankDetails = JSON.parse(bdString);
             } catch (e) {
                 return res.status(400).json({ message: 'Invalid bank details format' });
+            }
+        }
+
+        if (typeof updateData.availability === 'string' || Array.isArray(updateData.availability)) {
+            try {
+                let availString = Array.isArray(updateData.availability) ? updateData.availability[0] : updateData.availability;
+                updateData.availability = JSON.parse(availString);
+                if (!updateData.availability.availableFrom) updateData.availability.availableFrom = null;
+                if (!updateData.availability.availableUntil) updateData.availability.availableUntil = null;
+                if (!updateData.availability.statusOverride) updateData.availability.statusOverride = null;
+            } catch (e) {
+                // Ignore parsing errors
             }
         }
 

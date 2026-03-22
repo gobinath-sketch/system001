@@ -31,6 +31,46 @@ const SalesTab = forwardRef(({
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({});
   const [deliveryUsers, setDeliveryUsers] = useState([]);
+  const [recommendedSMEs, setRecommendedSMEs] = useState([]);
+  const [loadingSMEs, setLoadingSMEs] = useState(false);
+
+  // Fetch recommendations when SME is required
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!isEditing || formData.commonDetails?.smeRequired !== 'Yes') return;
+      
+      setLoadingSMEs(true);
+      try {
+        const token = sessionStorage.getItem('token');
+        const tech = formData.typeSpecificDetails?.technology || '';
+        const loc = formData.typeSpecificDetails?.trainingLocation || formData.commonDetails?.location || '';
+        const start = formData.commonDetails?.startDate || '';
+        const end = formData.commonDetails?.endDate || '';
+        
+        if (tech) {
+          const res = await axios.get(`${API_BASE}/api/smes/recommend`, {
+            params: { technology: tech, location: loc, startDate: start, endDate: end },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setRecommendedSMEs(res.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch SME recommendations:', err);
+      } finally {
+        setLoadingSMEs(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [
+    isEditing, 
+    formData.commonDetails?.smeRequired, 
+    formData.typeSpecificDetails?.technology, 
+    formData.commonDetails?.startDate, 
+    formData.commonDetails?.endDate, 
+    formData.typeSpecificDetails?.trainingLocation,
+    formData.commonDetails?.location
+  ]);
 
   // Fetch delivery users for the assignment dropdown
   useEffect(() => {
@@ -103,6 +143,9 @@ const SalesTab = forwardRef(({
         };
         delete sanitizedTypeSpecificDetails._id;
         delete sanitizedTypeSpecificDetails.__v;
+        
+        const selectedSMEId = typeof formData.selectedSME === 'object' && formData.selectedSME !== null ? formData.selectedSME._id : formData.selectedSME;
+
         const payload = {
           commonDetails: sanitizedCommonDetails,
           expenses: sanitizedExpenses,
@@ -110,7 +153,8 @@ const SalesTab = forwardRef(({
           participants: formData.participants,
           days: formData.days, // legacy fallback if needed
           requirementSummary: formData.requirementSummary,
-          assignedTo: formData.assignedTo || null
+          assignedTo: formData.assignedTo || null,
+          selectedSME: selectedSMEId || null
         };
         const res = await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
@@ -664,16 +708,39 @@ const SalesTab = forwardRef(({
         {(formData.commonDetails?.smeRequired === 'Yes' || opportunity.commonDetails?.smeRequired === 'Yes') && <React.Fragment>
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">Assigned SME</label>
-            <div className="p-2 bg-gray-50 rounded border border-gray-200 text-base font-semibold text-gray-800">
-              {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME?.name ? opportunity.selectedSME.name : 'Not Assigned'}
-            </div>
+            {isEditing ? (
+              <select 
+                value={typeof formData.selectedSME === 'object' ? (formData.selectedSME?._id || '') : (formData.selectedSME || '')} 
+                onChange={e => setFormData({ ...formData, selectedSME: e.target.value })} 
+                className={selectClass}
+              >
+                <option value="">-- Select Recommended SME --</option>
+                {loadingSMEs ? <option disabled>Loading recommendations...</option> : 
+                  recommendedSMEs.map(sme => (
+                    <option key={sme._id} value={sme._id}>
+                      {sme.name} ({sme.classification === 'Internal' ? 'Internal' : sme.smeType})
+                    </option>
+                  ))
+                }
+                {/* Fallback to show currently assigned SME even if not in recommendations */}
+                {formData.selectedSME && typeof formData.selectedSME === 'object' && formData.selectedSME.name && !recommendedSMEs.some(s => s._id === formData.selectedSME._id) && (
+                  <option value={formData.selectedSME._id}>
+                    {formData.selectedSME.name} (Currently Assigned)
+                  </option>
+                )}
+              </select>
+            ) : (
+              <div className="p-2 bg-gray-50 rounded border border-gray-200 text-base font-semibold text-gray-800">
+                {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME !== null && opportunity.selectedSME?.name ? opportunity.selectedSME.name : 'Not Assigned'}
+              </div>
+            )}
           </div>
 
           {/* SME Profile Document */}
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">SME Profile</label>
             <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-              {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium" title="View SME Profile">
+              {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME !== null && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium" title="View SME Profile">
                 <CheckCircle size={14} /> View
               </a> : <span className="text-sm text-gray-400 italic">Not Available</span>}
             </div>
