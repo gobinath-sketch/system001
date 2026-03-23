@@ -106,15 +106,10 @@ const SMESchema = new mongoose.Schema({
     availability: {
         availableFrom: { type: Date },
         availableUntil: { type: Date },
-        statusOverride: {
-            type: String,
-            enum: ['Available', 'Engaged', 'Not Available', null],
-            default: null
-        },
-        // Auto-calculated status
+        // Auto-calculated status based on dates
         currentStatus: {
             type: String,
-            enum: ['Available', 'Engaged', 'Not Available'],
+            enum: ['Available', 'Not Available'],
             default: 'Available'
         }
     },
@@ -152,36 +147,33 @@ SMESchema.pre('save', function () {
 
     // Remove smeType for Internal SMEs
     if (this.classification === 'Internal') {
-        this.smeType = undefined; // Force it to be empty for interal
+        this.smeType = undefined;
     }
 
-    // Auto-resolve availability status
-    if (this.availability && this.availability.statusOverride) {
-        this.availability.currentStatus = this.availability.statusOverride;
-    } else {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    // Auto-derive availability status purely from dates
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-        if (this.availability && this.availability.availableFrom) {
-            const start = new Date(this.availability.availableFrom);
-            start.setHours(0, 0, 0, 0);
-            
-            let end = null;
-            if (this.availability.availableUntil) {
-                end = new Date(this.availability.availableUntil);
-                end.setHours(23, 59, 59, 999);
-            }
+    const avail = this.availability;
+    if (avail && avail.availableFrom) {
+        const start = new Date(avail.availableFrom);
+        start.setHours(0, 0, 0, 0);
 
-            if (today >= start && (!end || today <= end)) {
-                this.availability.currentStatus = 'Available';
-            } else {
-                this.availability.currentStatus = 'Not Available';
-            }
-        } else {
-            // Default open availability if no dates are set
-            this.availability = this.availability || {};
-            this.availability.currentStatus = 'Available';
+        let end = null;
+        if (avail.availableUntil) {
+            end = new Date(avail.availableUntil);
+            end.setHours(23, 59, 59, 999);
         }
+
+        if (today >= start && (!end || today <= end)) {
+            avail.currentStatus = 'Available';
+        } else {
+            avail.currentStatus = 'Not Available';
+        }
+    } else {
+        // No dates set → always available
+        if (!this.availability) this.availability = {};
+        this.availability.currentStatus = 'Available';
     }
 });
 

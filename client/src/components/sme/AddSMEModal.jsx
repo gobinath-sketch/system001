@@ -52,8 +52,7 @@ const AddSMEModal = ({
     panNo: '',
     availability: {
       availableFrom: '',
-      availableUntil: '',
-      statusOverride: ''
+      availableUntil: ''
     }
   };
   const [formData, setFormData] = useState(initialFormState);
@@ -94,8 +93,7 @@ const AddSMEModal = ({
           panNo: smeToEdit.panNo && smeToEdit.panNo !== 'Pending' ? smeToEdit.panNo : '',
           availability: {
             availableFrom: smeToEdit.availability?.availableFrom ? new Date(smeToEdit.availability.availableFrom).toISOString().split('T')[0] : '',
-            availableUntil: smeToEdit.availability?.availableUntil ? new Date(smeToEdit.availability.availableUntil).toISOString().split('T')[0] : '',
-            statusOverride: smeToEdit.availability?.statusOverride || ''
+            availableUntil: smeToEdit.availability?.availableUntil ? new Date(smeToEdit.availability.availableUntil).toISOString().split('T')[0] : ''
           }
         });
       } else {
@@ -518,7 +516,7 @@ const AddSMEModal = ({
             {/* Section E: Availability */}
             <div>
               <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">E. Availability</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Available From</label>
                   <input type="date" name="availability.availableFrom" value={formData.availability.availableFrom} onChange={handleInputChange} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" />
@@ -526,15 +524,6 @@ const AddSMEModal = ({
                 <div>
                   <label className="block text-xs text-gray-500 mb-1">Available Until</label>
                   <input type="date" name="availability.availableUntil" value={formData.availability.availableUntil} onChange={handleInputChange} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Status Override (Optional)</label>
-                  <select name="availability.statusOverride" value={formData.availability.statusOverride} onChange={handleInputChange} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px] bg-white">
-                    <option value="">Auto-calculate from dates</option>
-                    <option value="Available">Available</option>
-                    <option value="Engaged">Engaged</option>
-                    <option value="Not Available">Not Available</option>
-                  </select>
                 </div>
               </div>
             </div>
