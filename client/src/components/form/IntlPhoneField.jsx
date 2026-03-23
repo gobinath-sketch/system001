@@ -25,7 +25,7 @@ const IntlPhoneField = ({
   inputClass = '',
   inputHeight = '36px'
 }) => {
-  const sanitizedValue = normalizeForInput(value, true); // Preserve + sign for PhoneInput display
+  const sanitizedValue = value ? String(value).replace(/\D/g, '') : '';
   const handlePhoneChange = (phoneValue, countryData) => {
     const normalizedDigits = normalizeForInput(phoneValue);
     if (!normalizedDigits) {
@@ -35,18 +35,6 @@ const IntlPhoneField = ({
 
     const dialCode = normalizeForInput(countryData?.dialCode);
     const withPlus = `+${normalizedDigits}`;
-    const countryCode = countryData?.countryCode ? String(countryData.countryCode).toUpperCase() : undefined;
-    const maxMobileLocalLength = getMobileExampleLength(countryCode);
-
-    if (dialCode && normalizedDigits.startsWith(dialCode) && maxMobileLocalLength > 0) {
-      const localDigits = normalizedDigits.slice(dialCode.length);
-      if (localDigits.length > maxMobileLocalLength) return;
-    }
-
-    if (normalizedDigits.length > 15) return;
-    const lengthResult = validatePhoneNumberLength(withPlus, countryCode);
-    if (lengthResult === 'TOO_LONG') return;
-
     onChange(withPlus);
   };
 
@@ -56,8 +44,8 @@ const IntlPhoneField = ({
       value={sanitizedValue}
       onChange={handlePhoneChange}
       enableSearch
-      enableLongNumbers={false}
-      countryCodeEditable={false}
+      enableLongNumbers={true}
+      countryCodeEditable={true}
       disableSearchIcon
       inputProps={{ required }}
       containerClass={`intl-phone-field ${containerClass}`.trim()}

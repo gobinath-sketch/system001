@@ -207,6 +207,7 @@ const OpportunitySchema = new mongoose.Schema({
         startDate: { type: Date },
         endDate: { type: Date },
         duration: { type: Number },
+        durationHours: { type: Number, default: 0 },
         location: { type: String },
 
         trainerDetails: {
@@ -219,7 +220,7 @@ const OpportunitySchema = new mongoose.Schema({
         tovRate: { type: Number }, // Rate entered by user
         tovUnit: {
             type: String,
-            enum: ['Fixed', 'Per Day', 'Per Participant'],
+            enum: ['Fixed', 'Per Day', 'Per Participant', 'Per Hour'],
             default: 'Fixed'
         },
 
@@ -428,8 +429,9 @@ OpportunitySchema.pre('save', async function () {
         this.financials.totalExpense = baseExpense + marketingAmount + contingencyAmount;
 
         // Cost per Day
-        const days = this.days || 1;
-        this.financials.costPerDay = this.financials.costPerDay = (days > 0) ? (this.financials.totalExpense / days) : 0;
+        const durationHours = (this.commonDetails && this.commonDetails.durationHours > 0) ? this.commonDetails.durationHours : ((this.days || 1) * 8);
+        const virtualDays = (durationHours > 0) ? (durationHours / 8) : 1;
+        this.financials.costPerDay = this.financials.costPerDay = (virtualDays > 0) ? (this.financials.totalExpense / virtualDays) : 0;
 
         // Base Calculation Value (Prioritize PO Value for "Financial Summary" sync)
         const revenueBase = (this.poValue && this.poValue > 0) ? this.poValue : tov;
@@ -440,7 +442,7 @@ OpportunitySchema.pre('save', async function () {
         this.financials.gktRevenue = revenueBase - this.financials.totalExpense;
 
         // GKT Revenue per Day
-        this.financials.gktRevenuePerDay = (days > 0) ? (this.financials.gktRevenue / days) : 0;
+        this.financials.gktRevenuePerDay = (virtualDays > 0) ? (this.financials.gktRevenue / virtualDays) : 0;
 
         // GP % = (GKT Revenue / RevenueBase) * 100
         if (revenueBase > 0) {

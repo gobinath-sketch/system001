@@ -11,7 +11,8 @@ const AddSMEModal = ({
   isOpen,
   onClose,
   onSuccess,
-  smeToEdit = null
+  smeToEdit = null,
+  defaultClassification = 'External'
 }) => {
   const {
     addToast
@@ -26,6 +27,7 @@ const AddSMEModal = ({
     gstDocument: null
   });
   const initialFormState = {
+    classification: defaultClassification,
     smeType: 'Company',
     companyName: '',
     companyContactNumber: '',
@@ -47,7 +49,12 @@ const AddSMEModal = ({
       ifscCode: ''
     },
     gstNo: '',
-    panNo: ''
+    panNo: '',
+    availability: {
+      availableFrom: '',
+      availableUntil: '',
+      statusOverride: ''
+    }
   };
   const [formData, setFormData] = useState(initialFormState);
   const [errors, setErrors] = useState({});
@@ -68,6 +75,7 @@ const AddSMEModal = ({
     if (isOpen) {
       if (smeToEdit) {
         setFormData({
+          classification: smeToEdit.classification || 'External',
           smeType: smeToEdit.smeType || (smeToEdit.companyVendor ? 'Company' : 'Freelancer'),
           companyName: smeToEdit.companyName || '',
           companyContactNumber: smeToEdit.companyContactNumber || '',
@@ -83,7 +91,12 @@ const AddSMEModal = ({
           address: smeToEdit.address || '',
           bankDetails: smeToEdit.bankDetails || initialFormState.bankDetails,
           gstNo: smeToEdit.gstNo && smeToEdit.gstNo !== 'Pending' ? smeToEdit.gstNo : '',
-          panNo: smeToEdit.panNo && smeToEdit.panNo !== 'Pending' ? smeToEdit.panNo : ''
+          panNo: smeToEdit.panNo && smeToEdit.panNo !== 'Pending' ? smeToEdit.panNo : '',
+          availability: {
+            availableFrom: smeToEdit.availability?.availableFrom ? new Date(smeToEdit.availability.availableFrom).toISOString().split('T')[0] : '',
+            availableUntil: smeToEdit.availability?.availableUntil ? new Date(smeToEdit.availability.availableUntil).toISOString().split('T')[0] : '',
+            statusOverride: smeToEdit.availability?.statusOverride || ''
+          }
         });
       } else {
         setFormData(initialFormState);
@@ -138,28 +151,16 @@ const AddSMEModal = ({
       }));
       let error = '';
       if (name === 'contactNumber' || name === 'companyContactNumber') {
-        const {
-          valid,
-          message
-        } = validateMobile(value);
+        const { valid, message } = validateMobile(value);
         if (!valid && value.length > 0) error = message;
       } else if (name === 'email') {
-        const {
-          valid,
-          message
-        } = validateEmail(value);
+        const { valid, message } = validateEmail(value);
         if (!valid && value) error = message;
       } else if (name === 'gstNo') {
-        const {
-          valid,
-          message
-        } = validateGST(value);
+        const { valid, message } = validateGST(value);
         if (!valid && value) error = message;
       } else if (name === 'panNo') {
-        const {
-          valid,
-          message
-        } = validatePAN(value);
+        const { valid, message } = validatePAN(value);
         if (!valid && value) error = message;
       }
       setErrors(prev => ({
@@ -178,9 +179,9 @@ const AddSMEModal = ({
     e.preventDefault();
 
     // Validations
-    if (formData.smeType === 'Freelancer') {
-      if (!formData.contactNumber) return addToast('SME Contact Number is required for Freelancers', 'error');
-      if (!formData.email) return addToast('Email is required for Freelancers', 'error');
+    if (formData.classification === 'Internal' || formData.smeType === 'Freelancer') {
+      if (!formData.contactNumber) return addToast('SME Contact Number is required', 'error');
+      if (!formData.email) return addToast('Email is required', 'error');
     }
     if (formData.contactNumber) {
       const {
@@ -240,6 +241,8 @@ const AddSMEModal = ({
     Object.keys(formData).forEach(key => {
       if (key === 'bankDetails') {
         data.append('bankDetails', JSON.stringify(formData.bankDetails));
+      } else if (key === 'availability') {
+        data.append('availability', JSON.stringify(formData.availability));
       } else if (key === 'yearsExperience') {
         data.append('yearsExperience', Number(formData.yearsExperience || 0));
       } else {
@@ -299,24 +302,41 @@ const AddSMEModal = ({
 
       <div className="p-6">
         <form onSubmit={handleSubmit}>
-          {/* Type Selection */}
+          {/* Classification Selection */}
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">SME Type</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Classification</label>
             <div className="flex gap-4">
-              <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Company' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
-                <input type="radio" name="smeType" value="Company" checked={formData.smeType === 'Company'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
-                <span className="font-medium">Company</span>
+              <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.classification === 'Internal' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
+                <input type="radio" name="classification" value="Internal" checked={formData.classification === 'Internal'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
+                <span className="font-medium">Internal</span>
               </label>
-              <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Freelancer' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
-                <input type="radio" name="smeType" value="Freelancer" checked={formData.smeType === 'Freelancer'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
-                <span className="font-medium">Freelancer</span>
+              <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.classification === 'External' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
+                <input type="radio" name="classification" value="External" checked={formData.classification === 'External'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
+                <span className="font-medium">External</span>
               </label>
             </div>
           </div>
 
+          {/* Type Selection (External Only) */}
+          {formData.classification === 'External' && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">SME Type</label>
+              <div className="flex gap-4">
+                <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Company' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
+                  <input type="radio" name="smeType" value="Company" checked={formData.smeType === 'Company'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
+                  <span className="font-medium">Company</span>
+                </label>
+                <label className={`flex items-center space-x-2 cursor-pointer border p-3 rounded-lg w-32 justify-center transition-colors ${formData.smeType === 'Freelancer' ? 'bg-blue-50 border-brand-blue text-brand-blue' : 'hover:bg-gray-50'}`}>
+                  <input type="radio" name="smeType" value="Freelancer" checked={formData.smeType === 'Freelancer'} onChange={handleInputChange} disabled={!!smeToEdit} className="text-brand-blue focus:ring-brand-blue" />
+                  <span className="font-medium">Freelancer</span>
+                </label>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-8">
             {/* Company Specific Section */}
-            {formData.smeType === 'Company' && <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
+            {formData.classification === 'External' && formData.smeType === 'Company' && <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
               <h3 className="font-semibold text-blue-900 mb-4">Company Details</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input name="companyName" value={formData.companyName} onChange={handleInputChange} placeholder="Company Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
@@ -353,7 +373,7 @@ const AddSMEModal = ({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <input name="name" value={formData.name} onChange={handleInputChange} placeholder="SME Name *" className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" required />
                 <div className="relative">
-                  <input name="email" value={formData.email} onChange={handleInputChange} placeholder={formData.smeType === 'Freelancer' ? "Email *" : "Email"} type="email" className={`w-full h-[36px] border px-3 rounded text-[13px] ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
+                  <input name="email" value={formData.email} onChange={handleInputChange} placeholder={(formData.classification === 'Internal' || formData.smeType === 'Freelancer') ? "Email *" : "Email"} type="email" className={`w-full h-[36px] border px-3 rounded text-[13px] ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
                   {errors.email && <div className="absolute top-full left-0 mt-1 z-10 bg-red-100 text-red-600 text-xs px-2 py-1 rounded shadow-md border border-red-200">{errors.email}</div>}
                 </div>
                 <div className="relative">
@@ -365,7 +385,7 @@ const AddSMEModal = ({
                         value
                       }
                     })}
-                    required={formData.smeType === 'Freelancer'}
+                    required={formData.classification === 'Internal' || formData.smeType === 'Freelancer'}
                     containerClass="w-full"
                     inputClass={`!w-full focus:!ring-2 focus:!ring-primary-blue ${errors.contactNumber ? '!ring-1 !ring-red-500' : ''}`}
                   />
@@ -382,7 +402,7 @@ const AddSMEModal = ({
                   className="w-full"
                   required
                 />
-                {formData.smeType === 'Freelancer' && <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Address *" className="border p-2 rounded text-sm w-full md:col-span-3" rows="2" required />}
+                {(formData.classification === 'Internal' || formData.smeType === 'Freelancer') && <textarea name="address" value={formData.address} onChange={handleInputChange} placeholder="Address *" className="border p-2 rounded text-sm w-full md:col-span-3" rows="2" required />}
               </div>
             </div>
 
@@ -492,6 +512,30 @@ const AddSMEModal = ({
                     </div>
                   </div>
                 </div>)}
+              </div>
+            </div>
+
+            {/* Section E: Availability */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800 border-b pb-2 mb-4">E. Availability</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Available From</label>
+                  <input type="date" name="availability.availableFrom" value={formData.availability.availableFrom} onChange={handleInputChange} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Available Until</label>
+                  <input type="date" name="availability.availableUntil" value={formData.availability.availableUntil} onChange={handleInputChange} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px]" />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500 mb-1">Status Override (Optional)</label>
+                  <select name="availability.statusOverride" value={formData.availability.statusOverride} onChange={handleInputChange} className="w-full h-[36px] border border-gray-200 px-3 rounded text-[13px] bg-white">
+                    <option value="">Auto-calculate from dates</option>
+                    <option value="Available">Available</option>
+                    <option value="Engaged">Engaged</option>
+                    <option value="Not Available">Not Available</option>
+                  </select>
+                </div>
               </div>
             </div>
           </div>

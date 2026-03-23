@@ -9,6 +9,8 @@ import UploadButton from '../../ui/UploadButton';
 import { getTechnologyOptions } from '../../../utils/TechnologyConstants';
 import { API_BASE } from '../../../config/api';
 import CountrySelectField from '../../form/CountrySelectField';
+import CourseAutocomplete from '../../ui/CourseAutocomplete';
+import DurationField from '../../ui/DurationField';
 const SalesTab = forwardRef(({
   opportunity,
   isEditing,
@@ -29,6 +31,46 @@ const SalesTab = forwardRef(({
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({});
   const [deliveryUsers, setDeliveryUsers] = useState([]);
+  const [recommendedSMEs, setRecommendedSMEs] = useState([]);
+  const [loadingSMEs, setLoadingSMEs] = useState(false);
+
+  // Fetch recommendations when SME is required
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!isEditing || formData.commonDetails?.smeRequired !== 'Yes') return;
+      
+      setLoadingSMEs(true);
+      try {
+        const token = sessionStorage.getItem('token');
+        const tech = formData.typeSpecificDetails?.technology || '';
+        const loc = formData.typeSpecificDetails?.trainingLocation || formData.commonDetails?.location || '';
+        const start = formData.commonDetails?.startDate || '';
+        const end = formData.commonDetails?.endDate || '';
+        
+        if (tech) {
+          const res = await axios.get(`${API_BASE}/api/smes/recommend`, {
+            params: { technology: tech, location: loc, startDate: start, endDate: end },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setRecommendedSMEs(res.data || []);
+        }
+      } catch (err) {
+        console.error('Failed to fetch SME recommendations:', err);
+      } finally {
+        setLoadingSMEs(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [
+    isEditing, 
+    formData.commonDetails?.smeRequired, 
+    formData.typeSpecificDetails?.technology, 
+    formData.commonDetails?.startDate, 
+    formData.commonDetails?.endDate, 
+    formData.typeSpecificDetails?.trainingLocation,
+    formData.commonDetails?.location
+  ]);
 
   // Fetch delivery users for the assignment dropdown
   useEffect(() => {
@@ -101,14 +143,18 @@ const SalesTab = forwardRef(({
         };
         delete sanitizedTypeSpecificDetails._id;
         delete sanitizedTypeSpecificDetails.__v;
+        
+        const selectedSMEId = typeof formData.selectedSME === 'object' && formData.selectedSME !== null ? formData.selectedSME._id : formData.selectedSME;
+
         const payload = {
           commonDetails: sanitizedCommonDetails,
           expenses: sanitizedExpenses,
           typeSpecificDetails: sanitizedTypeSpecificDetails,
           participants: formData.participants,
-          days: formData.days,
+          days: formData.days, // legacy fallback if needed
           requirementSummary: formData.requirementSummary,
-          assignedTo: formData.assignedTo || null
+          assignedTo: formData.assignedTo || null,
+          selectedSME: selectedSMEId || null
         };
         const res = await axios.put(`${API_BASE}/api/opportunities/${opportunity._id}`, payload, {
           headers: {
@@ -169,26 +215,35 @@ const SalesTab = forwardRef(({
       }
 
       // Dynamic TOV calculation
-      if (section === 'commonDetails' && (field === 'tovRate' || field === 'tovUnit')) {
-        const rate = field === 'tovRate' ? parseFloat(value) || 0 : newState.commonDetails.tovRate || 0;
-        const unit = field === 'tovUnit' ? value : newState.commonDetails.tovUnit || 'Fixed';
+      if (section === 'commonDetails' && (field === 'tovRate' || field === 'tovUnit' || field === 'durationHours') || section === 'root' && field === 'participants') {
+        const rate = (section === 'commonDetails' && field === 'tovRate') ? (parseFloat(value) || 0) : (newState.commonDetails.tovRate || 0);
+        const unit = (section === 'commonDetails' && field === 'tovUnit') ? value : (newState.commonDetails.tovUnit || 'Fixed');
+        const durationH = (section === 'commonDetails' && field === 'durationHours') ? value : (newState.commonDetails.durationHours || 0);
+        const participants = (section === 'root' && field === 'participants') ? value : (newState.participants || 1);
+        
         let calculatedTov = rate;
-        if (unit === 'Per Day') calculatedTov = rate * (newState.days || 1); else if (unit === 'Per Participant') calculatedTov = rate * (newState.participants || 1);
+        const calcDays = durationH / 8;
+        
+        if (unit === 'Per Day') calculatedTov = rate * (calcDays || 1); 
+        else if (unit === 'Per Hour') calculatedTov = rate * (durationH || 1);
+        else if (unit === 'Per Participant') calculatedTov = rate * (participants || 1);
+        
         newState.commonDetails.tov = calculatedTov;
       }
 
-      // Auto-calculate end date when start date or days changes
-      if (section === 'commonDetails' && field === 'startDate' || section === 'root' && field === 'days') {
-        const startDate = section === 'commonDetails' && field === 'startDate' ? value : newState.commonDetails?.startDate;
-        const days = section === 'root' && field === 'days' ? value : newState.days;
-        if (startDate && days && parseInt(days) > 0) {
+      // Auto-calculate end date when start date or duration changes
+      if (section === 'commonDetails' && (field === 'startDate' || field === 'durationHours')) {
+        const startDate = (section === 'commonDetails' && field === 'startDate') ? value : newState.commonDetails?.startDate;
+        const durationH = (section === 'commonDetails' && field === 'durationHours') ? value : newState.commonDetails?.durationHours;
+        const daysRounded = Math.ceil((durationH || 8) / 8);
+
+        if (startDate && daysRounded > 0) {
           const start = new Date(startDate);
           const end = new Date(start);
           // Add days - 1 (since start date is day 1)
-          end.setDate(start.getDate() + parseInt(days) - 1);
+          end.setDate(start.getDate() + daysRounded - 1);
 
           // Only auto-update if user hasn't manually set end date
-          // (We check if end date is empty or matches previous auto-calculation)
           if (!newState.commonDetails) {
             newState.commonDetails = {};
           }
@@ -579,13 +634,26 @@ const SalesTab = forwardRef(({
             <option value="MCT">MCT</option>
           </select>
         </div>
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-1">Course Code</label>
-          <input type="text" value={formData.commonDetails?.courseCode || ''} onChange={e => handleChange('commonDetails', 'courseCode', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Code" />
-        </div>
-        <div>
-          <label className="block text-base font-semibold text-gray-800 mb-1">Course Name</label>
-          <input type="text" value={formData.commonDetails?.courseName || ''} onChange={e => handleChange('commonDetails', 'courseName', e.target.value)} disabled={!isEditing} className={inputClass} placeholder="Enter Name" />
+        <div className="md:col-span-2">
+          <label className="block text-base font-semibold text-gray-800 mb-1">Course</label>
+          <CourseAutocomplete
+              technology={formData.typeSpecificDetails?.technology || opportunity.typeSpecificDetails?.technology}
+              trainingRequirement={formData.typeSpecificDetails?.trainingName || formData.requirementSummary}
+              value={
+                  formData.commonDetails?.courseCode && formData.commonDetails?.courseName
+                  ? `${formData.commonDetails.courseCode} - ${formData.commonDetails.courseName}`
+                  : formData.commonDetails?.courseName || formData.commonDetails?.courseCode || ''
+              }
+              onChange={(code, name, durationHours) => {
+                  handleChange('commonDetails', 'courseCode', code);
+                  handleChange('commonDetails', 'courseName', name);
+                  if (durationHours !== null) {
+                      handleChange('commonDetails', 'durationHours', durationHours);
+                  }
+              }}
+              disabled={!isEditing}
+              className={inputClass}
+          />
         </div>
 
         {/* Month/Year Selection */}
@@ -606,10 +674,15 @@ const SalesTab = forwardRef(({
           </div>
         </div>
 
-        {/* No. of Days - Smaller visual width (w-1/2) */}
+        {/* Duration */}
         <div>
-          <label className="block text-base font-semibold text-gray-800 mb-1">No. of Days</label>
-          <input type="number" value={formData.days || ''} onChange={e => handleChange('root', 'days', parseInt(e.target.value) || 0)} disabled={!isEditing} className={`${inputClass} w-2/3`} placeholder="0" />
+          <label className="block text-base font-semibold text-gray-800 mb-1">Duration</label>
+          <DurationField 
+              durationHours={formData.commonDetails?.durationHours}
+              onChange={val => handleChange('commonDetails', 'durationHours', val)}
+              disabled={!isEditing}
+              className={`${inputClass} !w-auto`}
+          />
         </div>
 
         {/* Start and End Date Side-by-Side */}
@@ -635,16 +708,39 @@ const SalesTab = forwardRef(({
         {(formData.commonDetails?.smeRequired === 'Yes' || opportunity.commonDetails?.smeRequired === 'Yes') && <React.Fragment>
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">Assigned SME</label>
-            <div className="p-2 bg-gray-50 rounded border border-gray-200 text-base font-semibold text-gray-800">
-              {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME?.name ? opportunity.selectedSME.name : 'Not Assigned'}
-            </div>
+            {isEditing ? (
+              <select 
+                value={typeof formData.selectedSME === 'object' ? (formData.selectedSME?._id || '') : (formData.selectedSME || '')} 
+                onChange={e => setFormData({ ...formData, selectedSME: e.target.value })} 
+                className={selectClass}
+              >
+                <option value="">-- Select Recommended SME --</option>
+                {loadingSMEs ? <option disabled>Loading recommendations...</option> : 
+                  recommendedSMEs.map(sme => (
+                    <option key={sme._id} value={sme._id}>
+                      {sme.name} ({sme.classification === 'Internal' ? 'Internal' : sme.smeType})
+                    </option>
+                  ))
+                }
+                {/* Fallback to show currently assigned SME even if not in recommendations */}
+                {formData.selectedSME && typeof formData.selectedSME === 'object' && formData.selectedSME.name && !recommendedSMEs.some(s => s._id === formData.selectedSME._id) && (
+                  <option value={formData.selectedSME._id}>
+                    {formData.selectedSME.name} (Currently Assigned)
+                  </option>
+                )}
+              </select>
+            ) : (
+              <div className="p-2 bg-gray-50 rounded border border-gray-200 text-base font-semibold text-gray-800">
+                {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME !== null && opportunity.selectedSME?.name ? opportunity.selectedSME.name : 'Not Assigned'}
+              </div>
+            )}
           </div>
 
           {/* SME Profile Document */}
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">SME Profile</label>
             <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-              {typeof opportunity.selectedSME === 'object' && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium" title="View SME Profile">
+              {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME !== null && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${toPublicPath(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload)}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium" title="View SME Profile">
                 <CheckCircle size={14} /> View
               </a> : <span className="text-sm text-gray-400 italic">Not Available</span>}
             </div>

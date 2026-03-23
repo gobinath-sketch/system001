@@ -1,33 +1,41 @@
 const mongoose = require('mongoose');
 
 const SMESchema = new mongoose.Schema({
+    // New top-level classification
+    classification: {
+        type: String,
+        enum: ['Internal', 'External'],
+        default: 'External',
+        required: true
+    },
+
     smeType: {
         type: String,
         enum: ['Company', 'Freelancer'],
-        required: true,
-        default: 'Freelancer'
+        required: function () { return this.classification === 'External'; },
+        // default: 'Freelancer' // Removed default so Internal SMEs don't accidentally get 'Freelancer' type
     },
 
     // Company specific fields
     companyName: {
         type: String,
-        required: function () { return this.smeType === 'Company'; }
+        required: function () { return this.classification === 'External' && this.smeType === 'Company'; }
     },
     companyContactNumber: {
         type: String,
-        required: function () { return this.smeType === 'Company'; }
+        required: function () { return this.classification === 'External' && this.smeType === 'Company'; }
     },
     companyContactPerson: {
         type: String,
-        required: function () { return this.smeType === 'Company'; }
+        required: function () { return this.classification === 'External' && this.smeType === 'Company'; }
     },
     companyLocation: {
         type: String,
-        required: function () { return this.smeType === 'Company'; }
+        required: function () { return this.classification === 'External' && this.smeType === 'Company'; }
     },
     companyAddress: {
         type: String,
-        required: function () { return this.smeType === 'Company'; }
+        required: function () { return this.classification === 'External' && this.smeType === 'Company'; }
     },
 
     // Legacy reference - keeping for backward compatibility but optional now
@@ -41,14 +49,14 @@ const SMESchema = new mongoose.Schema({
 
     email: {
         type: String,
-        required: function () { return this.smeType === 'Freelancer'; },
+        required: function () { return this.classification === 'Internal' || this.smeType === 'Freelancer'; },
         lowercase: true,
         trim: true
     },
 
     contactNumber: {
         type: String,
-        required: function () { return this.smeType === 'Freelancer'; }
+        required: function () { return this.classification === 'Internal' || this.smeType === 'Freelancer'; }
     },
 
     technology: {
@@ -62,8 +70,8 @@ const SMESchema = new mongoose.Schema({
     },
 
     address: {
-        type: String, // For Freelancer address or general address
-        required: function () { return this.smeType === 'Freelancer'; }
+        type: String, // For Freelancer/Internal address or general address
+        required: function () { return this.classification === 'Internal' || this.smeType === 'Freelancer'; }
     },
 
     // Bank details (Required for both)
@@ -94,6 +102,23 @@ const SMESchema = new mongoose.Schema({
     // Optional
     idProof: { type: String },
 
+    // Availability
+    availability: {
+        availableFrom: { type: Date },
+        availableUntil: { type: Date },
+        statusOverride: {
+            type: String,
+            enum: ['Available', 'Engaged', 'Not Available', null],
+            default: null
+        },
+        // Auto-calculated status
+        currentStatus: {
+            type: String,
+            enum: ['Available', 'Engaged', 'Not Available'],
+            default: 'Available'
+        }
+    },
+
     // Metadata
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -120,8 +145,44 @@ SMESchema.index({ smeType: 1, isActive: 1, createdAt: -1 });
 SMESchema.index({ createdBy: 1, createdAt: -1 });
 SMESchema.index({ technology: 1, isActive: 1 });
 
+SMESchema.index({ classification: 1, isActive: 1 });
+
 SMESchema.pre('save', function () {
     this.$locals.wasNew = this.isNew;
+
+    // Remove smeType for Internal SMEs
+    if (this.classification === 'Internal') {
+        this.smeType = undefined; // Force it to be empty for interal
+    }
+
+    // Auto-resolve availability status
+    if (this.availability && this.availability.statusOverride) {
+        this.availability.currentStatus = this.availability.statusOverride;
+    } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (this.availability && this.availability.availableFrom) {
+            const start = new Date(this.availability.availableFrom);
+            start.setHours(0, 0, 0, 0);
+            
+            let end = null;
+            if (this.availability.availableUntil) {
+                end = new Date(this.availability.availableUntil);
+                end.setHours(23, 59, 59, 999);
+            }
+
+            if (today >= start && (!end || today <= end)) {
+                this.availability.currentStatus = 'Available';
+            } else {
+                this.availability.currentStatus = 'Not Available';
+            }
+        } else {
+            // Default open availability if no dates are set
+            this.availability = this.availability || {};
+            this.availability.currentStatus = 'Available';
+        }
+    }
 });
 
 SMESchema.post('save', function (doc) {
