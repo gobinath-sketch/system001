@@ -228,6 +228,11 @@ router.get('/recommend', protect, authorize('Sales Executive', 'Sales Manager', 
             const avail = sme.availability || {};
             const availFrom  = avail.availableFrom  ? new Date(avail.availableFrom)  : null;
             const availUntil = avail.availableUntil ? new Date(avail.availableUntil) : null;
+            
+            // Normalize SME availability dates to start and end of day
+            if (availFrom) availFrom.setHours(0, 0, 0, 0);
+            if (availUntil) availUntil.setHours(23, 59, 59, 999);
+            
             const smeHasDates = !!(availFrom || availUntil);
 
             if (!smeHasDates) {

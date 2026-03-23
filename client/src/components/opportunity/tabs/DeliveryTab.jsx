@@ -27,6 +27,9 @@ const DeliveryTab = forwardRef(({
   // vendors state removed
   const [smes, setSmes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [recommendedSMEs, setRecommendedSMEs] = useState([]);
+  const [loadingSMEs, setLoadingSMEs] = useState(false);
+  const [recommendationError, setRecommendationError] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [expenseUploading, setExpenseUploading] = useState(null);
   const [pendingInvoiceFile, setPendingInvoiceFile] = useState(null);
@@ -64,6 +67,48 @@ const DeliveryTab = forwardRef(({
     };
     fetchData();
   }, []);
+
+  // Fetch SME recommendations (same logic as SalesTab)
+  useEffect(() => {
+    const fetchRecommendations = async () => {
+      if (!isEditing || activeData.commonDetails?.smeRequired !== 'Yes') return;
+      
+      setLoadingSMEs(true);
+      setRecommendationError(false);
+      try {
+        const token = sessionStorage.getItem('token');
+        const tech = formData.typeSpecificDetails?.technology || opportunity.typeSpecificDetails?.technology || '';
+        const loc = formData.typeSpecificDetails?.trainingLocation || formData.commonDetails?.location || opportunity.typeSpecificDetails?.trainingLocation || '';
+        const start = formData.commonDetails?.startDate || opportunity.commonDetails?.startDate || '';
+        const end = formData.commonDetails?.endDate || opportunity.commonDetails?.endDate || '';
+        
+        if (tech) {
+          const res = await axios.get(`${API_BASE}/api/smes/recommend`, {
+            params: { technology: tech, location: loc, startDate: start, endDate: end },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          setRecommendedSMEs(res.data || []);
+        } else {
+          setRecommendedSMEs([]);
+        }
+      } catch (err) {
+        console.error('Failed to fetch SME recommendations:', err);
+        setRecommendationError(true);
+      } finally {
+        setLoadingSMEs(false);
+      }
+    };
+
+    fetchRecommendations();
+  }, [
+    isEditing,
+    activeData.commonDetails?.smeRequired,
+    formData.typeSpecificDetails?.technology,
+    formData.commonDetails?.startDate,
+    formData.commonDetails?.endDate,
+    formData.typeSpecificDetails?.trainingLocation,
+    formData.commonDetails?.location
+  ]);
 
   // Initialize formData when opportunity changes or edit mode starts
   useEffect(() => {
@@ -350,8 +395,8 @@ const DeliveryTab = forwardRef(({
   const shouldShowRequirementSummary = opportunity.type !== 'Lab Support';
   const showSummaryWithDocumentRow = ['Product Support', 'Content Development', 'Resource Support'].includes(opportunity.type);
 
-  // Show all SMEs (no vendor filtering for delivery team)
-  const filteredSMEs = smes;
+  // Use recommended SMEs when available. If the API explicitly failed, fall back to all SMEs.
+  const filteredSMEs = recommendationError ? smes : recommendedSMEs;
   return <div className="space-y-6">
     {/* Basic Details */}
     <Card className="!bg-white">
@@ -464,7 +509,7 @@ const DeliveryTab = forwardRef(({
         </div>}
         <div>
           <label className="block text-base font-semibold text-gray-800 mb-1">Requirement Document</label>
-          <div className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 min-h-[42px] flex items-center">
+          <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 bg-gray-100 text-gray-800 cursor-not-allowed`}>
             {opportunity.requirementDocument ? <a href={`${API_BASE}/${opportunity.requirementDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:underline">
               <CheckCircle size={14} /> View
             </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
@@ -486,7 +531,7 @@ const DeliveryTab = forwardRef(({
         }[opportunity.type] || 'Training Details'}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Row 1: Support Type, SME */}
+        {/* Row 1: Trainer Support + Course */}
         <div>
           <label className="block text-base font-semibold text-gray-800 mb-1">Trainer Support</label>
           <select value={formData.commonDetails?.trainingSupporter || 'GKT'} onChange={e => handleChange('commonDetails', 'trainingSupporter', e.target.value)} disabled={!isEditing} className={selectClass}>
@@ -495,42 +540,6 @@ const DeliveryTab = forwardRef(({
             <option value="MCT">MCT</option>
           </select>
         </div>
-        {/* Select SME + Content Document — only shown when SME is required */}
-        {activeData.commonDetails?.smeRequired === 'Yes' && <>
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-1">Select SME</label>
-            <div className={`flex items-center border border-gray-500 rounded-lg overflow-hidden ${!isEditing ? 'bg-gray-100' : 'bg-gray-50 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-              <select value={formData.selectedSME || ''} onChange={handleSMEChange} disabled={!isEditing} className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none text-base ${!isEditing ? 'cursor-not-allowed text-gray-800' : 'text-gray-900'}`}>
-                <option value="">-- Select SME --</option>
-                <option value="ADD_NEW_SME" className="text-brand-blue font-bold">+ Add New SME</option>
-                {filteredSMEs.map((s, index) => <option key={s._id || index} value={s._id}>
-                  {s.smeType === 'Company' ? `${s.name} – ${s.companyName}` : `${s.name} – Freelancer`}
-                </option>)}
-              </select>
-
-            </div>
-          </div>
-          <div>
-            <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
-            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
-              <div className="min-w-0">
-                {hasPendingContentDoc ? <div className="inline-flex items-center text-sm font-medium text-blue-600">
-                  <CheckCircle size={14} className="mr-1" /> Uploaded
-                </div> : hasUploadedContentDoc ? <a href={`${API_BASE}/${opportunity.deliveryDocuments.contentDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-medium text-blue-600 hover:underline">
-                  <CheckCircle size={14} className="mr-1" /> View
-                </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
-              </div>
-              {isDeliveryRole && isEditing && <div className="shrink-0">
-                <input type="file" id="content-document-upload" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'contentDocument')} accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx" disabled={uploading} />
-                <UploadButton onClick={() => document.getElementById('content-document-upload').click()} disabled={uploading}>
-                  {hasPendingContentDoc || hasUploadedContentDoc ? 'Replace' : 'Upload'}
-                </UploadButton>
-              </div>}
-            </div>
-          </div>
-        </>}
-
-        {/* Row 2: Course Details, Year/Month */}
         <div className="md:col-span-2">
           <label className="block text-base font-semibold text-gray-800 mb-1">Course</label>
           <CourseAutocomplete
@@ -552,6 +561,8 @@ const DeliveryTab = forwardRef(({
               className={inputClass}
           />
         </div>
+
+        {/* Row 2: Year/Month + Duration + Start/End Date */}
         <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">Year</label>
@@ -568,8 +579,6 @@ const DeliveryTab = forwardRef(({
             </select>
           </div>
         </div>
-
-        {/* Row 3: Schedule & Participants */}
         <div>
           <label className="block text-base font-semibold text-gray-800 mb-1">Duration</label>
           <DurationField 
@@ -589,11 +598,67 @@ const DeliveryTab = forwardRef(({
             <input type="date" value={formData.commonDetails?.endDate ? formData.commonDetails.endDate.split('T')[0] : ''} onChange={e => handleChange('commonDetails', 'endDate', e.target.value)} disabled={!isEditing} className={inputClass} />
           </div>
         </div>
-        {/* SME Required — read-only for Delivery; editable by Sales only */}
+
+        {/* Row 3: SME Required + (if Yes: Select SME, SME Profile) */}
         <div>
           <label className="block text-base font-semibold text-gray-800 mb-1">SME Required</label>
           <input type="text" value={activeData.commonDetails?.smeRequired || 'No'} disabled className="w-full border p-2 rounded-lg text-base border-gray-500 bg-gray-100 text-gray-800 cursor-not-allowed" />
         </div>
+        {activeData.commonDetails?.smeRequired === 'Yes' && <>
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">Select SME</label>
+            <div className={`flex items-center border border-gray-500 rounded-lg overflow-hidden ${!isEditing ? 'bg-gray-100' : 'bg-gray-50 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+              <select value={formData.selectedSME || ''} onChange={handleSMEChange} disabled={!isEditing} className={`flex-1 p-2 border-none bg-transparent focus:ring-0 outline-none text-base ${!isEditing ? 'cursor-not-allowed text-gray-800' : 'text-gray-900'}`}>
+                <option value="">-- Select Recommended SME --</option>
+                <option value="ADD_NEW_SME" className="text-brand-blue font-bold">+ Add New SME</option>
+                {loadingSMEs ? <option disabled>Loading recommendations...</option> :
+                  filteredSMEs.length === 0 ? <option disabled>No SMEs match the criteria</option> :
+                  filteredSMEs.map((s, index) => (
+                    <option key={s._id || index} value={s._id}>
+                      {s.name} ({s.classification === 'Internal' ? 'Internal' : s.smeType === 'Company' ? s.companyName : 'Freelancer'})
+                    </option>
+                  ))
+                }
+                {/* Fallback: show currently assigned SME if not in recommendations */}
+                {formData.selectedSME && typeof opportunity.selectedSME === 'object' && opportunity.selectedSME?.name && !filteredSMEs.some(s => s._id === (typeof opportunity.selectedSME === 'object' ? opportunity.selectedSME._id : opportunity.selectedSME)) && (
+                  <option value={opportunity.selectedSME._id}>
+                    {opportunity.selectedSME.name} (Currently Assigned)
+                  </option>
+                )}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">SME Profile</label>
+            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900'}`}>
+              {typeof opportunity.selectedSME === 'object' && opportunity.selectedSME !== null && (opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload) ? <a href={`${API_BASE}/${String(opportunity.selectedSME.sme_profile || opportunity.selectedSME.contentUpload).replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline font-medium">
+                <CheckCircle size={14} /> View
+              </a> : <span className="text-sm text-gray-400 italic">Not Available</span>}
+            </div>
+          </div>
+
+          {/* Row 4: Content Document */}
+          <div>
+            <label className="block text-base font-semibold text-gray-800 mb-1">Content Document</label>
+            <div className={`w-full border p-2 rounded-lg text-base border-gray-500 flex items-center justify-between gap-2 ${!isEditing ? 'bg-gray-100 text-gray-800 cursor-not-allowed' : 'bg-gray-50 text-gray-900 focus-within:ring-2 focus-within:ring-primary-blue'}`}>
+              <div className="min-w-0">
+                {hasPendingContentDoc ? <div className="inline-flex items-center text-sm font-medium text-blue-600">
+                  <CheckCircle size={14} className="mr-1" /> Uploaded
+                </div> : hasUploadedContentDoc ? <a href={`${API_BASE}/${opportunity.deliveryDocuments.contentDocument.replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-sm font-medium text-blue-600 hover:underline">
+                  <CheckCircle size={14} className="mr-1" /> View
+                </a> : <span className="text-sm text-gray-400 italic">Not Uploaded</span>}
+              </div>
+              {isDeliveryRole && isEditing && <div className="shrink-0">
+                <input type="file" id="content-document-upload" className="hidden" onChange={e => handleDeliveryDocUpload(e, 'contentDocument')} accept=".pdf,.doc,.docx,.ppt,.pptx,.xlsx" disabled={uploading} />
+                <UploadButton onClick={() => document.getElementById('content-document-upload').click()} disabled={uploading}>
+                  {hasPendingContentDoc || hasUploadedContentDoc ? 'Replace' : 'Upload'}
+                </UploadButton>
+              </div>}
+            </div>
+          </div>
+        </>}
+
+        {/* Row 5 (last): Total Pax + Attended Pax */}
         {opportunity.type === 'Training' && <div className="grid grid-cols-2 gap-2">
           <div>
             <label className="block text-base font-semibold text-gray-800 mb-1">Total Pax</label>
