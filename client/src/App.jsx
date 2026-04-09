@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import DirectorDashboard from './pages/DirectorDashboard';
 import SalesManagerDashboard from './pages/dashboard/SalesManagerDashboard';
 import BusinessHeadDashboard from './pages/dashboard/BusinessHeadDashboard';
+import UserApprovals from './pages/dashboard/UserApprovals';
 import ClientPage from './pages/ClientPage';
 import OpportunityPage from './pages/OpportunityPage';
 import OpportunityDetailPage from './pages/OpportunityDetailPage';
@@ -68,6 +69,7 @@ function App() {
               <Route path="/opportunities" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityPage /></Layout></ProtectedRoute>} />
               <Route path="/opportunities/:id" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityDetailPage /></Layout></ProtectedRoute>} />
               <Route path="/approvals" element={<ProtectedRoute allowedRoles={approvalRoles}><Layout><ApprovalsPage /></Layout></ProtectedRoute>} />
+              <Route path="/user-approvals" element={<ProtectedRoute allowedRoles={['Business Head', 'Super Admin']}><Layout><UserApprovals /></Layout></ProtectedRoute>} />
 
               {/* Delivery Routes */}
               <Route path="/dashboard/delivery" element={<ProtectedRoute allowedRoles={deliveryRoles}><Layout><DeliveryDashboard /></Layout></ProtectedRoute>} />

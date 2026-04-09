@@ -402,6 +402,47 @@ async function fetchChannelMessages({ teamId, channelId, top = 50 }) {
 }
 
 
+async function sendMail({ to, subject, htmlBody, textBody }) {
+    const mailbox = String(process.env.OUTLOOK_MAILBOX || '').trim();
+    if (!mailbox) throw new Error('OUTLOOK_MAILBOX env var is not configured');
+
+    const token = await getGraphAccessToken();
+    const url = `${GRAPH_BASE_URL}/users/${encodeURIComponent(mailbox)}/sendMail`;
+
+    const payload = {
+        message: {
+            subject: String(subject || '').trim(),
+            body: {
+                contentType: htmlBody ? 'HTML' : 'Text',
+                content: htmlBody || textBody || ''
+            },
+            toRecipients: [
+                {
+                    emailAddress: {
+                        address: to
+                    }
+                }
+            ]
+        },
+        saveToSentItems: true
+    };
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok && response.status !== 202) {
+        const text = await response.text();
+        throw new Error(`sendMail failed (${response.status}): ${text}`);
+    }
+    return true;
+}
+
 module.exports = {
     getGraphAccessToken,
     fetchRecentInboxMessages,
@@ -414,5 +455,6 @@ module.exports = {
     fetchJoinedTeams,
     fetchTeamChannels,
     fetchChannelMessages,
+    sendMail,
     // Notes (OneNote) intentionally removed for app-only limitations
 };

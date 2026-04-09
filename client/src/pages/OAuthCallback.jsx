@@ -11,6 +11,12 @@ const OAuthCallback = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+    if (error === 'pending_admin_approval') {
+      setStatus('Not authenticated!!! Sent for admin approval');
+      return;
+    }
+
     const token = params.get('token');
     if (!token) {
       setStatus('Missing token. Please try Outlook login again.');

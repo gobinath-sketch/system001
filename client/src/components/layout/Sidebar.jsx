@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from '../../context/AuthContext';
-import { LayoutDashboard, Users, Briefcase, Package, FileText, ChevronLeft, ChevronRight, CreditCard, Settings, Inbox } from 'lucide-react';
+import { LayoutDashboard, Users, Briefcase, Package, FileText, ChevronLeft, ChevronRight, CreditCard, Settings, Inbox, UserCheck } from 'lucide-react';
 import LogoutButton from '../common/LogoutButton';
 const Sidebar = ({
   isMobileOpen = false,
@@ -169,6 +169,10 @@ const Sidebar = ({
         label: 'Approvals',
         icon: FileText,
         path: '/approvals'
+      }, {
+        label: 'User Approvals',
+        icon: UserCheck,
+        path: '/user-approvals'
       }, {
         label: 'Automation',
         icon: Inbox,

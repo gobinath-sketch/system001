@@ -148,26 +148,29 @@ router.get('/outlook/callback', async (req, res) => {
 
         let user = await User.findOne({ email });
         if (!user) {
+            // Import PendingUser model on the fly or at top, we'll require it here since it's only once
+            const PendingUser = require('../models/PendingUser');
+            
             const fallbackName = displayName || email.split('@')[0];
-            const [firstName, ...rest] = fallbackName.split(' ');
-            const lastName = rest.join(' ');
-            const rawPassword = randomUUID();
-            const hashed = await bcrypt.hash(rawPassword, 10);
+            
+            // Check if already pending
+            let pendingUser = await PendingUser.findOne({ email });
+            if (!pendingUser) {
+                await PendingUser.create({
+                    name: fallbackName,
+                    email
+                });
+            } else if (pendingUser.status !== 'pending') {
+                // User was previously approved but their account was deleted — reset to pending
+                pendingUser.status = 'pending';
+                pendingUser.name = fallbackName; // refresh name in case it changed
+                await pendingUser.save();
+            }
 
-            user = await User.create({
-                name: fallbackName,
-                email,
-                password: hashed,
-                role: 'Sales Executive',
-                creatorCode: 'OAUTH',
-                settings: {
-                    profile: {
-                        firstName: firstName || '',
-                        lastName: lastName || '',
-                        email
-                    }
-                }
-            });
+            const redirectUrl = new URL(oauthSuccessRedirect);
+            // Append error query param to intercept in React
+            redirectUrl.searchParams.set('error', 'pending_admin_approval');
+            return res.redirect(redirectUrl.toString());
         }
 
         const sessionId = randomUUID();

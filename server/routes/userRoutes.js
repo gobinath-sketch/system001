@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const { sendMail } = require('../email-automation/services/graphService');
 
 const ROLE_BY_ACCESS = {
     'Sales Executive': 'Sales Executive',
@@ -107,6 +108,181 @@ router.post('/', async (req, res) => {
 
     } catch (err) {
         console.error('Error creating user:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
+// @route   GET /api/users/pending
+// @desc    Get all pending users
+// @access  Public
+router.get('/pending', async (req, res) => {
+    try {
+        const PendingUser = require('../models/PendingUser');
+        const pendingUsers = await PendingUser.find({ status: 'pending' }).sort({ createdAt: -1 });
+        res.status(200).json(pendingUsers);
+    } catch (err) {
+        console.error('Error fetching pending users:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
+// @route   GET /api/users/managers
+// @desc    Get all potential reporting managers
+// @access  Public
+router.get('/managers', async (req, res) => {
+    try {
+        const managers = await User.find({
+            role: { $in: ['Business Head', 'Director', 'Sales Manager', 'Delivery Head'] }
+        }).select('_id name email role');
+        res.status(200).json(managers);
+    } catch (err) {
+        console.error('Error fetching managers:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
+// @route   POST /api/users/approve-pending
+// @desc    Approve a pending user and create their User account
+// @access  Public
+router.post('/approve-pending', async (req, res) => {
+    try {
+        const { pendingUserId, role: rawRole, reportingManagerId } = req.body;
+        
+        if (!pendingUserId || !rawRole) {
+            return res.status(400).json({ message: 'Pending User ID and Role are required' });
+        }
+
+        const PendingUser = require('../models/PendingUser');
+        const pendingUser = await PendingUser.findById(pendingUserId);
+        
+        if (!pendingUser || pendingUser.status !== 'pending') {
+            return res.status(404).json({ message: 'Pending user not found or already processed' });
+        }
+
+        const role = ROLE_BY_ACCESS[rawRole] || rawRole;
+        const prefix = getPrefix(role);
+
+        // Generate creatorCode
+        const allUsers = await User.find({}).select('creatorCode');
+        let maxCounter = 0;
+        allUsers.forEach(u => {
+            if (u.creatorCode && u.creatorCode.charAt(0) === prefix) {
+                const num = parseInt(u.creatorCode.substring(1), 10);
+                if (!isNaN(num) && num > maxCounter) {
+                    maxCounter = num;
+                }
+            }
+        });
+        const creatorCode = `${prefix}${maxCounter + 1}`;
+
+        // Create generic password
+        const { randomUUID } = require('crypto');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(randomUUID(), salt);
+        
+        const fallbackName = pendingUser.name || pendingUser.email.split('@')[0];
+        const [firstName, ...rest] = fallbackName.split(' ');
+        const lastName = rest.join(' ');
+
+        const user = new User({
+            name: fallbackName,
+            email: pendingUser.email,
+            password: hashedPassword,
+            role,
+            creatorCode,
+            settings: {
+                profile: {
+                    firstName: firstName || '',
+                    lastName: lastName || '',
+                    email: pendingUser.email
+                }
+            }
+        });
+
+        if (reportingManagerId) {
+            const manager = await User.findById(reportingManagerId);
+            if (manager) {
+                user.reportingManager = manager._id;
+            }
+        }
+
+        await user.save();
+
+        // Update pending status
+        pendingUser.status = 'approved';
+        await pendingUser.save();
+
+        // Send approval email
+        try {
+            await sendMail({
+                to: pendingUser.email,
+                subject: 'Your GKT ERP Access Has Been Approved',
+                htmlBody: `
+                    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1a1a2e;">
+                        <h2 style="color: #16a34a;">✅ Access Approved</h2>
+                        <p>Hi <strong>${fallbackName}</strong>,</p>
+                        <p>Your request to access the <strong>Global Knowledge Technologies ERP system</strong> has been <strong style="color: #16a34a;">approved</strong>.</p>
+                        <p>You have been assigned the role of: <strong>${role}</strong></p>
+                        <p>You can now log in using your Outlook account.</p>
+                        <br/>
+                        <p style="color: #6b7280; font-size: 12px;">This is an automated message from the GKT ERP system.</p>
+                    </div>
+                `
+            });
+        } catch (mailErr) {
+            console.warn('[UserApproval] Approval email failed (non-fatal):', mailErr.message);
+        }
+
+        res.status(200).json({ message: 'User approved and provisioned successfully.', user });
+    } catch (err) {
+        console.error('Error approving user:', err);
+        res.status(500).json({ message: 'Server error', error: err.message });
+    }
+});
+
+// @route   POST /api/users/reject-pending
+// @desc    Reject a pending user request
+// @access  Public
+router.post('/reject-pending', async (req, res) => {
+    try {
+        const { pendingUserId } = req.body;
+        if (!pendingUserId) {
+            return res.status(400).json({ message: 'Pending User ID is required' });
+        }
+
+        const PendingUser = require('../models/PendingUser');
+        const pendingUser = await PendingUser.findById(pendingUserId);
+
+        if (!pendingUser || pendingUser.status !== 'pending') {
+            return res.status(404).json({ message: 'Pending user not found or already processed' });
+        }
+
+        pendingUser.status = 'rejected';
+        await pendingUser.save();
+
+        // Send rejection email
+        try {
+            await sendMail({
+                to: pendingUser.email,
+                subject: 'Your GKT ERP Access Request Has Been Declined',
+                htmlBody: `
+                    <div style="font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; color: #1a1a2e;">
+                        <h2 style="color: #dc2626;">❌ Access Declined</h2>
+                        <p>Hi <strong>${pendingUser.name}</strong>,</p>
+                        <p>Your request to access the <strong>Global Knowledge Technologies ERP system</strong> has been <strong style="color: #dc2626;">declined</strong> by the Business Head.</p>
+                        <p>If you believe this is an error, please contact your HR department or system administrator.</p>
+                        <br/>
+                        <p style="color: #6b7280; font-size: 12px;">This is an automated message from the GKT ERP system.</p>
+                    </div>
+                `
+            });
+        } catch (mailErr) {
+            console.warn('[UserApproval] Rejection email failed (non-fatal):', mailErr.message);
+        }
+
+        res.status(200).json({ message: 'User request rejected.' });
+    } catch (err) {
+        console.error('Error rejecting user:', err);
         res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
