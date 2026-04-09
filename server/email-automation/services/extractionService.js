@@ -232,6 +232,7 @@ function buildSystemPrompt() {
         'Do not use your own company name from email signatures, disclaimers, or footers as client.companyName.',
         'If the sender domain matches the mailbox/org domain, only set client.companyName when the email explicitly names an external client.',
         'Prefer external client names mentioned in the request body over internal company names.',
+        'Fetch the client company name and client contact number from the sender\'s signature if available, and put them under client.companyName and the client\'s contactNumber. Do not confuse this with the receiver\'s mail or name.',
         'IDs: only set selectedSME/assignedTo if the email explicitly provides a valid Mongo ObjectId; otherwise leave empty.',
         '',
         'ERP JSON schema (output keys):',

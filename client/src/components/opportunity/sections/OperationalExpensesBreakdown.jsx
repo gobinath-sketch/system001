@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, GraduationCap, Package, FlaskConical, BadgePercent, Hotel, UtensilsCrossed, Building2, Plane, Ticket, Car, Wallet, Upload } from 'lucide-react';
+import { CheckCircle, GraduationCap, Package, FlaskConical, BadgePercent, Hotel, UtensilsCrossed, Building2, Plane, Ticket, Car, Wallet, Upload, Briefcase } from 'lucide-react';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { API_BASE } from '../../../config/api';
 import UploadButton from '../../ui/UploadButton';
@@ -52,6 +52,10 @@ const OperationalExpensesBreakdown = ({
     },
     vouchersCost:    { key: 'vouchersCost',     label: 'Vouchers',          icon: Ticket,  fixedLabel: 'Total amount' },
     localConveyance: { key: 'localConveyance',  label: 'Local Conveyance',  icon: Car,     fixedLabel: 'Total amount' },
+    consultantCost:    { 
+      key: 'consultantCost', label: 'Consultant Cost', icon: Briefcase,
+      options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Cost' }]
+    },
   };
 
   // ─── Dynamic expense list based on opportunity type & training mode ─────────
@@ -76,15 +80,15 @@ const OperationalExpensesBreakdown = ({
         return [e.trainerCost, e.material, e.labs, e.venue, e.accommodation, e.perDiem, e.travel, e.localConveyance, e.gkRoyalty];
       }
       case 'Vouchers':
-        return [e.vouchersCost, e.gkRoyalty];
+        return [e.vouchersCost];
       case 'Lab Support':
         return [e.labs, e.material, e.gkRoyalty];
       case 'Content Development':
-        return [e.trainerCost, e.material, e.gkRoyalty];
+        return [e.trainerCost, e.material];
       case 'Product Support':
-        return [e.trainerCost, e.travel, e.accommodation, e.perDiem, e.localConveyance, e.gkRoyalty];
+        return [e.consultantCost, e.travel, e.accommodation, e.perDiem, e.localConveyance];
       case 'Resource Support':
-        return [e.trainerCost, e.travel, e.accommodation, e.perDiem, e.localConveyance, e.gkRoyalty];
+        return [e.consultantCost, e.travel, e.accommodation, e.perDiem, e.localConveyance];
       default:
         // Fallback: show everything
         return Object.values(e);
@@ -159,6 +163,7 @@ const OperationalExpensesBreakdown = ({
 
     switch (category) {
       case 'trainerCost':
+      case 'consultantCost':
         if (type === 'costPerDay') return rate * days;
         if (type === 'costPerHour') return rate * durationHours; // Use total duration hours directly
         if (type === 'totalCost') return rate;
@@ -391,7 +396,7 @@ const EditRow = ({
       </div>
 
       {/* Upload + View — only for cost items that require a proposal document */}
-      {['trainerCost', 'material', 'labs', 'vouchersCost'].includes(category) && (
+      {['trainerCost', 'consultantCost', 'material', 'labs', 'vouchersCost'].includes(category) && (
         <div className="shrink-0 flex items-center gap-2">
           <input type="file" id={`upload-${category}`} className="hidden" onChange={e => onUpload(e)} disabled={uploading === category} />
           <UploadButton
