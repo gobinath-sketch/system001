@@ -63,6 +63,11 @@ export const AuthProvider = ({
     setUser(nextUser);
     sessionStorage.setItem('user', JSON.stringify(nextUser));
   };
+  const setUserFromOAuth = userData => {
+    if (!userData) return;
+    setUser(userData);
+    sessionStorage.setItem('user', JSON.stringify(userData));
+  };
   const logout = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
@@ -74,6 +79,7 @@ export const AuthProvider = ({
     logout,
     updateUserRole,
     updateUser,
+    setUserFromOAuth,
     loading
   }}>
     {!loading && children}

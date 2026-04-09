@@ -19,6 +19,7 @@ import FinanceModulePage from './pages/finance/FinanceModulePage';
 import FinanceDetails from './pages/finance/FinanceDetails';
 import SettingsPage from './pages/SettingsPage';
 import EmailAutomationPage from './pages/EmailAutomationPage';
+import OAuthCallback from './pages/OAuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import { ToastProvider } from './context/ToastContext';
@@ -53,6 +54,7 @@ function App() {
           <Router basename={import.meta.env.BASE_URL}>
             <Routes>
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+              <Route path="/oauth/callback" element={<OAuthCallback />} />
 
               {/* Role-Based Dashboard Routes */}
               <Route path="/" element={<ProtectedRoute allowedRoles={allRoles}><Layout><DashboardPage /></Layout></ProtectedRoute>} />

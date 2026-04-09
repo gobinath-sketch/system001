@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { API_BASE } from '../config/api';
 import { getDefaultRouteForRole } from '../utils/navigation';
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -115,9 +116,22 @@ const LoginPage = () => {
                             </div>
                         </div>
 
-                        <button type="submit" className="w-full sm:w-2/3 mx-auto block bg-gradient-to-b from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 rounded-full transition-all duration-300 transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] shadow-lg active:scale-95">
-                            Login
-                        </button>
+                        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                            <button type="submit" className="w-full sm:w-1/2 bg-gradient-to-b from-gray-700 to-gray-900 hover:from-gray-600 hover:to-gray-800 text-white font-bold py-3 rounded-full transition-all duration-300 transform hover:scale-[1.02] hover:shadow-[0_0_20px_rgba(0,0,0,0.2)] shadow-lg active:scale-95">
+                                Login
+                            </button>
+                            <a href={`${API_BASE}/api/auth/outlook/login`} className="w-full sm:w-1/2 flex items-center justify-center gap-3 bg-white/70 border border-gray-200 rounded-full py-2.5 text-gray-700 font-semibold shadow-sm hover:bg-white transition">
+                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[#0078D4]/10">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+                                        <path d="M4 7.5V18a1 1 0 0 0 1 1h9V7.5H4z" fill="#0078D4"/>
+                                        <path d="M14 7.5h5a1 1 0 0 1 1 1v8.5a1 1 0 0 1-1 1h-5V7.5z" fill="#185ABD"/>
+                                        <path d="M14 5.5h6a1 1 0 0 1 1 1v2.2h-7V5.5z" fill="#2B7CD3"/>
+                                        <path d="M7.1 10.2h1.4l1.3 2.5 1.3-2.5h1.4l-2 3.5 2.1 3.8h-1.5l-1.4-2.7-1.4 2.7H7.1l2.1-3.8-2.1-3.5z" fill="#fff"/>
+                                    </svg>
+                                </span>
+                                <span>Outlook</span>
+                            </a>
+                        </div>
                     </form>
                 </div>
             </div>
