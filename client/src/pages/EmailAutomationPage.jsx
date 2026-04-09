@@ -1102,8 +1102,8 @@ const EmailAutomationPage = () => {
 
             {reviewModalItem && reviewDraft && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[88vh] overflow-hidden">
-                        <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
+                    <div className="bg-white rounded-lg shadow-xl w-[98vw] max-w-[1600px] h-[94vh] flex flex-col overflow-hidden">
+                        <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between shrink-0">
                             <div>
                                 <h3 className="text-base font-semibold text-slate-900">AI Review Confirmation</h3>
                                 <p className="text-xs text-slate-500 mt-1">
@@ -1115,59 +1115,77 @@ const EmailAutomationPage = () => {
                             </button>
                         </div>
 
-                        <div className="p-4 overflow-auto max-h-[74vh] space-y-5">
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                <div className="lg:col-span-2 bg-white border rounded-lg p-4 space-y-4">
-                                    <div>
-                                        <div className="text-xs text-slate-500 mb-1">Source email</div>
-                                        <div className="text-sm font-semibold text-slate-900">{reviewModalItem.subject || '(No subject)'}</div>
-                                        <div className="text-sm text-slate-600 mt-1">{reviewModalItem.fromName || reviewModalItem.fromEmail || '-'}</div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Intent</label>
-                                            <input
-                                                value={reviewDraft.intent || ''}
-                                                onChange={(e) => updateReviewDraftField(['intent'], e.target.value)}
-                                                className="w-full border rounded-lg px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Confidence</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="1"
-                                                step="0.01"
-                                                value={reviewDraft.confidence ?? 0}
-                                                onChange={(e) => updateReviewDraftField(['confidence'], Number(e.target.value))}
-                                                className="w-full border rounded-lg px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-600 mb-1">AI Reason</label>
-                                        <textarea
-                                            rows={3}
-                                            value={reviewDraft.reason || ''}
-                                            onChange={(e) => updateReviewDraftField(['reason'], e.target.value)}
-                                            className="w-full border rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    </div>
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                            {/* LEFT SIDE: Email Content View */}
+                            <div className="w-full md:w-[45%] lg:w-[40%] flex flex-col h-full border-r border-gray-200 bg-white">
+                                <div className="p-4 border-b bg-slate-50 shrink-0">
+                                    <div className="text-xs text-slate-500 mb-1">Source email</div>
+                                    <div className="text-sm font-semibold text-slate-900">{reviewModalItem.subject || '(No subject)'}</div>
+                                    <div className="text-sm text-slate-600 mt-1">{reviewModalItem.fromName || reviewModalItem.fromEmail || '-'}</div>
                                 </div>
-
-                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
-                                    <div className="text-sm font-semibold text-blue-900">Prepared actions</div>
-                                    <div className="text-xs text-slate-600">
-                                        The approval below will use the edited draft in this screen.
-                                    </div>
-                                    <ul className="text-sm text-slate-700 space-y-1 list-disc pl-4">
-                                        <li>{reviewDraft?.client?.companyName ? 'Client create/update ready' : 'No client name extracted yet'}</li>
-                                        <li>{reviewDraft?.opportunity?.requirementSummary ? 'Opportunity data present' : 'Opportunity data is limited'}</li>
-                                        <li>{reviewDraft?.meeting?.shouldCreateEvent ? 'Calendar event will be created on approval' : 'No calendar event will be created'}</li>
-                                    </ul>
+                                <div className="p-4 overflow-auto flex-1 bg-white">
+                                    <div className="text-xs text-gray-500 mb-2">Exact mail body</div>
+                                    {reviewModalItem?.rawPayload?.body?.content || reviewModalItem?.rawPayload?.bodyHtml ? (
+                                        <iframe 
+                                            title="mail-body-preview" 
+                                            className="w-full h-full min-h-[400px] border border-gray-200 rounded" 
+                                            srcDoc={reviewModalItem?.rawPayload?.body?.content || reviewModalItem?.rawPayload?.bodyHtml} 
+                                        />
+                                    ) : (
+                                        <pre className="text-sm whitespace-pre-wrap font-sans">{reviewModalItem.bodyText || ''}</pre>
+                                    )}
                                 </div>
                             </div>
+
+                            {/* RIGHT SIDE: Extracted Form */}
+                            <div className="w-full md:w-[55%] lg:w-[60%] overflow-auto p-4 space-y-5 bg-slate-50">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div className="bg-white border rounded-lg p-4 space-y-4 shadow-sm">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Intent</label>
+                                                <input
+                                                    value={reviewDraft.intent || ''}
+                                                    onChange={(e) => updateReviewDraftField(['intent'], e.target.value)}
+                                                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Confidence</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="1"
+                                                    step="0.01"
+                                                    value={reviewDraft.confidence ?? 0}
+                                                    onChange={(e) => updateReviewDraftField(['confidence'], Number(e.target.value))}
+                                                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">AI Reason</label>
+                                            <textarea
+                                                rows={3}
+                                                value={reviewDraft.reason || ''}
+                                                onChange={(e) => updateReviewDraftField(['reason'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-blue-50 border border-blue-100 shadow-sm rounded-lg p-4 space-y-2">
+                                        <div className="text-sm font-semibold text-blue-900">Prepared actions</div>
+                                        <div className="text-xs text-slate-600">
+                                            The approval below will use the edited draft in this screen.
+                                        </div>
+                                        <ul className="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                                            <li>{reviewDraft?.client?.companyName ? 'Client create/update ready' : 'No client name extracted yet'}</li>
+                                            <li>{reviewDraft?.opportunity?.requirementSummary ? 'Opportunity data present' : 'Opportunity data is limited'}</li>
+                                            <li>{reviewDraft?.meeting?.shouldCreateEvent ? 'Calendar event will be created on approval' : 'No calendar event will be created'}</li>
+                                        </ul>
+                                    </div>
+                                </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="bg-white border rounded-lg p-4 space-y-4">
@@ -1474,9 +1492,9 @@ const EmailAutomationPage = () => {
                                         className="w-full border rounded-lg px-3 py-2 text-sm"
                                     />
                                 </div>
+                                </div>
                             </div>
                         </div>
-
                         <div className="px-4 py-3 border-t bg-slate-50 flex flex-wrap items-center justify-end gap-2">
                             <button
                                 onClick={closeReviewModal}
