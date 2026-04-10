@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Plus, Trash2, ArrowLeft, Edit, Search, Filter, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getDefaultRouteForRole } from '../utils/navigation';
@@ -67,6 +67,7 @@ const ClientPage = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
+  const { id: clientIdParam } = useParams();
   const {
     user
   } = useAuth();
@@ -89,13 +90,13 @@ const ClientPage = () => {
       setActiveClientDraftId(null);
       setShowFormModal(true);
       setViewMode('list');
-    } else {
+    } else if (!clientIdParam) {
       // Reset to list view if no specific state provided (e.g. sidebar navigation)
       setViewMode('list');
       setSelectedClient(null);
       setShowFormModal(false);
     }
-  }, [location]);
+  }, [location, clientIdParam]);
   const [selectedClient, setSelectedClient] = useState(null);
   const [selectedContact, setSelectedContact] = useState(null); // For contact detail modal
   const [searchQuery, setSearchQuery] = useState('');
@@ -207,6 +208,14 @@ const ClientPage = () => {
         }
       });
       setClients(res.data);
+      // If a clientId is in the URL, open that client in detail view
+      if (clientIdParam) {
+        const target = res.data.find(c => c._id === clientIdParam);
+        if (target) {
+          setSelectedClient(target);
+          setViewMode('details');
+        }
+      }
     } catch (err) {
       console.error('Error fetching clients:', err);
       addToast('Failed to load clients. Please try again.', 'error');
@@ -422,9 +431,7 @@ const ClientPage = () => {
   };
   const goBack = () => {
     if (viewMode === 'details') {
-      setViewMode('list');
-      resetForm();
-      setSelectedClient(null);
+      navigate('/clients');
     }
     // If in modal, the modal has its own close button which just toggles the state
   };
@@ -440,11 +447,20 @@ const ClientPage = () => {
 
   // --- Filters ---
   const uniqueCreators = [...new Set(clients.map(c => c.createdBy?.name).filter(Boolean))];
-  const filteredClients = clients.filter(client => {
-    const matchesName = client.companyName.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCreator = filterCreator ? client.createdBy?.name === filterCreator : true;
-    return matchesName && matchesCreator;
-  });
+  const filteredClients = clients
+    .filter(client => {
+      const matchesName = client.companyName.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCreator = filterCreator ? client.createdBy?.name === filterCreator : true;
+      return matchesName && matchesCreator;
+    })
+    .sort((a, b) => {
+      // Clients with most recently added opportunity appear first
+      const aDate = a.lastOppAddedAt ? new Date(a.lastOppAddedAt).getTime() : 0;
+      const bDate = b.lastOppAddedAt ? new Date(b.lastOppAddedAt).getTime() : 0;
+      if (bDate !== aDate) return bDate - aDate;
+      // Fallback: sort by creation date descending
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
 
   // --- Render Views ---
 
@@ -869,13 +885,14 @@ const ClientPage = () => {
                 <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Location</th>
                 <th className="px-6 py-3 font-semibold text-gray-900 w-[15%]">Contact Info</th>
                 {['Sales Manager', 'Business Head'].includes(user?.role) && <th className="px-6 py-3 font-semibold text-gray-900 w-[10%]">Created By</th>}
+                <th className="px-6 py-3 font-semibold text-gray-900 text-center whitespace-nowrap">No. of Opportunities</th>
                 <th className="px-6 py-3 font-semibold text-gray-900 text-center whitespace-nowrap">Add Opportunity</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {filteredClients.length > 0 ? filteredClients.map(client => {
                 const primaryContact = client.contactPersons?.find(c => c.isPrimary) || client.contactPersons?.[0];
-                return <tr key={client._id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => openDetails(client)}>
+                return <tr key={client._id} className="hover:bg-gray-50 cursor-pointer transition-colors" onClick={() => navigate(`/clients/${client._id}`)}>
                   <td className="px-6 py-4 font-bold text-gray-900">{client.companyName}</td>
                   <td className="px-6 py-4 text-gray-700">
                     {primaryContact?.name || <span className="text-gray-400 italic">No contact</span>}

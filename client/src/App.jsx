@@ -66,6 +66,7 @@ function App() {
 
               {/* Shared Routes */}
               <Route path="/clients" element={<ProtectedRoute allowedRoles={salesRoles}><Layout><ClientPage /></Layout></ProtectedRoute>} />
+              <Route path="/clients/:id" element={<ProtectedRoute allowedRoles={salesRoles}><Layout><ClientPage /></Layout></ProtectedRoute>} />
               <Route path="/opportunities" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityPage /></Layout></ProtectedRoute>} />
               <Route path="/opportunities/:id" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityDetailPage /></Layout></ProtectedRoute>} />
               <Route path="/approvals" element={<ProtectedRoute allowedRoles={approvalRoles}><Layout><ApprovalsPage /></Layout></ProtectedRoute>} />

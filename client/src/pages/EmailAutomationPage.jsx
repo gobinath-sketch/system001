@@ -849,7 +849,7 @@ const EmailAutomationPage = () => {
                                             <div className="flex flex-wrap gap-2">
                                                 {item?.linkedEntities?.clientId?._id && (
                                                     <button
-                                                        onClick={() => navigate('/clients')}
+                                                        onClick={() => navigate(`/clients/${item.linkedEntities.clientId._id}`)}
                                                         className="px-2 py-1 text-xs rounded bg-blue-50 text-blue-700 border border-blue-200"
                                                     >
                                                         Client: {item.linkedEntities.clientId.companyName || 'Open'}
