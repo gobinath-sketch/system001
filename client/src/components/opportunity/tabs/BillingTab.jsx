@@ -829,7 +829,9 @@ const BillingTab = forwardRef(({
   tov > 0 ? (gktRevenue / tov * 100).toFixed(1) : 0; // Marketing and Contingency percentages (still from expenses for display)
   activeData.expenses?.marketingPercent || 0;
   activeData.expenses?.contingencyPercent || 15; // User requested "Cost per day/Cost per participant"
-  const totalDays = activeData.days || activeData.commonDetails?.duration || activeData.commonDetails?.trainingDays || 0;
+  // Duration is stored as total hours in commonDetails.durationHours (1 day = 8 hours)
+  const totalDurationHours = activeData.commonDetails?.durationHours || 0;
+  const totalDays = totalDurationHours > 0 ? Math.ceil(totalDurationHours / 8) : 0;
   const totalParticipants = activeData.participants || activeData.commonDetails?.attendanceParticipants || activeData.commonDetails?.totalParticipants || 0;
   const proposalValue = formData.commonDetails?.tov || activeData.commonDetails?.tov || 0;
   // Keep as numbers for formatting later

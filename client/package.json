@@ -20,6 +20,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.13.2",
     "country-state-city": "^3.2.1",
+    "exceljs": "^4.4.0",
     "i18n-iso-countries": "^7.14.0",
     "leva": "^0.10.1",
     "libphonenumber-js": "^1.12.37",
@@ -34,8 +35,7 @@
     "socket.io-client": "^4.8.3",
     "styled-components": "^6.3.8",
     "tailwindcss": "^4.1.18",
-    "three": "^0.182.0",
-    "xlsx": "https://cdn.sheetjs.com/xlsx-latest/xlsx-latest.tgz"
+    "three": "^0.182.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.5",

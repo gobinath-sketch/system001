@@ -849,7 +849,7 @@ const EmailAutomationPage = () => {
                                             <div className="flex flex-wrap gap-2">
                                                 {item?.linkedEntities?.clientId?._id && (
                                                     <button
-                                                        onClick={() => navigate('/clients')}
+                                                        onClick={() => navigate(`/clients/${item.linkedEntities.clientId._id}`)}
                                                         className="px-2 py-1 text-xs rounded bg-blue-50 text-blue-700 border border-blue-200"
                                                     >
                                                         Client: {item.linkedEntities.clientId.companyName || 'Open'}
@@ -1102,8 +1102,8 @@ const EmailAutomationPage = () => {
 
             {reviewModalItem && reviewDraft && (
                 <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/40">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[88vh] overflow-hidden">
-                        <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between">
+                    <div className="bg-white rounded-lg shadow-xl w-[98vw] max-w-[1600px] h-[94vh] flex flex-col overflow-hidden">
+                        <div className="px-4 py-3 border-b bg-slate-50 flex items-center justify-between shrink-0">
                             <div>
                                 <h3 className="text-base font-semibold text-slate-900">AI Review Confirmation</h3>
                                 <p className="text-xs text-slate-500 mt-1">
@@ -1115,82 +1115,100 @@ const EmailAutomationPage = () => {
                             </button>
                         </div>
 
-                        <div className="p-4 overflow-auto max-h-[74vh] space-y-5">
-                            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                <div className="lg:col-span-2 bg-white border rounded-lg p-4 space-y-4">
-                                    <div>
-                                        <div className="text-xs text-slate-500 mb-1">Source email</div>
-                                        <div className="text-sm font-semibold text-slate-900">{reviewModalItem.subject || '(No subject)'}</div>
-                                        <div className="text-sm text-slate-600 mt-1">{reviewModalItem.fromName || reviewModalItem.fromEmail || '-'}</div>
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Intent</label>
-                                            <input
-                                                value={reviewDraft.intent || ''}
-                                                onChange={(e) => updateReviewDraftField(['intent'], e.target.value)}
-                                                className="w-full border rounded-lg px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Confidence</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="1"
-                                                step="0.01"
-                                                value={reviewDraft.confidence ?? 0}
-                                                onChange={(e) => updateReviewDraftField(['confidence'], Number(e.target.value))}
-                                                className="w-full border rounded-lg px-3 py-2 text-sm"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-600 mb-1">AI Reason</label>
-                                        <textarea
-                                            rows={3}
-                                            value={reviewDraft.reason || ''}
-                                            onChange={(e) => updateReviewDraftField(['reason'], e.target.value)}
-                                            className="w-full border rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    </div>
+                        <div className="flex-1 overflow-hidden flex flex-col md:flex-row">
+                            {/* LEFT SIDE: Email Content View */}
+                            <div className="w-full md:w-[45%] lg:w-[40%] flex flex-col h-full border-r border-gray-200 bg-white">
+                                <div className="p-4 border-b bg-slate-50 shrink-0">
+                                    <div className="text-xs text-slate-500 mb-1">Source email</div>
+                                    <div className="text-sm font-semibold text-slate-900">{reviewModalItem.subject || '(No subject)'}</div>
+                                    <div className="text-sm text-slate-600 mt-1">{reviewModalItem.fromName || reviewModalItem.fromEmail || '-'}</div>
                                 </div>
-
-                                <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 space-y-2">
-                                    <div className="text-sm font-semibold text-blue-900">Prepared actions</div>
-                                    <div className="text-xs text-slate-600">
-                                        The approval below will use the edited draft in this screen.
-                                    </div>
-                                    <ul className="text-sm text-slate-700 space-y-1 list-disc pl-4">
-                                        <li>{reviewDraft?.client?.companyName ? 'Client create/update ready' : 'No client name extracted yet'}</li>
-                                        <li>{reviewDraft?.opportunity?.requirementSummary ? 'Opportunity data present' : 'Opportunity data is limited'}</li>
-                                        <li>{reviewDraft?.meeting?.shouldCreateEvent ? 'Calendar event will be created on approval' : 'No calendar event will be created'}</li>
-                                    </ul>
+                                <div className="p-4 overflow-auto flex-1 bg-white">
+                                    <div className="text-xs text-gray-500 mb-2">Exact mail body</div>
+                                    {reviewModalItem?.rawPayload?.body?.content || reviewModalItem?.rawPayload?.bodyHtml ? (
+                                        <iframe 
+                                            title="mail-body-preview" 
+                                            className="w-full h-full min-h-[400px] border border-gray-200 rounded" 
+                                            srcDoc={reviewModalItem?.rawPayload?.body?.content || reviewModalItem?.rawPayload?.bodyHtml} 
+                                        />
+                                    ) : (
+                                        <pre className="text-sm whitespace-pre-wrap font-sans">{reviewModalItem.bodyText || ''}</pre>
+                                    )}
                                 </div>
                             </div>
+
+                            {/* RIGHT SIDE: Extracted Form */}
+                            <div className="w-full md:w-[55%] lg:w-[60%] overflow-auto p-4 space-y-5 bg-slate-50">
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                    <div className="bg-white border rounded-lg p-4 space-y-4 shadow-sm">
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Intent</label>
+                                                <input
+                                                    value={reviewDraft.intent || ''}
+                                                    onChange={(e) => updateReviewDraftField(['intent'], e.target.value)}
+                                                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Confidence</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="1"
+                                                    step="0.01"
+                                                    value={reviewDraft.confidence ?? 0}
+                                                    onChange={(e) => updateReviewDraftField(['confidence'], Number(e.target.value))}
+                                                    className="w-full border rounded-lg px-3 py-2 text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">AI Reason</label>
+                                            <textarea
+                                                rows={3}
+                                                value={reviewDraft.reason || ''}
+                                                onChange={(e) => updateReviewDraftField(['reason'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-blue-50 border border-blue-100 shadow-sm rounded-lg p-4 space-y-2">
+                                        <div className="text-sm font-semibold text-blue-900">Prepared actions</div>
+                                        <div className="text-xs text-slate-600">
+                                            The approval below will use the edited draft in this screen.
+                                        </div>
+                                        <ul className="text-sm text-slate-700 space-y-1 list-disc pl-4">
+                                            <li>{reviewDraft?.client?.companyName ? 'Client create/update ready' : 'No client name extracted yet'}</li>
+                                            <li>{reviewDraft?.opportunity?.requirementSummary ? 'Opportunity data present' : 'Opportunity data is limited'}</li>
+                                            <li>{reviewDraft?.meeting?.shouldCreateEvent ? 'Calendar event will be created on approval' : 'No calendar event will be created'}</li>
+                                        </ul>
+                                    </div>
+                                </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                 <div className="bg-white border rounded-lg p-4 space-y-4">
                                     <div className="text-sm font-semibold text-slate-900">Client Draft</div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Company Name</label>
-                                        <input
-                                            value={reviewDraft?.client?.companyName || ''}
-                                            onChange={(e) => updateReviewDraftField(['client', 'companyName'], e.target.value)}
-                                            className="w-full border rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Sector</label>
-                                        <input
-                                            value={reviewDraft?.client?.sector || ''}
-                                            onChange={(e) => updateReviewDraftField(['client', 'sector'], e.target.value)}
-                                            className="w-full border rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Primary Contact</label>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Company Name</label>
+                                            <input
+                                                value={reviewDraft?.client?.companyName || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'companyName'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Sector</label>
+                                            <input
+                                                value={reviewDraft?.client?.sector || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'sector'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Primary Contact Name</label>
                                             <input
                                                 value={reviewDraft?.client?.contactPersons?.[0]?.name || ''}
                                                 onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'name'], e.target.value)}
@@ -1198,10 +1216,51 @@ const EmailAutomationPage = () => {
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Primary Email</label>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Designation</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.designation || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'designation'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Department</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.department || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'department'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Contact Number</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.contactNumber || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'contactNumber'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                                placeholder="+91 XXXXX XXXXX"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Email</label>
                                             <input
                                                 value={reviewDraft?.client?.contactPersons?.[0]?.email || ''}
                                                 onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'email'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Location</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.location || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'location'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm"
+                                            />
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">LinkedIn</label>
+                                            <input
+                                                value={reviewDraft?.client?.contactPersons?.[0]?.linkedIn || ''}
+                                                onChange={(e) => updateReviewDraftField(['client', 'contactPersons', 0, 'linkedIn'], e.target.value)}
                                                 className="w-full border rounded-lg px-3 py-2 text-sm"
                                             />
                                         </div>
@@ -1210,44 +1269,141 @@ const EmailAutomationPage = () => {
 
                                 <div className="bg-white border rounded-lg p-4 space-y-4">
                                     <div className="text-sm font-semibold text-slate-900">Opportunity Draft</div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Type</label>
-                                        <input
-                                            value={reviewDraft?.opportunity?.type || ''}
-                                            onChange={(e) => updateReviewDraftField(['opportunity', 'type'], e.target.value)}
-                                            className="w-full border rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-600 mb-1">Requirement Summary</label>
-                                        <textarea
-                                            rows={4}
-                                            value={reviewDraft?.opportunity?.requirementSummary || ''}
-                                            onChange={(e) => updateReviewDraftField(['opportunity', 'requirementSummary'], e.target.value)}
-                                            className="w-full border rounded-lg px-3 py-2 text-sm"
-                                        />
-                                    </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Participants</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={reviewDraft?.opportunity?.participants || 0}
-                                                onChange={(e) => updateReviewDraftField(['opportunity', 'participants'], Number(e.target.value))}
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Type</label>
+                                            <select
+                                                value={reviewDraft?.opportunity?.type || 'Training'}
+                                                onChange={(e) => updateReviewDraftField(['opportunity', 'type'], e.target.value)}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm bg-white"
+                                            >
+                                                <option value="Training">Training</option>
+                                                <option value="Product Support">Product Support</option>
+                                                <option value="Resource Support">Resource Support</option>
+                                                <option value="Vouchers">Vouchers</option>
+                                                <option value="Content Development">Content Development</option>
+                                                <option value="Lab Support">Lab Support</option>
+                                            </select>
+                                        </div>
+                                        <div className="md:col-span-2">
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Requirement Summary</label>
+                                            <textarea
+                                                rows={2}
+                                                value={reviewDraft?.opportunity?.requirementSummary || ''}
+                                                onChange={(e) => updateReviewDraftField(['opportunity', 'requirementSummary'], e.target.value)}
                                                 className="w-full border rounded-lg px-3 py-2 text-sm"
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Days</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                value={reviewDraft?.opportunity?.days || 0}
-                                                onChange={(e) => updateReviewDraftField(['opportunity', 'days'], Number(e.target.value))}
-                                                className="w-full border rounded-lg px-3 py-2 text-sm"
-                                            />
-                                        </div>
+                                        
+                                        {(reviewDraft?.opportunity?.type === 'Training' || !reviewDraft?.opportunity?.type) && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Technology</label>
+                                                    <input value={reviewDraft?.opportunity?.technology || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'technology'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Training Name</label>
+                                                    <input value={reviewDraft?.opportunity?.trainingName || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'trainingName'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Mode of Training</label>
+                                                    <input value={reviewDraft?.opportunity?.modeOfTraining || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'modeOfTraining'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Training Location</label>
+                                                    <input value={reviewDraft?.opportunity?.trainingLocation || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'trainingLocation'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Participants</label>
+                                                    <input type="number" min="0" value={reviewDraft?.opportunity?.participants || 0} onChange={(e) => updateReviewDraftField(['opportunity', 'participants'], Number(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Days</label>
+                                                    <input type="number" min="0" value={reviewDraft?.opportunity?.days || 0} onChange={(e) => updateReviewDraftField(['opportunity', 'days'], Number(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {reviewDraft?.opportunity?.type === 'Vouchers' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Technology</label>
+                                                    <input value={reviewDraft?.opportunity?.technology || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'technology'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Exam Details</label>
+                                                    <input value={reviewDraft?.opportunity?.examDetails || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'examDetails'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">No of Vouchers</label>
+                                                    <input type="number" min="0" value={reviewDraft?.opportunity?.noOfVouchers || 0} onChange={(e) => updateReviewDraftField(['opportunity', 'noOfVouchers'], Number(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Exam Location</label>
+                                                    <input value={reviewDraft?.opportunity?.region || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'region'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {reviewDraft?.opportunity?.type === 'Lab Support' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Technology</label>
+                                                    <input value={reviewDraft?.opportunity?.technology || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'technology'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">No of IDs</label>
+                                                    <input type="number" min="0" value={reviewDraft?.opportunity?.noOfIDs || 0} onChange={(e) => updateReviewDraftField(['opportunity', 'noOfIDs'], Number(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Duration</label>
+                                                    <input value={reviewDraft?.opportunity?.duration || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'duration'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Region</label>
+                                                    <input value={reviewDraft?.opportunity?.region || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'region'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {reviewDraft?.opportunity?.type === 'Resource Support' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Resource Type</label>
+                                                    <input value={reviewDraft?.opportunity?.resourceType || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'resourceType'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Resource Count</label>
+                                                    <input type="number" min="0" value={reviewDraft?.opportunity?.resourceCount || 0} onChange={(e) => updateReviewDraftField(['opportunity', 'resourceCount'], Number(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {reviewDraft?.opportunity?.type === 'Content Development' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Content Type</label>
+                                                    <input value={reviewDraft?.opportunity?.contentType || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'contentType'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Delivery Format</label>
+                                                    <input value={reviewDraft?.opportunity?.deliveryFormat || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'deliveryFormat'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {reviewDraft?.opportunity?.type === 'Product Support' && (
+                                            <>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Project Scope</label>
+                                                    <input value={reviewDraft?.opportunity?.projectScope || ''} onChange={(e) => updateReviewDraftField(['opportunity', 'projectScope'], e.target.value)} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Team Size</label>
+                                                    <input type="number" min="0" value={reviewDraft?.opportunity?.teamSize || 0} onChange={(e) => updateReviewDraftField(['opportunity', 'teamSize'], Number(e.target.value))} className="w-full border rounded-lg px-3 py-2 text-sm" />
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -1336,9 +1492,9 @@ const EmailAutomationPage = () => {
                                         className="w-full border rounded-lg px-3 py-2 text-sm"
                                     />
                                 </div>
+                                </div>
                             </div>
                         </div>
-
                         <div className="px-4 py-3 border-t bg-slate-50 flex flex-wrap items-center justify-end gap-2">
                             <button
                                 onClick={closeReviewModal}

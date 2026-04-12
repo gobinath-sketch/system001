@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Download, TrendingUp, Calendar } from 'lucide-react';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSocket } from '../../context/SocketContext';
 import AnimatedNumber from '../common/AnimatedNumber';
@@ -137,58 +137,46 @@ const GPReportSection = () => {
       setLoading(false);
     }
   };
-  const generateExcelReport = () => {
+  const generateExcelReport = async () => {
     if (!reportData || !reportData.clientData) return;
 
-    // Prepare data for Excel
-    const excelData = reportData.clientData.map(client => ({
-      'S.No': client.sno,
-      'Client Name': client.clientName,
-      'Total Revenue': client.totalRevenue,
-      'Total Expenses': client.totalExpenses,
-      'Profit': client.gp,
-      'GP %': client.gpPercent.toFixed(2) + '%'
-    }));
+    const workbook = new ExcelJS.Workbook();
+    const ws = workbook.addWorksheet('GP Report');
 
-    // Create worksheet
-    const ws = XLSX.utils.json_to_sheet(excelData);
-
-    // Set column widths
-    ws['!cols'] = [{
-      wch: 8
-    },
-    // S.No
-    {
-      wch: 30
-    },
-    // Client Name
-    {
-      wch: 15
-    },
-    // Total Revenue
-    {
-      wch: 15
-    },
-    // Total Expenses
-    {
-      wch: 15
-    },
-    // GP
-    {
-      wch: 10
-    } // GP %
+    // Define columns
+    ws.columns = [
+      { header: 'S.No',           key: 'sno',           width: 8  },
+      { header: 'Client Name',    key: 'clientName',     width: 30 },
+      { header: 'Total Revenue',  key: 'totalRevenue',   width: 15 },
+      { header: 'Total Expenses', key: 'totalExpenses',  width: 15 },
+      { header: 'Profit',         key: 'gp',             width: 15 },
+      { header: 'GP %',           key: 'gpPercent',      width: 10 },
     ];
 
-    // Create workbook
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'GP Report');
+    // Add rows
+    reportData.clientData.forEach(client => {
+      ws.addRow({
+        sno:          client.sno,
+        clientName:   client.clientName,
+        totalRevenue: client.totalRevenue,
+        totalExpenses: client.totalExpenses,
+        gp:           client.gp,
+        gpPercent:    client.gpPercent.toFixed(2) + '%',
+      });
+    });
 
-    // Generate filename with date
+    // Generate file and trigger download
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     const dateStr = new Date().toISOString().split('T')[0];
-    const filename = `GP_Report_${filterType}_${dateStr}.xlsx`;
-
-    // Download
-    XLSX.writeFile(wb, filename);
+    a.href = url;
+    a.download = `GP_Report_${filterType}_${dateStr}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
   const formatCurrency = value => {
     const displayValue = currency === 'USD' ? value / USD_TO_INR : value;

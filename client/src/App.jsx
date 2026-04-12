@@ -7,6 +7,7 @@ import DashboardPage from './pages/DashboardPage';
 import DirectorDashboard from './pages/DirectorDashboard';
 import SalesManagerDashboard from './pages/dashboard/SalesManagerDashboard';
 import BusinessHeadDashboard from './pages/dashboard/BusinessHeadDashboard';
+import UserApprovals from './pages/dashboard/UserApprovals';
 import ClientPage from './pages/ClientPage';
 import OpportunityPage from './pages/OpportunityPage';
 import OpportunityDetailPage from './pages/OpportunityDetailPage';
@@ -19,6 +20,7 @@ import FinanceModulePage from './pages/finance/FinanceModulePage';
 import FinanceDetails from './pages/finance/FinanceDetails';
 import SettingsPage from './pages/SettingsPage';
 import EmailAutomationPage from './pages/EmailAutomationPage';
+import OAuthCallback from './pages/OAuthCallback';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import { ToastProvider } from './context/ToastContext';
@@ -53,6 +55,7 @@ function App() {
           <Router basename={import.meta.env.BASE_URL}>
             <Routes>
               <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+              <Route path="/oauth/callback" element={<OAuthCallback />} />
 
               {/* Role-Based Dashboard Routes */}
               <Route path="/" element={<ProtectedRoute allowedRoles={allRoles}><Layout><DashboardPage /></Layout></ProtectedRoute>} />
@@ -63,9 +66,11 @@ function App() {
 
               {/* Shared Routes */}
               <Route path="/clients" element={<ProtectedRoute allowedRoles={salesRoles}><Layout><ClientPage /></Layout></ProtectedRoute>} />
+              <Route path="/clients/:id" element={<ProtectedRoute allowedRoles={salesRoles}><Layout><ClientPage /></Layout></ProtectedRoute>} />
               <Route path="/opportunities" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityPage /></Layout></ProtectedRoute>} />
               <Route path="/opportunities/:id" element={<ProtectedRoute allowedRoles={opportunityRoles}><Layout><OpportunityDetailPage /></Layout></ProtectedRoute>} />
               <Route path="/approvals" element={<ProtectedRoute allowedRoles={approvalRoles}><Layout><ApprovalsPage /></Layout></ProtectedRoute>} />
+              <Route path="/user-approvals" element={<ProtectedRoute allowedRoles={['Business Head', 'Super Admin']}><Layout><UserApprovals /></Layout></ProtectedRoute>} />
 
               {/* Delivery Routes */}
               <Route path="/dashboard/delivery" element={<ProtectedRoute allowedRoles={deliveryRoles}><Layout><DeliveryDashboard /></Layout></ProtectedRoute>} />

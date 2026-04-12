@@ -1,7 +1,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const mongoose = require('mongoose');
-const xlsx = require('xlsx');
+const ExcelJS = require('exceljs');
 const Course = require('../models/Course');
 
 async function seed() {
@@ -11,9 +11,22 @@ async function seed() {
         console.log('Connected to DB');
 
         const filePath = path.join(__dirname, '..', 'data', 'gkt_courses.xlsx');
-        const workbook = xlsx.readFile(filePath);
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const data = xlsx.utils.sheet_to_json(sheet);
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.readFile(filePath);
+        const sheet = workbook.worksheets[0];
+
+        // Convert sheet rows to JSON objects using the first row as headers
+        const headers = [];
+        sheet.getRow(1).eachCell((cell) => { headers.push(cell.value); });
+        const data = [];
+        sheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return; // skip header
+            const obj = {};
+            row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
+                obj[headers[colNumber - 1]] = cell.value;
+            });
+            data.push(obj);
+        });
 
         let count = 0;
         let errors = 0;

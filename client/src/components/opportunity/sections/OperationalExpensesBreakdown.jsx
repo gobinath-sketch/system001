@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, GraduationCap, Package, FlaskConical, BadgePercent, Hotel, UtensilsCrossed, Building2, Plane, Ticket, Car, Wallet } from 'lucide-react';
+import { CheckCircle, GraduationCap, Package, FlaskConical, BadgePercent, Hotel, UtensilsCrossed, Building2, Plane, Ticket, Car, Wallet, Upload, Briefcase } from 'lucide-react';
 import { useCurrency } from '../../../context/CurrencyContext';
 import { API_BASE } from '../../../config/api';
 import UploadButton from '../../ui/UploadButton';
@@ -19,98 +19,87 @@ const OperationalExpensesBreakdown = ({
   const CURRENCY_SYMBOL = currency === 'USD' ? '$' : '₹';
 
   // Helper accessors for days and pax from activeData or opportunity
-  const days = activeData.days || activeData.commonDetails?.duration || activeData.commonDetails?.trainingDays || opportunity.days || opportunity.commonDetails?.duration || opportunity.commonDetails?.trainingDays || 0;
+  // Duration is stored as total hours in commonDetails.durationHours (1 day = 8 hours)
+  const durationHours = activeData.commonDetails?.durationHours || opportunity.commonDetails?.durationHours || 0;
+  const days = durationHours > 0 ? Math.ceil(durationHours / 8) : 0;
   const pax = activeData.participants || activeData.commonDetails?.attendanceParticipants || activeData.commonDetails?.totalParticipants || opportunity.participants || opportunity.commonDetails?.attendanceParticipants || opportunity.commonDetails?.totalParticipants || 0;
   const [localBreakdown, setLocalBreakdown] = useState({});
 
-  // Configuration for expenses order and options
-  const expenseConfig = [{
-    key: 'trainerCost',
-    label: 'Trainer Cost',
-    icon: GraduationCap,
-    options: [{
-      value: 'costPerDay',
-      label: 'Cost / Day'
-    }, {
-      value: 'costPerHour',
-      label: 'Cost / Hour'
-    }, {
-      value: 'totalCost',
-      label: 'Total Training Cost'
-    }]
-  }, {
-    key: 'material',
-    label: 'Material Cost',
-    icon: Package,
-    options: [{
-      value: 'costPerPax',
-      label: 'Cost / Pax'
-    }, {
-      value: 'overallCost',
-      label: 'Overall Cost'
-    }]
-  }, {
-    key: 'labs',
-    label: 'Lab Cost',
-    icon: FlaskConical,
-    options: [{
-      value: 'costPerPaxDay',
-      label: 'Cost / Pax / Day'
-    }, {
-      value: 'costPerPaxAllDays',
-      label: 'Cost / Pax (All Days)'
-    }, {
-      value: 'totalCost',
-      label: 'Total Cost'
-    }]
-  }, {
-    key: 'gkRoyalty',
-    label: 'GK Royalty',
-    icon: BadgePercent,
-    fixedLabel: 'Fixed: Cost / Pax / Day'
-  }, {
-    key: 'accommodation',
-    label: 'Accommodation',
-    icon: Hotel,
-    fixedLabel: 'Fixed: Cost / Day'
-  }, {
-    key: 'perDiem',
-    label: 'Per Diem',
-    icon: UtensilsCrossed,
-    fixedLabel: 'Fixed: Cost / Day'
-  }, {
-    key: 'venue',
-    label: 'Venue Cost',
-    icon: Building2,
-    options: [{
-      value: 'costPerDay',
-      label: 'Cost / Day'
-    }, {
-      value: 'totalCost',
-      label: 'Total Cost'
-    }]
-  }, {
-    key: 'travel',
-    label: 'Travel Cost',
-    icon: Plane,
-    options: [{
-      value: 'costPerDay',
-      label: 'Cost / Day'
-    }, {
-      value: 'totalCost',
-      label: 'Total Cost'
-    }]
-  }, {
-    key: 'vouchersCost',
-    label: 'Vouchers',
-    icon: Ticket,
-    fixedLabel: 'Total amount'
-  }, {
-    key: 'localConveyance',
-    label: 'Local Conveyance',
-    icon: Car,
-    fixedLabel: 'Total amount'
-  }];
+  // ─── Master expense definitions ────────────────────────────────────────────
+  const ALL_EXPENSES = {
+    trainerCost: {
+      key: 'trainerCost', label: 'Trainer Cost', icon: GraduationCap,
+      options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Training Cost' }]
+    },
+    material: {
+      key: 'material', label: 'Material Cost', icon: Package,
+      options: [{ value: 'costPerPax', label: 'Cost / Pax' }, { value: 'overallCost', label: 'Overall Cost' }]
+    },
+    labs: {
+      key: 'labs', label: 'Lab Cost', icon: FlaskConical,
+      options: [{ value: 'costPerPaxDay', label: 'Cost / Pax / Day' }, { value: 'costPerPaxAllDays', label: 'Cost / Pax (All Days)' }, { value: 'totalCost', label: 'Total Cost' }]
+    },
+    gkRoyalty:       { key: 'gkRoyalty',       label: 'GK Royalty',        icon: BadgePercent,    fixedLabel: 'Fixed: Cost / Pax / Day' },
+    accommodation:   { key: 'accommodation',    label: 'Accommodation',     icon: Hotel,           fixedLabel: 'Fixed: Cost / Day' },
+    perDiem:         { key: 'perDiem',          label: 'Per Diem',          icon: UtensilsCrossed, fixedLabel: 'Fixed: Cost / Day' },
+    venue: {
+      key: 'venue', label: 'Venue Cost', icon: Building2,
+      options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }]
+    },
+    travel: {
+      key: 'travel', label: 'Travel Cost', icon: Plane,
+      options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'totalCost', label: 'Total Cost' }]
+    },
+    vouchersCost:    { key: 'vouchersCost',     label: 'Vouchers',          icon: Ticket,  fixedLabel: 'Total amount' },
+    localConveyance: { key: 'localConveyance',  label: 'Local Conveyance',  icon: Car,     fixedLabel: 'Total amount' },
+    consultantCost:    { 
+      key: 'consultantCost', label: 'Consultant Cost', icon: Briefcase,
+      options: [{ value: 'costPerDay', label: 'Cost / Day' }, { value: 'costPerHour', label: 'Cost / Hour' }, { value: 'totalCost', label: 'Total Cost' }]
+    },
+  };
+
+  // ─── Dynamic expense list based on opportunity type & training mode ─────────
+  const getExpenseConfig = (type, mode) => {
+    const e = ALL_EXPENSES;
+    switch (type) {
+      case 'Training': {
+        const m = (mode || '').toLowerCase();
+        if (m.includes('online') || m === 'virtual') {
+          // Online / Virtual Training
+          return [e.trainerCost, e.material, e.labs, e.gkRoyalty];
+        }
+        if (m.includes('offline') || m === 'classroom') {
+          // Offline / Classroom Training
+          return [e.trainerCost, e.material, e.labs, e.venue, e.accommodation, e.perDiem, e.travel, e.localConveyance, e.gkRoyalty];
+        }
+        if (m.includes('hybrid')) {
+          // Hybrid Training
+          return [e.trainerCost, e.material, e.labs, e.venue, e.travel, e.localConveyance, e.accommodation, e.perDiem, e.gkRoyalty];
+        }
+        // No mode selected yet — show all training-related expenses
+        return [e.trainerCost, e.material, e.labs, e.venue, e.accommodation, e.perDiem, e.travel, e.localConveyance, e.gkRoyalty];
+      }
+      case 'Vouchers':
+        return [e.vouchersCost];
+      case 'Lab Support':
+        return [e.labs, e.material, e.gkRoyalty];
+      case 'Content Development':
+        return [e.trainerCost, e.material];
+      case 'Product Support':
+        return [e.consultantCost, e.travel, e.accommodation, e.perDiem, e.localConveyance];
+      case 'Resource Support':
+        return [e.consultantCost, e.travel, e.accommodation, e.perDiem, e.localConveyance];
+      default:
+        // Fallback: show everything
+        return Object.values(e);
+    }
+  };
+
+  // Derive current config reactively from opportunity type + mode
+  const opportunityType = activeData.type || opportunity.type || '';
+  const trainingMode    = activeData.typeSpecificDetails?.modeOfTraining || opportunity.typeSpecificDetails?.modeOfTraining || '';
+  const expenseConfig   = getExpenseConfig(opportunityType, trainingMode);
+
 
   // Sync local state on prop change
   useEffect(() => {
@@ -174,8 +163,9 @@ const OperationalExpensesBreakdown = ({
 
     switch (category) {
       case 'trainerCost':
+      case 'consultantCost':
         if (type === 'costPerDay') return rate * days;
-        if (type === 'costPerHour') return rate * hours * days;
+        if (type === 'costPerHour') return rate * durationHours; // Use total duration hours directly
         if (type === 'totalCost') return rate;
         return 0;
       case 'material':
@@ -202,207 +192,239 @@ const OperationalExpensesBreakdown = ({
     }
   };
 
-  // --- VIEW MODE RENDERER (CARD STYLE) ---
+  // ─── VIEW MODE — compact horizontal card ──────────────────────────────────────
   const renderViewCard = config => {
-    const {
-      key: category,
-      label,
-      options,
-      fixedLabel
-    } = config;
+    const { key: category, label, options, fixedLabel } = config;
     const data = localBreakdown[category] || {};
     const Icon = config.icon || Wallet;
     const currentTotal = activeData.expenses?.[category] || 0;
-    const typeLabel = options ? options.find(o => o.value === data.type)?.label || data.type : fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed';
-    return <div key={category} className="bg-white/80 border border-slate-200 rounded-xl p-3.5 flex flex-col justify-center h-full shadow-[0_1px_2px_rgba(15,23,42,0.03)]">
-      <div className="flex justify-between items-center mb-2">
-        <div className="inline-flex items-center gap-2 min-w-0">
-          <Icon size={16} className="text-slate-700" />
-          <span className="font-semibold text-slate-800 text-base">{label}</span>
-          {opportunity.expenseDocuments?.[category]?.length > 0 && <a href={`${API_BASE}/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-sm font-medium" title="View Document">
-            <CheckCircle size={14} className="mr-1" /> View
-          </a>}
+    const typeLabel = options
+      ? options.find(o => o.value === data.type)?.label || options[0].label
+      : fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed';
+
+    return (
+      <div key={category}
+        className="flex items-center gap-4 bg-white rounded-xl border border-slate-100 px-4 py-3 shadow-sm hover:shadow-md transition-shadow"
+      >
+        {/* Icon badge */}
+        <div className="shrink-0 w-9 h-9 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-sm">
+          <Icon size={16} className="text-white" />
         </div>
-        <span className="font-bold text-slate-900 text-base">
-          {CURRENCY_SYMBOL} {(currentTotal / CONVERSION_RATE).toLocaleString(undefined, {
-            maximumFractionDigits: 0
-          })}
-        </span>
-      </div>
 
-      <div className="flex justify-between items-center text-base text-slate-700 leading-relaxed">
-        <span className="text-slate-800 font-medium">{typeLabel}</span>
-        <span className="font-semibold text-slate-900 text-base">
-          {CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}
-        </span>
-      </div>
+        {/* Label + billing type */}
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-slate-800 text-sm leading-tight truncate">{label}</p>
+          <p className="text-xs text-slate-400 mt-0.5 truncate">{typeLabel}</p>
+        </div>
 
-      {data.hours > 0 && data.type === 'costPerHour' && <div className="text-sm text-slate-700 mt-1">Hours: {data.hours}</div>}
-    </div>;
+        {/* Rate */}
+        <div className="text-right shrink-0">
+          <p className="text-xs text-slate-400">Rate</p>
+          <p className="text-sm font-semibold text-slate-700">{CURRENCY_SYMBOL} {Number(data.rate || 0).toLocaleString()}</p>
+        </div>
+
+        {/* Divider */}
+        <div className="w-px h-8 bg-slate-100 shrink-0" />
+
+        {/* Total */}
+        <div className="text-right shrink-0 min-w-[80px]">
+          <p className="text-xs text-slate-400">Total</p>
+          <p className="text-base font-bold text-blue-900">
+            {CURRENCY_SYMBOL} {(currentTotal / CONVERSION_RATE).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+          </p>
+        </div>
+
+        {/* Doc link */}
+        {opportunity.expenseDocuments?.[category]?.length > 0 && (
+          <a
+            href={`${API_BASE}/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`}
+            target="_blank" rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium"
+          >
+            <CheckCircle size={13} /> View
+          </a>
+        )}
+      </div>
+    );
   };
-  return <div className="h-full flex flex-col rounded-3xl border border-slate-200/80 bg-white p-3 sm:p-5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-sm">
-    {/* Header Section */}
-    <div className="flex flex-row items-center justify-between gap-3 mb-5 pb-2">
-      <h3 className="text-xl font-bold text-primary-blue mb-4">Operational Expenses Breakdown</h3>
-      <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 px-3 py-1 bg-blue-50/50 border border-blue-100 rounded-lg text-sm font-medium text-blue-900">
-          <span className="text-blue-900">Pax:</span>
-          <span className="font-bold">{pax}</span>
-          <span className="w-px h-3 bg-blue-200 mx-1"></span>
-          <span className="text-blue-900">Days:</span>
-          <span className="font-bold">{days}</span>
+
+  return (
+    <div className="h-full flex flex-col rounded-2xl border border-slate-200 bg-white shadow-md overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 bg-gradient-to-r from-blue-900 to-blue-700">
+        <h3 className="text-xl font-bold text-white">Operational Expenses Breakdown</h3>
+        <div className="flex items-center gap-3">
+          {/* Common Proposal Upload */}
+          {canEdit && (
+            <div className="flex items-center gap-2">
+              <input type="file" id="upload-common-proposal" className="hidden" onChange={e => handleProposalUpload(e, 'proposal')} accept=".pdf,.doc,.docx,.ppt,.pptx" disabled={uploading} />
+              <button
+                onClick={() => document.getElementById('upload-common-proposal').click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 bg-white/15 hover:bg-white/25 border border-white/30 text-white text-xs font-semibold rounded-lg px-3 py-1.5 transition-all shadow-sm"
+              >
+                <Upload size={13} />
+                {opportunity.proposalDocument ? 'Replace Proposal' : 'Upload Proposal'}
+              </button>
+              {opportunity.proposalDocument && (
+                <a
+                  href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`}
+                  target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-white/90 hover:text-white text-xs font-medium"
+                >
+                  <CheckCircle size={12} /> View
+                </a>
+              )}
+            </div>
+          )}
+          {!canEdit && opportunity.proposalDocument && (
+            <a
+              href={`${API_BASE}/${opportunity.proposalDocument.replace(/\\/g, '/')}`}
+              target="_blank" rel="noopener noreferrer"
+              className="flex items-center gap-1.5 bg-white/15 border border-white/30 text-white text-xs font-semibold rounded-lg px-3 py-1.5"
+            >
+              <CheckCircle size={13} /> View Proposal
+            </a>
+          )}
+          {/* Pax & Days badge */}
+          <div className="flex items-center gap-3 bg-white/10 border border-white/20 rounded-lg px-3 py-1.5 text-white text-sm">
+            <span className="font-medium opacity-80">Pax</span>
+            <span className="font-bold">{pax}</span>
+            <span className="w-px h-3 bg-white/30" />
+            <span className="font-medium opacity-80">Days</span>
+            <span className="font-bold">{days}</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    {/* Content Section */}
-    <div className="flex-grow overflow-y-auto pr-1">
-      {!canEdit ?
-        // VIEW MODE: Grid Cards
-        <div className="grid h-full gap-4 grid-cols-1 md:grid-cols-2">
-          {expenseConfig.map(config => renderViewCard(config))}
-        </div> :
-        // EDIT MODE: Table Layout
-        <div className="w-full border border-slate-200 rounded-xl overflow-x-auto shadow-sm">
-          {/* Table Header */}
-          <div className="min-w-[980px] grid grid-cols-[1.45fr_1.4fr_1fr_0.95fr_0.65fr_0.9fr] gap-4 py-3.5 px-4 bg-blue-900 text-white text-sm font-semibold uppercase tracking-wider">
-            <div>Expenses</div>
-            <div>Type</div>
-            <div>Rate</div>
-            <div className="text-center">Proposal</div>
-            <div className="text-center">View</div>
-            <div className="text-right">Total Amount</div>
+      {/* Content */}
+      <div className="flex-grow overflow-y-auto p-4">
+        {!canEdit ? (
+          // VIEW MODE — single-column stacked cards, always readable
+          <div className="flex flex-col gap-2.5">
+            {expenseConfig.map(config => renderViewCard(config))}
           </div>
-
-          {/* Table Rows */}
-          <div className="min-w-[980px] bg-white divide-y divide-slate-100">
-            {expenseConfig.map(config => <EditRow key={config.key} config={config} data={localBreakdown[config.key] || {}} onUpdate={(field, val) => updateBreakdown(config.key, field, val)} onUpload={e => handleProposalUpload(e, config.key)} uploading={uploading} opportunity={opportunity} pendingDocs={pendingDocs} currentAmount={activeData.expenses?.[config.key] || 0} CURRENCY_SYMBOL={CURRENCY_SYMBOL} CONVERSION_RATE={CONVERSION_RATE} />)}
+        ) : (
+          // EDIT MODE — compact card rows
+          <div className="flex flex-col gap-2">
+            {expenseConfig.map(config => (
+              <EditRow
+                key={config.key}
+                config={config}
+                data={localBreakdown[config.key] || {}}
+                onUpdate={(field, val) => updateBreakdown(config.key, field, val)}
+                onUpload={e => handleProposalUpload(e, config.key)}
+                uploading={uploading}
+                opportunity={opportunity}
+                pendingDocs={pendingDocs}
+                currentAmount={(calculateTotal(config.key, localBreakdown[config.key] || {}) ?? 0)}
+                CURRENCY_SYMBOL={CURRENCY_SYMBOL}
+                CONVERSION_RATE={CONVERSION_RATE}
+              />
+            ))}
           </div>
-        </div>}
-    </div>
+        )}
+      </div>
 
-    {/* Footer / Total Section */}
-    <div className="mt-4 pt-3 border-t border-slate-200/70 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-      <span className="text-base font-bold text-blue-900">Total Expenses</span>
-      <span className="text-2xl sm:text-[2rem] font-bold text-blue-900">
-        {CURRENCY_SYMBOL} {(Object.keys(activeData.expenses || {}).reduce((sum, key) => {
-          if (key === 'breakdown' || key === 'marketingPercent' || key === 'contingencyPercent' || key === 'targetGpPercent' || key === 'marketing' || key === 'contingency') return sum;
-          return sum + (parseFloat(activeData.expenses[key]) || 0);
-        }, 0) / CONVERSION_RATE).toLocaleString(undefined, {
-          maximumFractionDigits: 0
-        })}
-      </span>
+      {/* Footer */}
+      <div className="px-5 py-3 bg-blue-50 border-t border-blue-100 flex items-center justify-between">
+        <span className="text-sm font-semibold text-blue-800">Total Expenses</span>
+        <span className="text-xl font-extrabold text-blue-900">
+          {CURRENCY_SYMBOL} {expenseConfig.reduce((sum, cfg) => {
+            const t = calculateTotal(cfg.key, localBreakdown[cfg.key] || {});
+            return sum + (t ?? 0);
+          }, 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+        </span>
+      </div>
     </div>
-  </div>;
+  );
 };
 
-// Extracted Edit Row Component to solve React Hook Violation
+// ─── Edit Row ──────────────────────────────────────────────────────────────
+// Card-style row: icon | label+type | rate input | total | upload/view
 const EditRow = ({
-  config,
-  data,
-  onUpdate,
-  onUpload,
-  uploading,
-  opportunity,
-  pendingDocs = {},
-  currentAmount,
-  CURRENCY_SYMBOL,
-  CONVERSION_RATE
+  config, data, onUpdate, onUpload, uploading,
+  opportunity, pendingDocs = {}, currentAmount,
+  CURRENCY_SYMBOL, CONVERSION_RATE
 }) => {
-  const {
-    key: category,
-    label,
-    options,
-    fixedLabel,
-    icon: Icon
-  } = config;
-
+  const { key: category, label, options, fixedLabel, icon: Icon } = config;
   const selectedType = data.type || (options ? options[0].value : '');
 
-  // Helper to pass updates correctly
   const handleUpdate = (field, val) => {
     if (!data.type && options && field !== 'type') {
-      // If type is not set in state yet but they edit rate/hours, save default type too
       onUpdate({ type: options[0].value, [field]: val });
     } else {
       onUpdate(field, val);
     }
   };
-  const handleTypeChange = e => {
-    onUpdate('type', e.target.value);
-  };
 
-  // --- Rate Input Logic ---
-  let rateInput = null;
-  if (category === 'trainerCost') {
-    if (selectedType === 'costPerHour') {
-      rateInput = <div className="grid grid-cols-2 gap-2">
-        <TableInput value={data.hours} onChange={v => handleUpdate('hours', v)} placeholder="Hrs" className="w-full" />
-        <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} placeholder="Rate" className="w-full" />
-      </div>;
-    } else {
-      // costPerDay or totalCost
-      rateInput = <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} />;
-    }
-  } else {
-    // For all others (Material, Labs, etc.), per USER REQUEST, DO NOT SHOW PAX INPUT.
-    // Just show the rate input. Calculation will use global Pax if needed.
-    rateInput = <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} />;
-  }
-  const hasPending = Boolean(pendingDocs?.[category]);
+  const hasPending  = Boolean(pendingDocs?.[category]);
   const hasUploaded = Boolean(opportunity.expenseDocuments?.[category]?.length > 0);
-  return <div key={category} className="grid grid-cols-[1.45fr_1.4fr_1fr_0.95fr_0.65fr_0.9fr] gap-4 items-center py-2.5 px-4 border-b border-slate-100 last:border-0 hover:bg-slate-50/50 transition-colors">
-    {/* Expense Name */}
-    <div className="flex items-center gap-3">
-      <div className="p-1.5 bg-blue-50 text-blue-900 rounded-lg">
-        <Icon size={16} />
-      </div>
-      <span className="font-semibold text-slate-700 text-base">{label}</span>
-    </div>
 
-    {/* Type Dropdown */}
-    <div className="pr-2">
-      {options ? <div className="relative">
-        <select value={selectedType} onChange={handleTypeChange} className="w-full appearance-none bg-slate-50 border border-gray-500 text-black text-sm font-medium rounded-lg py-2.5 px-3 pr-8 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer">
-          {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
-        </select>
-        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-slate-500">
-          <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" /></svg>
+  return (
+    <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-xl px-4 py-2.5 hover:border-blue-200 hover:bg-blue-50/30 transition-all shadow-sm">
+      {/* Icon */}
+      <div className="shrink-0 w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center shadow-sm">
+        <Icon size={14} className="text-white" />
+      </div>
+
+      {/* Label + Type selector */}
+      <div className="flex flex-col min-w-[140px] flex-shrink-0">
+        <span className="font-semibold text-slate-700 text-sm leading-tight">{label}</span>
+        {options ? (
+          <select
+            value={selectedType}
+            onChange={e => onUpdate('type', e.target.value)}
+            className="mt-1 text-xs bg-slate-50 border border-slate-200 rounded-md px-2 py-1 text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-400 cursor-pointer"
+          >
+            {options.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
+          </select>
+        ) : (
+          <span className="mt-1 text-xs text-slate-400">{fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed'}</span>
+        )}
+      </div>
+
+      {/* Rate input */}
+      <div className="flex-1 flex gap-2">
+        <TableInput value={data.rate} onChange={v => handleUpdate('rate', v)} prefix={CURRENCY_SYMBOL} />
+      </div>
+
+      {/* Total */}
+      <div className="text-right shrink-0 min-w-[90px]">
+        <p className="text-xs text-slate-400">Total</p>
+        <p className="text-sm font-bold text-blue-900">{CURRENCY_SYMBOL} {(currentAmount / CONVERSION_RATE).toLocaleString()}</p>
+      </div>
+
+      {/* Upload + View — only for cost items that require a proposal document */}
+      {['trainerCost', 'consultantCost', 'material', 'labs', 'vouchersCost'].includes(category) && (
+        <div className="shrink-0 flex items-center gap-2">
+          <input type="file" id={`upload-${category}`} className="hidden" onChange={e => onUpload(e)} disabled={uploading === category} />
+          <UploadButton
+            onClick={() => document.getElementById(`upload-${category}`).click()}
+            disabled={uploading === category}
+          >
+            {hasUploaded || hasPending ? 'Replace' : 'Upload'}
+          </UploadButton>
+          {hasPending && (
+            <span className="inline-flex items-center text-blue-600 text-xs font-semibold">
+              <CheckCircle size={12} className="mr-0.5" /> Uploaded
+            </span>
+          )}
+          {!hasPending && hasUploaded ? (
+            <a
+              href={`${API_BASE}/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`}
+              target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center text-blue-600 hover:underline text-xs font-medium"
+            >
+              <CheckCircle size={12} className="mr-0.5" /> View
+            </a>
+          ) : null}
         </div>
-      </div> : <span className="text-sm text-black-400 font-medium px-3 py-2.5 bg-slate-50 rounded border border-gray-500 block w-full text-left truncate" title={fixedLabel}>
-        {fixedLabel ? fixedLabel.replace('Fixed: ', '') : 'Fixed'}
-      </span>}
+      )}
     </div>
-
-    {/* Rate Input */}
-    <div>
-      {rateInput}
-    </div>
-
-    {/* Upload Action */}
-    <div className="flex justify-center">
-      <div className="flex items-center gap-2">
-        {hasPending && <span className="inline-flex items-center text-blue-600 text-sm font-semibold">
-          <CheckCircle size={14} className="mr-1" /> Uploaded
-        </span>}
-        <input type="file" id={`upload-${category}`} className="hidden" onChange={e => onUpload(e)} disabled={uploading === category} />
-        <UploadButton onClick={() => document.getElementById(`upload-${category}`).click()} disabled={uploading === category}>
-          {hasUploaded || hasPending ? 'Replace' : 'Upload'}
-        </UploadButton>
-      </div>
-    </div>
-
-    {/* View */}
-    <div className="flex justify-center">
-      {!hasPending && hasUploaded ? <a href={`${API_BASE}/${opportunity.expenseDocuments[category][0].replace(/\\/g, '/')}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-blue-600 hover:underline text-sm font-medium"><CheckCircle size={14} className="mr-1" />View</a> : <span className="text-slate-300 text-sm">-</span>}
-    </div>
-
-    {/* Total Amount */}
-    <div className="text-right font-bold text-slate-700 text-base">
-      {CURRENCY_SYMBOL} {(currentAmount / CONVERSION_RATE).toLocaleString()}
-    </div>
-  </div>;
+  );
 };
+
 
 // Simplified Input for Table
 const TableInput = ({

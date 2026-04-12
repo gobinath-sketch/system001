@@ -181,7 +181,7 @@ router.get('/', protect, async (req, res) => {
 });
 
 // @route   GET /api/smes/recommend
-// @desc    Recommend SMEs based on technology, availability dates, and location
+// @desc    Recommend SMEs based on technology, date availability, and location
 // @access  Private (Sales, Manager, Director, Delivery Team)
 router.get('/recommend', protect, authorize('Sales Executive', 'Sales Manager', 'Director', 'Delivery Head', 'Delivery Executive'), async (req, res) => {
     try {
@@ -190,64 +190,80 @@ router.get('/recommend', protect, authorize('Sales Executive', 'Sales Manager', 
             return res.status(400).json({ message: 'Technology is required for recommendations' });
         }
 
-        // We fetch ALL active SMEs and score them in memory because scoring logic is somewhat complex
+        // Fetch all active SMEs
         const smes = await SME.find({ isActive: true })
             .populate('createdBy', 'name email')
             .lean();
 
         const reqTech = technology.toLowerCase().trim();
-        const reqLoc = location ? location.toLowerCase().trim() : '';
+        const reqLoc  = location ? location.toLowerCase().trim() : '';
         const reqStart = startDate ? new Date(startDate) : null;
-        const reqEnd = endDate ? new Date(endDate) : null;
+        const reqEnd   = endDate   ? new Date(endDate)   : null;
+
+        // Normalise training dates to midnight
+        if (reqStart) reqStart.setHours(0, 0, 0, 0);
+        if (reqEnd)   reqEnd.setHours(23, 59, 59, 999);
 
         const scoredSmes = smes.map(sme => {
-            let score = 0;
-            const matchReasons = [];
-
-            // 1. Technology match (Highest weight: 50, now a MUST HAVE)
+            // -----------------------------------------------------------
+            // 1. Technology match — HARD GATE (50 pts)
+            // -----------------------------------------------------------
             const smeTech = (sme.technology || '').toLowerCase().trim();
-            if (smeTech && reqTech && (smeTech.includes(reqTech) || reqTech.includes(smeTech))) {
-                score += 50;
-                matchReasons.push('Technology');
+            const techMatches = smeTech && reqTech &&
+                (smeTech.includes(reqTech) || reqTech.includes(smeTech));
+            if (!techMatches) return null; // exclude entirely
+
+            let score = 50;
+            const matchReasons = ['Technology'];
+
+            // -----------------------------------------------------------
+            // 2. Availability — training dates must fall WITHIN SME's
+            //    available window (30 pts).
+            //    Logic:
+            //      availFrom  <= trainingStart  AND
+            //      availUntil >= trainingEnd
+            //    If the SME has no dates set → treat as always available.
+            // -----------------------------------------------------------
+            let isAvailable = false;
+            const avail = sme.availability || {};
+            const availFrom  = avail.availableFrom  ? new Date(avail.availableFrom)  : null;
+            const availUntil = avail.availableUntil ? new Date(avail.availableUntil) : null;
+            
+            // Normalize SME availability dates to start and end of day
+            if (availFrom) availFrom.setHours(0, 0, 0, 0);
+            if (availUntil) availUntil.setHours(23, 59, 59, 999);
+            
+            const smeHasDates = !!(availFrom || availUntil);
+
+            if (!smeHasDates) {
+                // No availability dates → open / always available
+                isAvailable = true;
+            } else if (reqStart && reqEnd) {
+                // Training has both dates: SME window must fully contain it
+                const fromOk  = !availFrom  || availFrom  <= reqStart;
+                const untilOk = !availUntil || availUntil >= reqEnd;
+                isAvailable = fromOk && untilOk;
+            } else if (reqStart) {
+                // Only start date given: check start is within window
+                const fromOk  = !availFrom  || availFrom  <= reqStart;
+                const untilOk = !availUntil || availUntil >= reqStart;
+                isAvailable = fromOk && untilOk;
             } else {
-                return null; // Return null to completely ignore this SME
+                // No training dates given → accept the SME
+                isAvailable = true;
             }
 
-            // 2. Availability match (High weight: 30)
-            let isAvailable = false;
-            if (sme.availability) {
-                if (sme.availability.statusOverride === 'Available') {
-                    isAvailable = true;
-                } else if (sme.availability.statusOverride === 'Not Available' || sme.availability.statusOverride === 'Engaged') {
-                    isAvailable = false;
-                } else {
-                    // Check date overlap
-                    const availFrom = sme.availability.availableFrom ? new Date(sme.availability.availableFrom) : null;
-                    const availUntil = sme.availability.availableUntil ? new Date(sme.availability.availableUntil) : null;
-                    
-                    if (!availFrom && !availUntil) {
-                        isAvailable = true; // Open availability
-                    } else if (reqStart) {
-                        // Project has dates
-                        const safeEnd = reqEnd || reqStart; // fallback if single day
-                        if ((!availFrom || availFrom <= reqStart) && (!availUntil || availUntil >= safeEnd)) {
-                            isAvailable = true;
-                        }
-                    } else if (sme.availability.currentStatus === 'Available') {
-                        // If no project dates given, just check if they are generally available now
-                        isAvailable = true;
-                    }
-                }
-            } else {
-                isAvailable = true; // No availability set = assume available
-            }
+            // HARD GATE: if SME has dates set and doesn't cover the training period → exclude
+            if (smeHasDates && !isAvailable) return null;
 
             if (isAvailable) {
                 score += 30;
                 matchReasons.push('Availability');
             }
 
-            // 3. Location match (Lower weight: 20)
+            // -----------------------------------------------------------
+            // 3. Location match — last priority (20 pts)
+            // -----------------------------------------------------------
             if (reqLoc) {
                 const smeLoc = (sme.location || sme.companyLocation || '').toLowerCase();
                 if (smeLoc.includes(reqLoc) || reqLoc.includes(smeLoc)) {
@@ -257,13 +273,12 @@ router.get('/recommend', protect, authorize('Sales Executive', 'Sales Manager', 
             }
 
             return { ...sme, matchScore: score, matchReasons };
-        }).filter(s => s !== null); // Remove nulls (SMEs that didn't match Technology)
+        }).filter(s => s !== null);
 
-        // Filter out completely irrelevant ones (e.g. 0 score) and sort by score DESC
         const recommendations = scoredSmes
             .filter(s => s.matchScore > 0)
             .sort((a, b) => b.matchScore - a.matchScore)
-            .slice(0, 10); // Return top 10
+            .slice(0, 10);
 
         res.json(recommendations);
     } catch (err) {

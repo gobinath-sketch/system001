@@ -119,19 +119,53 @@ router.get('/', protect, async (req, res) => {
             .populate('createdBy', 'name creatorCode')
             .sort({ createdAt: -1 });
 
-        // Calculate 'Opp. given' for each client
+        // Calculate 'Opp. given' and 'lastOppAddedAt' for each client
         const clientsWithCount = await Promise.all(clients.map(async (client) => {
             const oppGiven = await Opportunity.countDocuments({
                 client: client._id,
                 isDeleted: { $ne: true }
             });
-            return { ...client.toObject(), oppGiven };
+            const lastOpp = await Opportunity.findOne(
+                { client: client._id, isDeleted: { $ne: true } },
+                { createdAt: 1 },
+                { sort: { createdAt: -1 } }
+            );
+            return { ...client.toObject(), oppGiven, lastOppAddedAt: lastOpp?.createdAt || null };
         }));
 
         console.log(`✅ Found ${clientsWithCount.length} clients`);
         res.json(clientsWithCount);
     } catch (error) {
         console.error('❌ Error fetching clients:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// @route   GET /api/clients/:id
+// @desc    Get a single client by ID
+// @access  Private
+router.get('/:id', protect, async (req, res) => {
+    try {
+        const client = await Client.findById(req.params.id)
+            .populate('createdBy', 'name creatorCode');
+
+        if (!client || client.isDeleted) {
+            return res.status(404).json({ message: 'Client not found' });
+        }
+
+        const oppGiven = await Opportunity.countDocuments({
+            client: client._id,
+            isDeleted: { $ne: true }
+        });
+        const lastOpp = await Opportunity.findOne(
+            { client: client._id, isDeleted: { $ne: true } },
+            { createdAt: 1 },
+            { sort: { createdAt: -1 } }
+        );
+
+        res.json({ ...client.toObject(), oppGiven, lastOppAddedAt: lastOpp?.createdAt || null });
+    } catch (error) {
+        console.error('❌ Error fetching client by ID:', error.message);
         res.status(500).json({ message: error.message });
     }
 });
