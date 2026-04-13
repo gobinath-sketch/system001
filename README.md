@@ -10,6 +10,7 @@ It combines:
 - Approval workflow (GP/contingency escalation)
 - Realtime communication (notifications + in-app chat)
 - User settings and session/security preferences
+- Email automation (Outlook mailbox ingestion + AI extraction + ERP auto-upsert)
 
 ## 2. Core Business Purpose
 The project helps teams answer these operational questions in one system:
@@ -155,6 +156,22 @@ flowchart TB
   MAIN --> IO[socket server]
   MODEL --> IO
 ```
+
+### G. Email Automation Flow (Outlook + AI + ERP)
+```mermaid
+flowchart LR
+  OUTLOOK[Outlook Mailbox] --> GRAPH[Microsoft Graph]
+  GRAPH --> INGEST[Email Automation Routes]
+  INGEST --> EXTRACT[LLM Extraction]
+  EXTRACT --> ENRICH[Context Enrichment]
+  ENRICH --> DECIDE{Confidence >= Threshold?}
+  DECIDE -->|Yes| UPSERT[Create/Update Client + Opportunity]
+  DECIDE -->|No| REVIEW[Needs Review Queue]
+  REVIEW -->|Approve| UPSERT
+  REVIEW -->|Reject| IGNORE[Ignored]
+  UPSERT --> CAL[Optional Calendar Event]
+  UPSERT --> HISTORY[Automation History]
+```
 ## 5. Role-Based Access Model
 Primary roles used in flows:
 - Sales Executive
@@ -281,6 +298,25 @@ Frontend has role-specific dashboards:
 - `/api/reports/vendor-expenses`
 - Used by report widgets/charts for business and finance decision support
 
+### 6.13 Email Automation (Outlook + LLM)
+- Outlook mailbox ingestion via Microsoft Graph (app-only token).
+- AI extraction into ERP JSON schema (intent + structured fields).
+- Confidence-based auto-processing with a manual review queue.
+- Auto-creation or update of Client + Opportunity entities.
+- Optional calendar event creation when meetings are detected.
+- Teams chat context ingestion via delegated auth (Chat.Read).
+ - Context enrichment uses recent conversation history, known client/opportunity data, and optional Teams/attachments/notes payloads.
+
+Supported AI intents:
+- `new_client_opportunity`
+- `opportunity_update`
+- `delivery_update`
+- `ignore`
+
+Key statuses (EmailIngestion):
+- `queued` -> `needs_review` -> `processed` (or `ignored`)
+- `failed` exists but current logic routes AI errors to `needs_review`
+
 ## 7. End-to-End Working Flow (Business Lifecycle)
 
 ### Flow A: User Login to Dashboard
@@ -332,6 +368,8 @@ Main entities:
 - `Notification`: user-targeted event stream
 - `SME`: vendor/resource master with compliance docs
 - `ChatMessage`: conversation messages with attachments and message state controls
+- `EmailIngestion`: email automation pipeline (classification, extraction, confidence, status, links)
+- `GraphUserToken`: delegated Graph auth tokens for Teams chat access
 
 ## 9. API Surface (By Module)
 - `/api/auth` - login
@@ -346,6 +384,36 @@ Main entities:
 - `/api/reports` - GP/vendor reports
 - `/api/settings` - user settings and session tools
 - `/api/chat` - chat + file transfer
+- `/api/email-automation` - Outlook + AI automation (ingestion, queue, history, graph, calendar, teams)
+
+### 9.1 Email Automation API (Key Routes)
+Health + status:
+- `GET /api/email-automation/health`
+
+Queue + history:
+- `GET /api/email-automation/queue?status=needs_review&limit=50`
+- `GET /api/email-automation/history?limit=100`
+- `POST /api/email-automation/queue/:id/review` (`approve` | `reject`)
+
+Mailbox + calendar:
+- `GET /api/email-automation/mailbox/messages`
+- `GET /api/email-automation/mailbox/messages/:messageId`
+- `GET /api/email-automation/calendar/events`
+- `GET /api/email-automation/calendar/events/:eventId`
+
+Ingestion:
+- `POST /api/email-automation/ingest/pull`
+- `POST /api/email-automation/ingest/selected`
+- `POST /api/email-automation/ingest/message`
+- `POST /api/email-automation/ingest/unified`
+- `POST /api/email-automation/webhook`
+
+Teams (delegated auth):
+- `GET /api/email-automation/graph/token-check`
+- `GET /api/email-automation/chats/auth/url`
+- `GET /api/email-automation/chats/auth/callback`
+- `GET /api/email-automation/chats`
+- `GET /api/email-automation/chats/:chatId/messages`
 
 ## 10. Frontend Route Map (Major)
 - `/login`
@@ -430,6 +498,25 @@ CHAT_S3_PUBLIC_BASE_URL=
 PROFILE_AVATAR_MAX_BYTES=104857600
 ```
 
+Email automation + Graph:
+```env
+AZURE_TENANT_ID=
+AZURE_CLIENT_ID=
+AZURE_CLIENT_SECRET=
+OUTLOOK_MAILBOX=
+GRAPH_TIMEZONE=Asia/Kolkata
+GRAPH_REDIRECT_URI=
+GRAPH_AUTH_SUCCESS_REDIRECT=
+
+EMAIL_AUTOMATION_USER_EMAIL=
+MAIL_AUTOMATION_AUTO_THRESHOLD=0.9
+
+OPENROUTER_API_KEY=
+OPENAI_API_KEY=
+EMAIL_AUTOMATION_MODEL=openai/gpt-4o-mini
+EMAIL_AUTOMATION_LLM_ENDPOINT=https://openrouter.ai/api/v1/chat/completions
+```
+
 ## 14. File Upload Paths
 - Generic uploads: `server/uploads/`
 - Chat uploads: `server/uploads/chat/`
@@ -462,8 +549,13 @@ npm --prefix client run lint
 - Multi-team collaboration model (Sales, Delivery, Finance, Leadership).
 
 ## 18. "AI" in This Project
-There is currently no ML/LLM inference pipeline in this codebase.
-The "intelligence" in the app is rule-based business logic:
+This codebase includes an AI-powered email automation pipeline:
+- LLM extraction turns Outlook emails into a structured ERP JSON payload.
+- Default model: `openai/gpt-4o-mini` via OpenRouter, configurable via env.
+- Output is confidence-scored; items below the threshold require human review.
+- Approved extractions auto-create/update Client + Opportunity and optionally create calendar events.
+
+Rule-based logic still powers:
 - Progress calculation
 - Approval routing
 - Role-based visibility
@@ -479,6 +571,7 @@ If a new team member reads this project as a workflow system:
 6. Managers/heads/director approve/reject.
 7. Notifications + chat coordinate people in realtime.
 8. Dashboards/reports provide leadership view of execution and profitability.
+9. Email automation can ingest Outlook messages and auto-create/update ERP records with review and history tracking.
 
 That is the complete business and technical lifecycle this ERP implements.
 
