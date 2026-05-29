@@ -1,4 +1,4 @@
-# GKTERP - End-to-End Project README
+# Global Knowledge Technologies {Enterprise Resource Planning}
 
 ## 1. Project Overview
 GKTERP is a role-based ERP web application used to manage the full business lifecycle of training/service opportunities from lead creation to delivery, finance tracking, approvals, and reporting.
